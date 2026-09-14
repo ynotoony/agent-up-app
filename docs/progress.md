@@ -8,4 +8,4 @@
 | --- | --- | --- | --- |
 | AgentUp Tauri 2 初始化 | done | 2026-09-14；治理骨架、根 Git、`.gitignore`、登记和静态校验通过；见本次提交 | M0：形成 schema、状态机、Tauri command/event 草案 |
 
-状态取值：`ready / in_progress / blocked / done`。明细写任务票 Checkpoint 区。
+状态取值：完整 `TaskState` 为 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done`；本表可展示其中摘要，但明细与 Review 状态必须写任务票 Checkpoint。

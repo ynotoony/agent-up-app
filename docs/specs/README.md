@@ -7,7 +7,7 @@
 
 ## 架构
 
-- 本目录保存**当前确认的需求真相**：一份规格 = 一条已确认的需求，可变——改需求直接改规格，并追加一行到 `../changes.md`。
+- 本目录保存规格候选与当前批准的需求真相：只有 `approved` 规格驱动实施；`draft`/`proposed` 供审阅，可变更并追加一行到 `../changes.md`。
 - 规格只写"当前是什么"，不保存历史；历史在 `../changes.md`（语义变更）、`../adr/`（决策理由）和 Git 历史里。
 - 领域词汇用 [`../CONTEXT.md`](../CONTEXT.md) 的统一语言，不自造近义词。
 
@@ -20,7 +20,7 @@
 
 ## 状态机
 
-`draft → confirmed → superseded`。被取代的规格在文件头标注取代者编号，不删除。
+`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。
 
 ## 写作规则（两条硬规则）
 

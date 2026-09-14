@@ -9,7 +9,7 @@
 
 - 一张票一个文件：`<NN>-<slug>.md`，按依赖顺序编号（blocker 在前）。
 - 票是 **agent 的任务**，只活在文件里；GitHub Issues 等人向追踪器若启用，只承接人向工作项（bug 报告、外部请求、协作讨论），两边不互为副本、不双写状态。
-- 领取规则：**blocker 全部 `done` 的票才可领取**（frontier）；状态流转 `ready / in_progress / blocked / done` 记录在票内与 `../progress.md`。
+- 领取规则：**blocker 全部 `done` 的票才可领取**（frontier）；状态流转 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done` 记录在票内与 `../progress.md`。
 
 ## 切片与依赖规则
 
@@ -27,7 +27,7 @@
 
 **Blocked by:** 依赖票的编号/标题，或"无——可立即开始"。
 
-**Status:** ready-for-agent
+**Status:** ready
 
 - [ ] 验收条件 1
 - [ ] 验收条件 2

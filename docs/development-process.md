@@ -1,5 +1,5 @@
 <!-- Input: 目标项目盘点与访谈确认的流程事实、seed 快速规则、产物生命周期协议与三阶段协作约定。 -->
-<!-- Output: 读取阶梯与权威层级、产物生命周期协议、工作分类与接手、两层代理协作、委派合同、检查点、会话恢复协议（三套状态机、恢复顺序、run record、写入所有权、故障处理、不变量）、验证与提交的权威运行时协议。 -->
+<!-- Output: 读取阶梯与权威层级、产物生命周期协议、工作分类与接手、两层代理协作、委派合同、检查点、会话恢复协议（四种命名状态模型、恢复顺序、run record、写入所有权、故障处理、不变量）、验证与提交的权威运行时协议。 -->
 <!-- Pos: 交付流程权威（seed 七件之一，唯一流程事实源）；一旦我被更新，务必更新我的开头注释，以及所属文件夹的 README.md。 -->
 
 # 开发流程
@@ -8,20 +8,20 @@
 
 ## 1. 快速摘要
 
-- 工作分四类：只读问答不领取任务；治理/文档维护按本流程改事实记录；功能/修复/重构必须领取一张 blocker 已完成的任务；生产性工作固定走 Implementation -> Review -> Commit 三阶段串行。
+- 工作分四类：只读问答不领取任务；治理/文档维护由 Coordinator 按本流程记录；功能/修复/重构按复杂度进入 C0-C3 路径。C2/C3 使用 Implementation → Review → Commit 分工；C0/C1 可由 Coordinator 直接完成或按需委派。
 - 读取阶梯五级：L0 `AGENTS.md` → L1 `docs/progress.md` 与目录 README → L2 任务票/规格/`docs/agent/artifacts.yaml` → L3 相关源码测试 → L4 按需；按任务类型取最小读取范围。
 - 权威层级六层：用户决策 > 代码/测试/事实记录 > 规格/任务合同 > 流程规则（本文）> Agent Up 模板 > 派生文件；冲突即停报告，不自行择优。
 - 产物五类：Seed 初始化即生成；Conditional 命中触发矩阵才创建；Record 只追加或按状态机更新、模板升级不得覆盖；Derived 可重建但须标注来源/时间/覆盖范围/失效条件；Adapter 仅宿主支持且任务需要时生成。
-- 条件产物按九行触发矩阵默认不创建；不为目录完整性预建空目录或占位文件。
+- 条件产物按触发矩阵默认不创建；不为目录完整性预建空目录或占位文件。
 - 同步门槛：仅契约、拓扑、行为、派生关系四类变化触发级联同步；错别字、排版、纯追加记录不触发。
 - 产物状态机：absent → proposed → approved → generated → stale → refreshed/superseded；用户拒绝记 deferred + 原因。
-- 初始化与产物增删自动评估 Artifact Plan（Required/Recommended/Deferred + 理由）；治理产物逐件登记 `docs/agent/artifacts.yaml`（十三字段）。
-- 三道门禁：语义变化未经用户确认不写文件；无验证证据不算完成；无独立 Review 通过不提交。
-- 主 agent 零写入：理解、拆分、派发、验收；委派必须给全 14 个固定字段；任何执行体不得创建下级执行体。
-- `docs/progress.md` 每票不超过 5 行，明细写任务票 Checkpoint 区；检查点必须可验证，不写"xx 开发中"。
-- 中断恢复只从事实出发：Session 置 `recovering` 后按八步固定顺序（AGENTS.md → progress → 任务票/Checkpoint → run record → 实际文件/Git → 重跑验证 → 判定 resume/blocked/conflict → Review 补审规则）得出结论；事实优先级四层（实际文件/测试/Git > Checkpoint/run record > progress > 聊天记录）；禁止用破坏性操作"恢复干净"。
-- 三套状态机取值固定：Session（active/interrupted/unknown/recovering/closed）、Task（ready/in_progress/blocked/review_ready/review_pass/review_fail/done）、Request（proposed/triaged/accepted/specified/ready + rejected/deferred/needs-user-decision）；写入所有权按五角色矩阵执行。
-- C2/C3、跨会话、中断、无 Git 基线或归属不明时生成 run record（`docs/agent/runs/<run-id>.json`，十三字段，机器 schema 见公开包 `references/schemas/run-record.schema.json`）；C0/C1 写任务票 Checkpoint；六条不变量是阶段出口硬门禁。
+- 初始化与产物增删自动评估 Artifact Plan（Required/Recommended/Deferred + 理由）；治理产物逐件登记 `docs/agent/artifacts.yaml`（十四字段，含 status）。
+- 三道门禁：草案可先以 `draft`/`proposed` 落盘且不覆盖当前 approved 规范；同一用户指令在明确范围内持续有效；实施或生效须基于可追溯的 `approved` 决策；无验证证据不算完成；Git Commit 须有独立 Review pass。
+- Coordinator（主 agent）默认负责理解、授权范围内的规划写入、拆分、派发与验收；无 subagent 时可直接完成 C0/C1（含小范围可逆代码）并留验证与 Checkpoint。C2/C3 使用分工与独立 Review；仅在确有需要时委派，不强制每票创建三名执行体。委派可用简表，复杂任务再使用完整字段；任何执行体不得创建下级执行体。
+- `docs/progress.md` 保持当前状态摘要，详细证据写任务票 Checkpoint 或无票治理的 changes 指定区；检查点必须可验证。
+- 中断恢复只从事实出发：先将 SessionState 置为 `recovering`，再读取最小必要记录、确认 owner、核实文件/验证/结论并落盘恢复摘要；事实优先级为实际文件/测试/Git > Checkpoint/run record > progress > 聊天记录；禁止用破坏性操作"恢复干净"。
+- 状态使用命名空间：`SessionState`、`TaskState`、`RequestState`、`ApprovalState`（draft/proposed/approved）与 `Phase`（coordination/intake/triage/implementation/review/commit）；产品领域状态由产品规格另行定义。写入所有权按角色矩阵执行。
+- C2/C3、跨会话、中断、无 Git 基线或归属不明时生成 run record（字段定义以本文 §12.4 为准）；C0/C1 通常只写 Checkpoint；六条不变量按风险适用。
 - 验证必须记录命令、环境、结果和日期；未运行的验证明确写 `N/A + reason`，禁止用"应该可以"代替证据。
 
 ## 2. 读取阶梯与权威层级
@@ -68,9 +68,9 @@
 #### R-DP-002 冲突即停 `MUST`
 
 - **When**：任何两个权威来源对同一事实给出不一致结论时。
-- **Action**：停止修改；报告冲突双方、各自层级与内容；给出可选项；等待用户裁决后继续。
+- **Action**：区分事实观测与目标规范：实际文件/测试证明现状，但不自动推翻更高层级的用户确认规格；仅当同层权威事实或用户意图无法裁决时停止受影响工作并报告。
 - **Forbidden**：自行选择一种解释继续写；静默合并两种说法；用低层级来源覆盖高层级来源。
-- **Stop if**：用户不在场 → 保持停止状态并记录阻塞，不推进。
+- **Stop if**：需要用户裁决的实质范围、不可逆权限或冲突意图无法确定 → 暂停受影响工作；用户离线不阻止已授权范围内的工作。
 - **Evidence**：冲突报告与用户裁决结果落盘到 `docs/changes.md` 或任务票。
 - **Owner**：当前会话执行体。
 - **Authority**：本文 §2.3（权威层级协议基线）。
@@ -90,17 +90,26 @@
 
 ## 4. 工作状态与接手
 
-`docs/progress.md` 是任务状态的唯一当前记录，不是对话日志。先按工作类型决定是否进入任务流程：
+`docs/progress.md` 是任务状态索引；任务票与 Checkpoint 保存详细依据，三者通过指针保持一致，不宣称 progress 单独承载全部事实。先按工作类型决定是否进入任务流程：
 
 - 回答、解释、只读审查和诊断：允许只读检查，不领取任务，不修改进度，不实施修复。
 - 用户明确要求的治理或文档维护：可以不领业务任务；改变项目事实时写入对应规格或 `docs/changes.md`。
-- 功能、修复或重构：必须领取一张 blocker 已完成的任务，并在开始、检查点和结束时更新进度。
+- 功能、修复或重构：C0/C1 可由 Coordinator 直接执行并记录；C2/C3 需要任务合同（有票时 blocker 全部 done）并在开始、检查点和结束时更新进度。
 
-任务票用 `Type`（`feature` / `bug` / `refactor` / `docs`）和 `Priority`（`P0` 正在中断 / `P1` 核心路径或阻塞链 / `P2` 普通交付 / `P3` 文档治理）分类。进度必须覆盖：当前状态（`ready / in_progress / blocked / done`）、最后检查点、已修改范围、验证结果（失败也记录）、已知阻塞、下一步。明细写任务票 Checkpoint 区，`docs/progress.md` 每票不超过 5 行，只留状态和证据指针。
+### 4.1 复杂度与授权档位
+
+- **C0**：纯排版、纯追加记录、索引同步或可逆文案调整；通常只需 Checkpoint。
+- **C1**：单模块、局部且可回滚的实现或治理修改（含小范围代码），无数据迁移、权限变化或外部集成。Coordinator 可直接实施，也可按需委派。
+- **C2**：跨模块、公共行为/接口、治理权限或跨会话交付；必须有明确合同、验证和独立 Review，按需使用 Implementation。
+- **C3**：数据迁移、安全边界、难逆操作或多个高风险面；必须分工实施、独立 Review，并生成 run record。
+
+用户一次明确指令在其范围内持续有效；`ApprovalState: approved` 可由可追溯的用户明确指令产生，无需逐文件二次批准。常规实现不确定性可由 Coordinator 选择并记录；只有实质范围变化、不可逆权限/数据风险或用户意图冲突才暂停询问。
+
+任务票用 `Type`（`feature` / `bug` / `refactor` / `docs`）和 `Priority`（`P0` 正在中断 / `P1` 核心路径或阻塞链 / `P2` 普通交付 / `P3` 文档治理）分类。进度必须覆盖完整 `TaskState`；`docs/progress.md` 可只展示摘要状态，但必须能指向票内完整状态与证据。明细写任务票 Checkpoint 区；progress 保持摘要长度，不设硬行数。
 
 ### Session 开始（接手门禁）
 
-1. 读 `AGENTS.md` 判定工作类型；只有功能、修复或重构才需要领取任务。
+1. 读 `AGENTS.md` 判定工作类型；C2/C3 功能、修复或重构需要领取任务，C0/C1 可由 Coordinator 直接执行并记录。
 2. 执行 `git status --short`、`git log -5 --oneline`、`git diff --stat`，对照进度判断脏文件归属；不能假设未提交改动可以丢弃。
 3. 重跑与本次工作直接相关的最后一条验证命令，确认最后检查点仍成立。
 4. 发现任务范围变化，先进入拆票流程，不直接动手。
@@ -144,12 +153,12 @@
 - **Forbidden**：为"功能齐全"预生成所有宿主适配；无任务需要时创建。
 - **Stop if**：宿主能力不明 → 按宿主能力评估后再决定。
 - **Evidence**：生成决定指向命中的宿主与任务需要。
-- **Owner**：Implementation 执行体（经用户确认的 Artifact Plan）。
+- **Owner**：Coordinator 或按授权的 Implementation 执行体（经用户确认的 Artifact Plan）。
 - **Authority**：本文 §5.1（生命周期基线）。
 
 ### 5.2 条件产物触发矩阵
 
-条件产物默认不创建；命中下列至少一条才创建。复杂度与 Profile 的权威表位置：Agent Up 包内 `references/protocol/complexity-profile.md`；本项目任务合同必须记录 C0-C3 和 D/B/I/U/S/M/O 七维 reason。
+条件产物默认不创建；命中下列至少一条才创建。复杂度采用本文 §4.1 的本地 C0-C3 定义；任务只需记录等级与简短理由，不依赖外部复杂度文件。
 
 | 产物 | 创建触发条件（满足其一） |
 | --- | --- |
@@ -161,7 +170,7 @@
 | `docs/architecture/` | 用户要求；C2/C3 跨模块；涉及多 Adapter |
 | `docs/agent/runs/` | C2/C3；跨会话；发生中断；无 Git 基线；改动归属不明 |
 | 项目地图 | 跨模块导航需要；仓库规模大；用户要求；旧地图过期 |
-| `scripts/` | 可重复验证需要沉淀为共享 harness |
+| `scripts/` | 同一验证被重复使用、跨票复用或用户要求沉淀时 |
 
 #### R-DP-006 默认不创建 `MUST`
 
@@ -170,16 +179,17 @@
 - **Forbidden**：为目录完整性预建空目录、占位文件或"以后会用到"的产物。
 - **Stop if**：触发条件命中与否无法判定 → 列入 Artifact Plan 待决项，向用户确认。
 - **Evidence**：每个条件产物的创建能指向命中的触发条件行。
-- **Owner**：Implementation 执行体（经用户确认的 Artifact Plan）。
+- **Owner**：Coordinator 或按授权的 Implementation 执行体（经用户确认的 Artifact Plan）。
 - **Authority**：本文 §5.2（触发矩阵基线）。
 
 ### 5.3 产物登记（docs/agent/artifacts.yaml）
 
-治理产物逐件登记，字段十三个；缺值写 `N/A + reason`，不留空：
+治理产物逐件登记，字段十四个（含 `status`）；缺值写 `N/A + reason`，不留空：
 
 | 字段 | 含义 |
 | --- | --- |
 | id | 产物稳定标识 |
+| status | 当前产物状态（absent / proposed / approved / generated / stale / refreshed / superseded / deferred） |
 | path | 仓库内路径 |
 | kind | 产物类型（governance/spec/request/task/record/map/adapter/script 等） |
 | authority | 在权威层级（§2.3）中的层级 |
@@ -196,18 +206,18 @@
 #### R-DP-007 产物登记 `MUST`
 
 - **When**：生成、删除或移动任何治理产物时。
-- **Action**：`docs/agent/artifacts.yaml` 同步登记或注销对应条目，十三字段按实际填写；不适用的字段记 `N/A + reason`。
+- **Action**：`docs/agent/artifacts.yaml` 同步登记或注销对应条目，十四字段（含 status）按实际填写；不适用的字段记 `N/A + reason`。
 - **Forbidden**：存在无登记的治理产物；登记与实际文件漂移而不处理。
 - **Stop if**：发现登记与实际漂移 → 将相关产物标 `stale` 并报告，不静默修正任一侧。
 - **Evidence**：登记与仓库文件清单可对照。
-- **Owner**：Implementation 执行体或协调记录 owner（按产物归属）。
+- **Owner**：Coordinator 或 Implementation（按产物归属与当前授权）。
 - **Authority**：本文 §5.3（登记协议基线）。
 
 ### 5.4 同步门槛
 
 | 变化类别 | 示例 | 触发动作 |
 | --- | --- | --- |
-| 契约变化 | Input/Output/Pos 语义、权威归属、所有权、生命周期、对外接口变化 | 更新契约头/元数据/README 登记，级联 `depends_on` |
+| 契约变化 | 治理文件或公共模块的 Input/Output/Pos、权威归属、所有权、生命周期、对外接口变化 | 更新相应契约头/元数据/README 登记，级联 `depends_on`；普通源码/记录不机械加头 |
 | 拓扑变化 | 文件新增/删除/移动/重命名、目录职责变化 | 更新目录 README 成员登记、`docs/agent/artifacts.yaml`、项目地图 |
 | 行为变化 | 流程、门禁、权限、验证要求、公共接口变化 | 更新协议引用与进度状态 |
 | 派生关系变化 | 生成来源、依赖关系、平台绑定变化 | 更新 `generated_from`/`depends_on`/`platform` 并校验 Derived 标注 |
@@ -217,7 +227,7 @@
 #### R-DP-008 语义触发同步 `MUST`
 
 - **When**：任何治理文件或产物发生变更后自查联动时。
-- **Action**：IF 变更命中四类语义变化之一 THEN 执行对应级联同步 ELSE 不要求更新契约头与 README；命中判断与类别写入变更记录。
+- **Action**：IF 变更命中四类语义变化之一 THEN 执行对应级联同步；契约头与 README 仅限治理文件、目录索引和公共模块，其他文件不机械更新。命中判断与类别写入变更记录。
 - **Forbidden**："一改就更新 README"式机械联动；语义变化却不更新登记。
 - **Stop if**：变化类别无法归类 → 按待决项报告用户。
 - **Evidence**：变更记录注明命中/未命中同步门槛及类别。
@@ -241,42 +251,38 @@ absent ──用户拒绝──> deferred（记录原因）
 - **Forbidden**：跳过 `proposed` 直接生成需用户确认的条件产物；把 `deferred` 当 `rejected` 静默丢弃；`superseded` 后继续引用旧产物为权威。
 - **Stop if**：状态无法判定 → 以实际文件为准并报告。
 - **Evidence**：状态流转有落盘记录（登记行、Checkpoint 或变更条目）。
-- **Owner**：Implementation 执行体或协调记录 owner（按产物归属）。
+- **Owner**：Coordinator 或 Implementation（按产物归属与当前授权）。
 - **Authority**：本文 §5.5（状态机基线）。
 
 ### 5.6 Artifact Plan
 
-初始化与阶段推进自动评估产物需求，产出 Artifact Plan：逐项标 `Required` / `Recommended` / `Deferred`，附理由与命中的触发条件行；Plan 随差异清单或任务票呈现给用户并落盘，不留在聊天中。
+初始化与阶段推进自动评估产物需求，产出 Artifact Plan：逐项标 `Required` / `Recommended` / `Deferred`，附理由与命中的触发条件行；Plan 可先以 `draft` 或 `proposed` 状态落盘供用户审阅，确认后标 `approved`，不留在聊天中。
+
+Artifact Plan 使用 `ApprovalState` 记录草案、提议和用户确认；`docs/agent/artifacts.yaml` 的 `status` 只记录产物生命周期。两者不能互相替代。
 
 #### R-DP-010 Artifact Plan 评估 `MUST`
 
 - **When**：执行初始化，或任务规划涉及产物增删时。
-- **Action**：自动评估产物需求并产出 Artifact Plan：逐项标 `Required` / `Recommended` / `Deferred`，附理由与命中的触发条件；Plan 随差异清单或任务票呈现给用户。
+- **Action**：自动评估产物需求并产出 Artifact Plan：逐项标 `Required` / `Recommended` / `Deferred`，附理由与命中的触发条件；Plan 可作为 `draft`/`proposed` 文件先落盘并呈现给用户，用户确认后转为 `approved`，再驱动实施。
 - **Forbidden**：跳过评估直接创建；Plan 只留在聊天中不落盘。
 - **Stop if**：评估依据不足 → 相应项标 Deferred + 原因，不猜。
 - **Evidence**：Plan 落盘于差异清单、任务票或等价协调记录。
-- **Owner**：Implementation 执行体或协调记录 owner。
+- **Owner**：Coordinator 或 Implementation（按当前授权）。
 - **Authority**：本文 §5.6（Artifact Plan 基线）。
 
-## 6. 代理协作（两层模型与三阶段流程，固定不裁剪）
+## 6. 代理协作（按复杂度分工）
 
-两层协作的存在理由是保持主对话干净：主对话只进路由文件、阶段报告和结论；实现细节、长输出和全量 diff 留在阶段执行体上下文里。本节为固定规则，不随项目规模裁剪。
+Coordinator 负责理解、授权范围内的规划写入、拆分、派发和验收，并可读取代码完成验收。C0/C1 可由 Coordinator 直接实施；C2/C3 默认由 Implementation 实施并由未参与实现的 Review 者审查。仅在有必要且宿主可用时委派，不强制每票创建三个执行体。
 
-三个阶段的执行体是 `docs/agent/roles/implementation.md`、`docs/agent/roles/review.md` 和 `docs/agent/roles/commit.md`；主 agent 按阶段派发对应执行体。更新本节务必同步三者；条文与定义冲突时以更严格者为准，并立即修正另一处。宿主无独立 subagent 时，按宿主适配层的降级路径取得独立 Review，并如实记录，不得以同一执行体自检冒充独立审查。
+- **Implementation**：按合同实施并验证，不承担正式 Review。
+- **Review**：只读核验行为、范围、证据及必要的跨切面登记；不修改受审内容。
+- **Commit**：Coordinator 或受委派执行体按白名单提交；任何 Git Commit 仍需独立 Review pass。
 
-主 agent 是唯一负责人：理解任务、拆分、派发、按结果验收。主 agent 全部工作零写入——不写代码、测试、规格、票据或进度，不逐行审查代码或 diff，不代修、不代提交；验收对象只有各阶段按 Output Contract 返回的报告。
-
-生产性工作固定按三阶段串行，不得合并进同一个执行体：
-
-- **Implementation**：按合同完成实现并运行实现相关验证；不承担正式审查，不执行任何 `git add` / `git commit`。
-- **Review**：独立于实现者，只读审查——对照合同、规格和 diff 判断通过与否；可运行不改变仓库文件的检查，不得修改任何文件。
-- **Commit**：独立于前两者，只按合同白名单暂存并创建提交；发现白名单外改动或范围不符必须停止报告，不得删改、回滚或扩大暂存范围。
-
-阶段顺序：Implementation（含内部检查点）→ 完整交付 → Review →（pass 后）Commit。Review 失败时重新派发 Implementation/Fix，修复完整交付后再派独立 Review。任何执行体不得创建下级执行体；复杂任务拆成多个同级阶段，共享文件与关键路径只能有一个 owner。
+独立 Review 要求审查者未参与受审内容实现；同模型不同执行体可以，不同模型共享实现上下文不自动独立。无 subagent 时可用新 session、不同执行身份或用户审查，并如实记录。
 
 ### 委派合同固定模板
 
-每次委派必须给全以下字段，不得省略字段、留空或写"见聊天记录"：
+委派至少写明目标、范围、权限、验收、证据、依赖和 owner；C2/C3 或风险较高时使用以下完整字段：
 
 ```text
 Repository / Absolute Path:
@@ -295,39 +301,39 @@ Risks:
 Budget / Checkpoints:
 ```
 
-`Goal` 用可观察结果描述；`Scope` 列允许修改的绝对路径；`Context / Evidence` 列出子代理必须先读的文件使其不依赖聊天上下文；`Output Contract` 规定返回的报告格式，不接受只有"完成"的摘要；`Budget / Checkpoints` 未写明时默认每段上限 80 次工具调用，超预算必须先落盘 Checkpoint 再继续。
+`Goal` 用可观察结果描述；`Scope` 列允许修改的绝对路径；`Context / Evidence` 列出子代理必须先读的文件使其不依赖聊天上下文；`Output Contract` 规定返回的报告格式；`Budget / Checkpoints` 用于规划资源，默认值为建议上限而非硬截止，接近预算时先落盘 Checkpoint，必要时可在记录理由后继续。
 
-派发前逐项检查字段完整、范围互斥、完成条件可验收；任一缺失不得派发。子代理发现事实冲突或前置未满足时停止并按 Output Contract 返回。
+派发前检查目标、范围、权限、验收和 owner 可理解；复杂合同再检查完整字段。子代理发现事实冲突或前置未满足时停止并按 Output Contract 返回。
 
 ### 上下文与 token 卫生（所有角色强制）
 
 上下文是稀缺资源；本节规则与两层协作目的一致——让主对话和每个阶段执行体只装必要信息：
 
-1. 大文件先按行号定位（如 `grep -n`），再按行号区间读；同一大文件整读不超过一次。
+1. 大文件优先按行号定位（如 `rg -n`），再按行号区间读；重复读取只在文件发生变化或验证需要时进行。
 2. 权威文档只读指定节：先定位节标题，再按区间读，不整读全文。
 3. 冗长命令输出先落盘 `/tmp`，对话里只回报命令与结果摘要行。
-4. 报告不超过 60 行；代码证据只给 `文件:行号区间`，不贴大段 diff 或完整输出。
-5. 每段委派默认 80 次工具调用硬顶，合同可写其他数值；超预算必须先落盘 Checkpoint 再继续。
+4. 报告保持可读且聚焦证据；复杂任务可超过建议长度并说明原因。代码证据优先给 `文件:行号区间`，不贴大段 diff 或完整输出。
+5. 工具调用、报告长度和上下文预算均为建议值；接近资源边界先落盘 Checkpoint，必要时记录理由后继续。
 6. 已读且未变化的文件不重读；不在对话或报告里复述文件全文。
-7. `docs/progress.md` 每票不超过 5 行，明细留在票文件 Checkpoint 区（见 §4）。
-8. **smart zone**：模型约在 120k token 内推理敏锐；主对话或任一执行体接近该量级时，先把状态落盘（票 Checkpoint / 进度），再在新会话从事实恢复，不带病推进。
+7. `docs/progress.md` 保持摘要，明细留在任务票 Checkpoint 区；无票治理可在 `docs/changes.md` 指定区追加。
+8. 需要切换上下文时以实际信息量和风险判断；切换前落盘 Checkpoint，恢复时从事实接续。
 9. **阶段边界决定上下文**：访谈 → 规格 → 拆票在同一上下文完成（同一次思考）；每张票的实现从新上下文开始，只凭票文件与 Git 状态接手，不依赖聊天记忆。
 
-### 三道门禁（固定不裁剪）
+### 三道门禁
 
 #### R-DP-011 三道门禁 `MUST`
 
 - **When**：按 Artifact Plan、任务票或阶段顺序推进任何写入、交付或提交时。
-- **Action**：执行三道门禁：语义变化未经用户确认不写文件；无验证证据不算完成；无独立 Review pass 不 Commit。
+- **Action**：草案可先以 `draft`/`proposed` 落盘且不覆盖 approved；实施/生效须有可追溯用户明确指令形成 `ApprovalState: approved`；按 C0-C3 运行相关验证；Git Commit 须有独立 Review pass。
 - **Forbidden**：以"自动化评估已判断"替代用户确认；借产物维护绕过阶段门禁。
-- **Stop if**：任一门禁不满足 → 停止并记录阻塞。
+- **Stop if**：实质范围、不可逆权限/数据风险或用户意图冲突无法裁决 → 停止受影响工作；其他低风险常规不确定性可选择并记录。
 - **Evidence**：写文件前的确认记录、完成时的验证证据、Commit 前的 Review pass 证据。
-- **Owner**：各阶段执行体（按阶段写入所有权）。
+- **Owner**：各阶段执行体或 Coordinator（按阶段与降级路径写入所有权）。
 - **Authority**：本文 §6（门禁基线）。
 
 ### 检查点纪律
 
-检查点必须是可验证状态（"状态转换测试通过"），不能写"xx 开发中"。达到检查点立即运行最近的相关测试并报告真实结果，然后才继续剩余范围；未完整交付不得派发 Review 或 Commit。
+检查点必须是可验证状态（例如"静态检查通过"），不能写"xx 开发中"。达到检查点记录相关验证结果；C2/C3 交付完整后才派 Review，Commit 仍需独立 Review pass。
 
 ## 7. 开发节点
 
@@ -341,18 +347,18 @@ Budget / Checkpoints:
 8. `审查通过`：独立 Review 只读审查通过。
 9. `已提交`：独立 Commit 按白名单完成提交。
 
-节点 1～7 是 Implementation 内部路径；只有全部 9 个节点完成，任务才能标记 `done`。"看起来能用"但没有测试、独立审查和恢复记录，不算完成。
+节点 1～7 是实施参考路径；C0/C1 可在相关验证和 Checkpoint 完成后交付，C2/C3 需 Review，只有合同要求提交时才以 Commit 收尾。任务可 `TaskState: done` 且 `commit_status: pending`。"看起来能用"但没有相关验证和持久记录，不算完成。
 
 ## 8. 何时拆票
 
-出现以下任一条件时停止实现，先拆票：预计无法在一个上下文窗口内完成并验证；包含两个可独立演示或独立回滚的用户结果；同时引入新领域对象和真实外部 Adapter；要改两个以上现有模块的公共接口；验收条件超过 7 条；跨越数据迁移、权限、外部集成三个高风险面中的两个以上；新需求不在当前规格内。
+出现以下任一条件时考虑拆票：包含两个可独立演示或独立回滚的用户结果；同时引入新领域对象和真实外部 Adapter；公共接口或高风险面难以在一次交付中验证；新需求不在当前 approved 规格内。拆票依据写入任务或协调记录。
 
 拆票方法：先更新规格或 `docs/changes.md` 说明为什么；票是**垂直切片**——一刀穿透所有层（数据、业务接口、页面、测试），完成的票可独立演示或验证，体量以一个新鲜上下文窗口能完成为限；每票写明 `Blocked by`（只列真正门禁它的票）、验收标准和不做什么；按依赖顺序编号入 `docs/issues/`，只有 blocker 全部 `done` 的票可以领取（frontier）。宽重构例外：机械的大范围变更按 expand–contract 走——先扩展（新旧并存）、分批迁移（每批一票）、最后收缩（删除旧形态）；批次无法独立保绿时共享集成分支，绿只在最终集成票承诺。票模板见 `docs/issues/README.md`。
 
 ## 9. Git 提交
 
 - 根目录只有一个 Git 仓库，默认分支 `main`；功能用 `ticket/<NN>-<slug>` 分支，小型单人工作经用户同意可直接在 `main`。
-- 提交格式 `<type>(<scope>): <结果>`，type 允许 `feat` `fix` `docs` `test` `refactor` `build` `chore`。
+- 提交格式 `<type>(<scope>): <结果>`，分支名由用户合同或既有仓库约定确定；未明确时使用当前分支，不自行创建或切换分支。type 允许 `feat` `fix` `docs` `test` `refactor` `build` `chore`。
 - 一个提交是一个可解释的恢复点；不把多个任务塞进一个提交，不为"干净历史"重写或丢弃未确认归属的改动。
 - 未经用户明确要求不 push、不部署、不发布。
 
@@ -372,33 +378,37 @@ Budget / Checkpoints:
 
 ## 11. 验证与记录
 
-验证按风险递增，不以"能跑"结束：模块行为 → 外部契约 → 构建 → 端到端 → 界面 → 权限（能做什么也明确不能做什么）→ 数据核对 → 运行验证。必须记录命令、环境、结果和日期；未运行的验证明确写"未运行（`N/A + reason`）"，禁止用"应该可以"代替证据。
+验证按风险选择与改动直接相关的证据：C0 通常做格式/链接/静态检查；C1 做局部行为、类型或构建检查；C2 增加接口/跨模块和独立 Review；C3 增加迁移演练、安全和恢复验证。无必要时不强制 TDD、全层 E2E 或共享 harness。每项验证记录命令、环境、结果和日期；未运行写 `N/A + reason`。
 
 ### 共享验证 harness
 
-可重复执行的验证沉淀为仓库共享脚本，全仓库复用：放 `scripts/`（采用三分法布局时 `private/scripts/`），接受场景/票号等作为输入参数，断言结果落 JSON 或结构化输出，截图、日志等产物只作存档；每个脚本在目录 README 登记用途与用法。写验证前先找 harness 里已有的，没有才新增并**当场登记**；过渡期允许任务内自写一次性脚本，但必须在 Checkpoint 标注"待沉淀"，任务收尾沉淀入 harness。禁止每个任务或执行体重写一次性验证脚本。
+只有验证会重复使用、跨票复用或用户要求时才沉淀 `scripts/` harness；一次性命令记录在 Checkpoint 即可。
 
 ## 12. 会话恢复协议
 
 Session（agent_session）是单次会话的易失上下文，随时可能中断或消失；project_network 是仓库内持久事实——文件、Git 状态、`docs/agent/artifacts.yaml`、progress、Checkpoint、run record——跨会话存续。任何需要跨会话存续的状态、结论或进度一律落盘到 project_network；恢复只从事实出发，不从聊天记忆出发。§4 Session 开始的接手门禁是本节恢复流程的快速形态；条文冲突以本节为准。
 
-### 12.1 三套状态机（取值固定）
+### 12.1 状态模型（命名空间固定）
 
-| 状态机 | 取值 | 说明 |
+| 状态模型 | 取值 | 说明 |
 | --- | --- | --- |
-| Session | `active` / `interrupted` / `unknown` / `recovering` / `closed` | `unknown` 指会话状态无法确证（如宿主崩溃后）；`recovering` 指正在执行本节恢复流程 |
-| Task | `ready` / `in_progress` / `blocked` / `review_ready` / `review_pass` / `review_fail` / `done` | 阻塞带原因（如 `blocked: scope-change`） |
-| Request | `proposed` / `triaged` / `accepted` / `specified` / `ready`；旁支 `rejected` / `deferred` / `needs-user-decision` | 流转由 Triage 写入；队列规则见 `docs/requests/README.md` |
+| `SessionState` | `active` / `interrupted` / `unknown` / `recovering` / `closed` | 会话生命周期；`interrupted` 只表示 Session，不改变任务状态 |
+| `TaskState` | `ready` / `in_progress` / `blocked` / `review_ready` / `review_pass` / `review_fail` / `done` | 交付状态；done 可与未提交并存，另记录提交状态 |
+| `RequestState` | `proposed` / `triaged` / `accepted` / `specified` / `ready` / `rejected` / `deferred` / `needs-user-decision` | 需求队列状态 |
+| `ApprovalState` | `draft` / `proposed` / `approved` | 审批状态，与 TaskState 分开；approved 由可追溯用户明确指令产生 |
+| `Phase` | `coordination` / `intake` / `triage` / `implementation` / `review` / `commit` | 工作阶段，不是产品领域状态 |
 
-#### R-DP-012 状态机取值固定 `MUST`
+产品计划可定义自己的领域生命周期状态；产品状态不与上述交付状态混用。`ApprovalState: draft` 表示未定稿草案，`proposed` 表示已提交用户审阅，`approved` 表示用户在明确范围内作出的可追溯确认；草案不得覆盖当前 approved 规范，后续会话沿用仍在范围内的 approved 指令。
 
-- **When**：记录或推断 Session、Task、Request 状态时。
-- **Action**：只使用上表取值；状态变更落盘到任务票、REQ 文件、run record 或 progress；`docs/progress.md` 状态行允许记录 Task 子集，完整取值以任务票与 run record 为准。
-- **Forbidden**：自造状态名（如"基本完成"）；状态只存在于聊天中。
-- **Stop if**：实际情况不属于任何取值 → 停止并报告用户补充语义。
-- **Evidence**：状态字段可被静态检索且取值在允许集合内。
+#### R-DP-012 状态模型取值固定 `MUST`
+
+- **When**：记录或推断任一状态模型时。
+- **Action**：使用命名空间值（如 `TaskState: in_progress`、`Phase: review`）；落盘到对应票、REQ、run 或 progress。
+- **Forbidden**：自造状态名、把产品状态写入交付状态字段、只在聊天中保留状态。
+- **Stop if**：实际情况不属于允许值且无法归入模型 → 报告并暂停受影响工作。
+- **Evidence**：状态字段和转换可静态检索。
 - **Owner**：按 §12.5 写入所有权矩阵。
-- **Authority**：本文 §12.1（会话恢复协议基线）。
+- **Authority**：本文 §12.1。
 
 ### 12.2 事实优先级（四层）
 
@@ -421,42 +431,41 @@ Session（agent_session）是单次会话的易失上下文，随时可能中断
 - **Owner**：当前会话执行体。
 - **Authority**：本文 §12.2。
 
-### 12.3 恢复流程（固定顺序，不得跳步）
+### 12.3 恢复流程
 
-Delivery Session（用户说"继续剩余任务"）启动或接管中断任务时，按以下八步执行，得出结论后才动手：
+Delivery Session 启动或接管时：
 
-1. 读目标项目 `AGENTS.md`（路由与边界）；
-2. 读 `docs/progress.md`（状态索引）；
-3. 读当前任务票与 Implementation Checkpoint；
-4. 读 run record（如存在）；
-5. 对照实际文件与 Git diff（无 Git 时退化为实际文件对照）；
-6. 重跑最后验证（`last_verified` 记录的命令）；
-7. Session 置 `recovering`，判定结论：`resume` / `blocked` / `conflict`；
-8. IF 中断发生在交付完成前 THEN 完整交付后重新独立 Review ELSE 按既有 Review 证据继续。
+1. 读取最小必要上下文（AGENTS.md、progress、相关票/Checkpoint、必要时 run record）；
+2. 确认当前 owner 与授权范围；
+3. 先把 SessionState 置为 `recovering` 并落盘；
+4. 对照实际文件、Git 和已有验证核实改动；
+5. 仅在证据失效或发生新变化时重跑验证；
+6. 记录恢复摘要与结论 `resume` / `blocked` / `conflict`，再继续或报告；
+7. 若中断发生在 Review 前，交付后重新独立 Review。
 
-恢复结论与重跑验证结果落盘到 Checkpoint 或 run record 后，才进入 Implementation。Intake Session（用户说"加需求"）只执行 `docs/requests/README.md` 的 Intake 规则，不进入本流程。
+Intake 只处理新 REQ 与索引并转交 Triage，不修改进行中的任务票。用户离线不阻止已授权工作。
 
-#### R-DP-014 恢复顺序固定 `MUST`
+#### R-DP-014 恢复顺序 `MUST`
 
-- **When**：Delivery Session 启动或接管中断任务时。
-- **Action**：按八步固定顺序执行并得出 `resume` / `blocked` / `conflict` 结论；结论落盘。
-- **Forbidden**：跳过步骤；凭上一会话聊天记忆直接开工；未重跑最后验证就交接或继续未验证的改动。
-- **Stop if**：判 `conflict`（实际文件与记录矛盾）→ 按 R-DP-013 处理并报告用户；恢复顺序中任一必读项不可得且无法用实际文件重建 → 判 `blocked` 并报告。
-- **Evidence**：恢复结论与重跑验证结果落盘到 Checkpoint 或 run record。
-- **Owner**：Delivery Session 执行体。
+- **When**：接管中断工作时。
+- **Action**：按上述顺序确认 owner、恢复状态、文件与证据，并使 progress 摘要与票/Checkpoint/run 详细记录一致。
+- **Forbidden**：跳过 owner/授权确认；无变化却机械重跑全部验证；凭聊天记忆恢复。
+- **Stop if**：实际文件与规范或授权范围存在无法裁决的冲突。
+- **Evidence**：Checkpoint/run record 含 SessionState、owner、结论与验证依据。
+- **Owner**：当前 Coordinator 或运行 owner。
 - **Authority**：本文 §12.3。
 
 ### 12.4 Run record
 
-生成条件（满足其一）：C2/C3 任务；跨会话交接；发生中断；无 Git 基线；改动归属不明。C0/C1 任务写任务票 Checkpoint，不强制 run record。文件：`docs/agent/runs/<run-id>.json`；`run_id` 含日期与随机后缀。字段十三项 + 可选 `independent_review`，机器 schema 见公开包 `references/schemas/run-record.schema.json`：
+生成条件（满足其一）：C2/C3 任务；跨会话交接；发生中断；无 Git 基线；改动归属不明。C0/C1 通常只写 Checkpoint；无票治理把证据追加到 `docs/changes.md` 指定区，不强制 run record。文件：`docs/agent/runs/<run-id>.json`；`run_id` 含日期与随机后缀。字段定义以本节表格为准，另有可选 `independent_review` 指针；本仓库不依赖外部 schema。
 
 | 字段 | 含义 |
 | --- | --- |
 | run_id | 日期 + 随机后缀的唯一标识 |
-| mode | 运行模式（delivery / intake / triage） |
-| phase | 所属阶段（implementation / review / commit 等） |
+| mode | 运行模式（coordination / delivery / intake / triage） |
+| phase | `Phase` 值（coordination / intake / triage / implementation / review / commit） |
 | task | 关联任务票标识 |
-| status | 会话与任务状态摘要（对齐 §12.1 状态机） |
+| status | 类型化对象：`{session: SessionState|null, task: TaskState|null, request: RequestState|null, approval: ApprovalState|null}` |
 | scope | 本次运行的任务 Scope |
 | baseline | `{vcs_ref, workspace_fingerprint}`；无 Git 时 `vcs_ref` 记 `N/A + reason` |
 | modified_files | 本次运行修改的文件清单 |
@@ -472,24 +481,25 @@ Delivery Session（用户说"继续剩余任务"）启动或接管中断任务�
 #### R-DP-015 Run record 生成与维护 `MUST`
 
 - **When**：命中任一生成条件，或已有 run record 的运行状态变化时。
-- **Action**：创建或更新 `docs/agent/runs/<run-id>.json`，字段按本节表格与机器 schema；每完成一个可验证步骤即更新 `last_verified` 与 `next_step`。
+- **Action**：创建或更新 `docs/agent/runs/<run-id>.json`，字段按本节表格；每完成一个可验证步骤更新 `last_verified` 与 `next_step`。
 - **Forbidden**：C0/C1 强制创建 run record；run record 与 Checkpoint 内容矛盾不处理；编造 baseline、验证结果或网络状态。
 - **Stop if**：无法确定 baseline → 如实记录 `N/A + reason`，不编造。
-- **Evidence**：run record 存在、字段可对照机器 schema、`updated_at` 与实际活动一致。
-- **Owner**：当前运行的 Implementation 执行体。
+- **Evidence**：run record 存在、字段可对照本节表格、`updated_at` 与实际活动一致。
+- **Owner**：按 `mode` 与 `phase` 由当前会话角色写入；delivery/implementation 由 Implementation 或担任 Implementation 的 Coordinator，review 由 Review，commit 由 Commit 或 Coordinator，intake 由 Intake，triage/coordination 由 Triage 或 Coordinator。
 - **Authority**：本文 §12.4。
 
 ### 12.5 写入所有权矩阵
 
 | 会话/角色 | 允许写入 | 禁止 |
 | --- | --- | --- |
-| Intake | 仅新 REQ 文件 | 当前任务、progress、规格、票 |
+| Intake | 新 REQ 文件及所属索引登记 | 进行中任务票、progress、规格 |
 | Triage | Request 状态流转、规格、任务票 | 产品实现文件、Implementation Checkpoint |
+| Coordinator（主 agent） | 授权范围内的规格/任务/索引/进度草案与状态；C0/C1 可逆治理、记录和小范围代码；Artifact Plan；协调 Checkpoint；读取代码验收 | C2/C3 生产实现、数据迁移、权限、外部集成；Review 结论代写 |
 | Delivery（Implementation） | 任务 Scope 内文件 + Implementation Checkpoint | Review 记录、Commit 操作 |
-| Review | 审查记录（任务票 Independent Review Checkpoint） | 修改被审内容 |
-| Commit | 暂存与提交记录 | 扩大范围、push、deploy |
+| Review | 有票时写票内 Independent Review Checkpoint；无票时向 Coordinator 返回报告，由 Coordinator 记录；Review 阶段 run record 更新由 Review 写入 | 修改被审内容、代写自己的 Review 结论 |
+| Commit | 暂存与提交记录；Commit 阶段 run record 更新 | 扩大范围、push、deploy |
 
-run record 由当前运行的 Implementation 执行体写入（R-DP-015）；`independent_review` 指针回填同 owner。禁止两个 session 同时写 `docs/progress.md`；`docs/requests/` 是 Intake 与 Delivery 的唯一目录交集（Intake 写新 REQ，Delivery 不写）。Intake 与 Delivery 并行规则的队列侧表述见 `docs/requests/README.md`，与本矩阵一致；冲突以更严格者为准。
+run record 由当前 `mode` 对应的会话角色写入（R-DP-015）；`independent_review` 指针由记录 owner 在 Review 结论落盘后回填。共享记录单 writer；禁止两个 session 同时写同一记录；`docs/requests/` 是 Intake 与 Delivery 的唯一目录交集（Intake 写新 REQ，Delivery 不写）。Intake 与 Delivery 并行规则的队列侧表述见 `docs/requests/README.md`，与本矩阵一致；冲突以更严格者为准。
 
 #### R-DP-016 写入所有权 `MUST`
 
@@ -498,7 +508,7 @@ run record 由当前运行的 Implementation 执行体写入（R-DP-015）；`in
 - **Forbidden**：两个 session 同时写 `docs/progress.md`；Implementation 自审通过；Commit 重写实现内容。
 - **Stop if**：写入目标被其他 session 占用或发现并行写入痕迹 → 停止写、以文件现状为准（R-DP-013）、报告。
 - **Evidence**：每处变更可归属到唯一角色（对齐 `git status` 归属解释要求）。
-- **Owner**：各阶段执行体。
+- **Owner**：各阶段执行体或 Coordinator（按写入所有权矩阵）。
 - **Authority**：本文 §12.5。
 
 ### 12.6 阶段故障处理
@@ -506,10 +516,10 @@ run record 由当前运行的 Implementation 执行体写入（R-DP-015）；`in
 #### R-DP-017 Implementation 中断 `MUST`
 
 - **When**：Implementation 执行体中断或消失后恢复时。
-- **Action**：保留已有改动，将任务标 `interrupted`，依据 Checkpoint/run record 记录已完成部分与 `next_step`，续跑未完成部分。
+- **Action**：保留已有改动，将 Session 标为 `SessionState: interrupted`，并将任务保持为 `TaskState: in_progress` 或按实际阻塞记为 `TaskState: blocked`；依据 Checkpoint/run record 记录已完成部分与 `next_step`，续跑未完成部分。
 - **Forbidden**：中断即回滚；丢弃未解释的改动。
 - **Stop if**：改动无法归属（不在 Scope、无记录）→ 按六条不变量第 6 条报告，不动文件。
-- **Evidence**：`interrupted` 标记与 `next_step` 落盘到 Checkpoint 或 run record。
+- **Evidence**：`SessionState: interrupted`、对应 `TaskState` 与 `next_step` 落盘到 Checkpoint 或 run record。
 - **Owner**：恢复后的 Delivery Session 执行体。
 - **Authority**：本文 §12.6。
 
@@ -545,30 +555,30 @@ run record 由当前运行的 Implementation 执行体写入（R-DP-015）；`in
 - **Owner**：所有执行体。
 - **Authority**：本文 §12.7。
 
-### 12.8 六条不变量（硬门禁）
+### 12.8 六条不变量（按风险适用）
 
-1. **无持久状态不算完成**——任何完成声明必须有落盘状态。
-2. **无最后验证不得交接**——交接前重跑最后验证并记录；确不适用记 `N/A + reason`。
-3. **无独立 Review pass 不得 Commit**。
-4. **文件/Git 状态优先于聊天记录**。
-5. **网络不可用只能 fallback 或明确阻塞**——不得假装在线或编造远程事实。
-6. **归属不明改动不得删/盖/重置**——先报告归属。
+1. **无持久状态不算完成**——所有 C0-C3 完成声明都必须有落盘状态。
+2. **无相关验证不得交接**——所有 C0-C3 都要有相关验证；不适用时记录 `N/A + reason`。
+3. **无独立 Review pass 不得 Git Commit**——所有 Git Commit 都适用；低风险工作可交付并保持未提交。
+4. **文件/Git 状态优先于聊天记录**——所有恢复和归属判断都适用。
+5. **网络不可用只能 fallback 或明确阻塞**——仅在任务使用网络时适用。
+6. **归属不明改动不得删/盖/重置**——所有修改和恢复都适用。
 
 #### R-DP-021 不变量硬门禁 `MUST`
 
 - **When**：任何阶段出口判断与交接时。
-- **Action**：逐条核对六条不变量；任一不满足即停止并阻塞。
-- **Forbidden**：以复杂度、进度压力或"已口头确认"为由豁免任何一条。
+- **Action**：按任务复杂度逐条核对适用不变量；适用项任一不满足即停止并阻塞，未适用项记录原因。
+- **Forbidden**：以复杂度或进度压力绕过适用不变量；以口头结论替代持久证据。
 - **Stop if**：不变量被违反且无法就地纠正 → 记录违反事实并报告用户。
 - **Evidence**：阶段出口记录含不变量核对结果。
-- **Owner**：各阶段执行体。
+- **Owner**：各阶段执行体或 Coordinator。
 - **Authority**：本文 §12.8。
 
 ## 13. 解释与例外
 
 - 首次为既有项目补 seed 时，Record 类既有文件按 R-DP-003 保护，只补缺失件；既有文档、代码布局、命名和规则一律视为项目事实，只登记、只补缺。
 - 本文与根 `AGENTS.md`、目录 README、任务票等文件冲突时，以本文为准修正引用；条文与三阶段执行体定义冲突时以更严格者为准。
-- 本项目的初始化访谈与盘点结果已填入目录边界、角色合同和验证命令；后续未确认事实继续写【待定：...】，不编造领域事实。
+- 本项目的初始化访谈与盘点结果已填入目录边界、角色合同和验证命令；后续未确认事实继续写【待定：...】，不编造领域事实。用户明确授权在范围内持续有效，常规选择记录即可。
 - 需求请求的队列规则（Intake 边界、Triage 边界、请求状态机）见 `docs/requests/README.md`；本文只承载任务执行流程，不重复队列细节。
 - 目标项目当前不是 Git 仓库时：恢复流程第 5 步退化为实际文件对照，`baseline.vcs_ref` 记 `N/A + reason`，`workspace_fingerprint` 照常计算；该状态由 Git 化任务结束。
 - `needs-user-decision` 不同于 `blocked`：前者是 Request 等用户裁决，后者是 Task 停止推进。

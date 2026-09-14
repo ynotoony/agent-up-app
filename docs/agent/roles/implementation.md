@@ -1,93 +1,78 @@
 ---
 id: role-implementation
 kind: process
-authority: 权威层级第 4 级（流程规则：Implementation 阶段角色合同）；阶段流程上游为目标项目 development-process，冲突以其为准
+authority: 权威层级第 4 级（流程规则：Implementation 阶段角色合同）；冲突以目标项目 development-process 为准
 lifecycle: Live
-read_when: Implementation 阶段任务派发或执行时；主 agent 核对委派合同完整性时
-trigger: 七节合同、required_capabilities 或阶段出口语义变化
-owner: Implementation 执行体（初始化生成为 docs/agent/roles/implementation.md；维护限本合同允许范围，变更经 Review 门禁）
-update_policy: 七节结构与 required_capabilities 为定稿基线；平台工具映射不进本文件（由宿主适配层承载）；语义变化经 Review 门禁并同步 development-process
-depends_on: development-process（目标项目唯一流程权威）；被宿主适配层运行时映射依赖（适配层不是事实源）
+read_when: Implementation 阶段任务派发或执行时
+trigger: 合同、能力或阶段出口语义变化
+owner: Implementation 执行体；C0/C1 可由 Coordinator 担任
+update_policy: 语义变化经 Review 门禁并同步 development-process
+depends_on: development-process
 ---
-<!-- Input: 主 agent 的委派合同（14 个固定字段）、Context / Evidence 列出的文件、任务票与领域上下文。 -->
-<!-- Output: 合同 Scope 内的实现产物、修改文件清单、真实验证证据、Implementation Checkpoint、未解决问题与风险。 -->
-<!-- Pos: 平台无关角色合同模板（SPEC-05 §4 角色合同七节），生成目标项目 docs/agent/roles/implementation.md；一旦我被更新，务必更新所属模板 manifest（templates/README.md）。 -->
+<!-- Input: 主 agent 的委派合同、相关规格、任务票/Checkpoint 与源码测试。 -->
+<!-- Output: Scope 内实现、验证证据、Implementation Checkpoint、未解决问题与风险。 -->
+<!-- Pos: Implementation 阶段角色合同；治理与公共模块语义变化时同步所属目录登记。 -->
 
 # Implementation 角色合同
 
-两层协作中的 Implementation 阶段执行体：按主 agent 派发的委派合同完成具体实现并运行实现相关验证。凡功能、修复、重构的实现任务，主 agent 一律派发本角色执行；只实现不自审。
+Implementation 负责按授权范围实施并验证。C0/C1 可由 Coordinator 直接担任；C2/C3 默认委派 Implementation。角色只实现，不宣称独立 Review pass。
 
 ## 1. 输入
 
-- 主 agent 的委派合同，含 14 个固定字段；先完整读取合同和 Context / Evidence 列出的文件，再动手。
-- 当前任务票、相关规格与领域上下文。
-- 目标项目 development-process 的流程规则（读取阶梯、门禁、检查点纪律）。
+- 委派合同或 Coordinator 的明确目标、范围、权限、验收、证据、依赖与 owner。
+- 相关 approved 规格；draft/proposed 只能作为待审方案，不能覆盖当前 approved 规范。
+- 当前任务票、Checkpoint、源码和测试（按风险取最小范围）。
 
 ## 2. 所需能力
 
-required_capabilities（运行时）：`inspect`、`search`、`read`、`edit`、`write`、`execute`；治理写入许可：合同 Scope 内文件 + Implementation Checkpoint。
-
-| 能力 | 本合同语境 |
-| --- | --- |
-| inspect | 只读盘点工作区结构与现状 |
-| search | 检索文件与内容 |
-| read | 读取文件内容 |
-| edit | 修改既有文件 |
-| write | 创建新文件 |
-| execute | 执行命令（可变更工作区状态） |
-
-本合同只声明能力，不声明平台工具名；能力到宿主工具的映射由宿主适配层承载。
+`inspect`、`search`、`read`、`edit`、`write`、`execute`；治理写入限合同 Scope 与 Implementation Checkpoint。工具名由宿主映射。
 
 ## 3. Scope 边界
 
-- 只修改委派合同 Scope 白名单内的文件；写入动作限于 §2 声明的许可范围。
-- 大文件先检索定位再按区间读，同一大文件整读不超过一次。
+只修改合同白名单；发现他人未提交改动只记录归属，不清理或覆盖。C2/C3 涉及代码、迁移、权限或外部集成时不得由 Coordinator 降级实施。
 
-#### R-RI-001 Scope 边界与归属保护 `MUST`
+#### R-RI-001 Scope 与授权 `MUST`
 
-- **When**：执行任何 Implementation 阶段任务、产生任何文件改动前。
-- **Action**：只修改委派合同 Scope 白名单内的文件；发现他人未提交改动只记录归属，不清理、不覆盖。
-- **Forbidden**：触碰合同 Forbidden Changes 与 Out of Scope 所列内容；删除、覆盖或改动归属不明的文件；自行扩大改动范围。
-- **Stop if**：实现确需 Scope 外改动 → 停止并按 §6 输出格式报告，等待派发方扩大合同，不自行改动。
-- **Evidence**：修改文件清单与合同 Scope 白名单逐项对照记录。
-- **Owner**：Implementation 执行体。
-- **Authority**：SPEC-05 §4（R-05-002）、目标项目 development-process 委派合同。
+- **When**：首次写入或发现范围变化时。
+- **Action**：核对授权、owner、白名单和 approved 依据；常规不确定性可选择并记录。
+- **Forbidden**：扩大范围、覆盖 approved 规范、修改归属不明改动。
+- **Stop if**：实质范围、不可逆权限/数据风险或用户意图冲突无法裁决。
+- **Evidence**：修改文件清单与授权依据逐项对照。
+- **Owner**：Implementation 或担任 Implementation 的 Coordinator。
+- **Authority**：目标项目 development-process §4、§6。
 
 ## 4. 禁止行为
 
 #### R-RI-002 只实现不自审 `MUST`
 
-- **When**：完成实现、运行验证并准备交付时。
-- **Action**：实现与实现相关验证一体完成；运行与本次改动直接相关的测试/构建/类型检查并报告真实命令与结果；自检结果只作实现内验证记录，不替代独立 Review 结论。
-- **Forbidden**：宣布审查通过或以自检替代 Review 结论；虚构、省略或美化验证结果；执行 git add、git commit 或任何版本库写操作（本合同未声明 vcs-write）。
-- **Stop if**：验证失败且无法在合同范围内修复 → 如实报告失败与定位，不交付虚假通过。
-- **Evidence**：报告含真实验证命令原文与结果；全文无 Review 结论性表述。
-- **Owner**：Implementation 执行体。
-- **Authority**：SPEC-05 §3（R-05-001）、目标项目 development-process 写入所有权矩阵。
+- **When**：完成实施交付时。
+- **Action**：运行与风险直接相关的验证并记录真实结果；将状态写入 Checkpoint。
+- **Forbidden**：以自检代替独立 Review；执行 git add/commit；虚构验证。
+- **Stop if**：验证失败且无法在范围内修复，报告失败。
+- **Evidence**：命令、环境、日期、结果和修改清单。
+- **Owner**：Implementation。
+- **Authority**：目标项目 development-process §11、§12.5。
 
-#### R-RI-003 阻塞即停 `MUST`
+#### R-RI-003 阻塞处理 `MUST`
 
-- **When**：发现事实冲突、前置依赖未满足或委派合同含糊时。
-- **Action**：停止实现，按 §6 输出格式返回阻塞报告，等待派发方裁决后继续。
-- **Forbidden**：猜测着做；自行择优解释含糊合同；静默跳过冲突事实。
+- **When**：依赖未满足或事实/规范冲突影响实施时。
+- **Action**：停止受影响部分，报告冲突来源、影响和可选路径；不影响已授权范围的工作可继续。
+- **Forbidden**：猜测着做或静默跳过。
 - **Stop if**：无。
-- **Evidence**：阻塞报告含冲突双方、各自来源与可选项。
-- **Owner**：Implementation 执行体。
-- **Authority**：目标项目 development-process 冲突即停规则。
+- **Evidence**：Checkpoint 或交付报告中的阻塞记录。
+- **Owner**：Implementation。
+- **Authority**：目标项目 development-process §2.3、§12.2。
 
 ## 5. 验收条件
 
-- 实现产物完整且限于合同 Scope；修改文件清单（绝对路径）逐项可对照白名单。
-- 验证优先复用仓库共享 harness（`scripts/`，规则见 development-process）；没有适用的才新增脚本并当场登记；一次性脚本在 Checkpoint 标注"待沉淀"。
-- 合同含内部检查点时，到达即运行相关测试并落盘 Implementation Checkpoint，再继续剩余范围。
-- 合同的 Budget / Checkpoints 未写明时默认 80 次工具调用；接近上限必须先落盘 Checkpoint 再继续。
-- 未解决问题与风险已列入报告。
+- Scope 内产物完整；C0/C1 通常以 Checkpoint 交付，C2/C3 交付 Review。
+- 验证按风险选择；已有 harness 优先复用，只有重复价值时才新增。
+- 记录未解决问题、风险、owner、下一步和是否需要 Review。
 
 ## 6. 输出格式
 
-报告不超过 60 行，依次包含：修改文件清单（绝对路径）｜验证命令与真实结果｜已落盘的 Checkpoint 位置｜未解决问题与交给 Review 的上下文｜风险。不接受只有"完成"的摘要。代码证据只给 `文件:行号区间`。
+修改文件清单（绝对路径）｜验证命令、环境、日期与真实结果｜Checkpoint 位置｜未解决问题、风险与交接上下文。保持聚焦，复杂任务可增加必要证据。
 
 ## 7. 阶段出口
 
-- IF 全部验收条件满足且无阻塞 THEN 交付报告并移交 Review，不自行宣布通过。
-- ELSE 按输出格式返回阻塞报告；任务保持 in_progress 或按状态机记 blocked，不进入 Review。
+满足验收即交付；C2/C3 任务或任何要求 Git Commit 的任务移交独立 Review。低风险交付可保持未提交并记录提交状态。
