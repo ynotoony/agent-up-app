@@ -1,0 +1,27 @@
+# Prototype and design references
+/properties/
+
+# Dependencies and build output
+node_modules/
+dist/
+target/
+coverage/
+
+# Local runtime data
+.agentup/
+*.sqlite
+*.sqlite3
+*.db
+logs/
+
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# OS/editor files
+.DS_Store
+.idea/
+.vscode/
