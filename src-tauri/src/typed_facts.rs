@@ -734,6 +734,10 @@ struct RunContent {
     token_output: Option<i64>,
     #[serde(skip_serializing_if = "Option::is_none")]
     verdict: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    elapsed_ms: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider_timeout_count: Option<i64>,
 }
 
 fn parse_run(content: &Value) -> Result<RunContent, AppError> {
@@ -780,6 +784,9 @@ fn parse_run(content: &Value) -> Result<RunContent, AppError> {
         if !matches!(verdict.as_str(), "pass" | "fail") {
             return Err(parse_err());
         }
+    }
+    if parsed.elapsed_ms.unwrap_or(0) < 0 || parsed.provider_timeout_count.unwrap_or(0) < 0 {
+        return Err(parse_err());
     }
     Ok(parsed)
 }

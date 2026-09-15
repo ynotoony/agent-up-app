@@ -14,10 +14,15 @@
 
 **Blocked by:** M5-01 done；SPEC-009 approved。
 
-**Status:** ready
+**Status:** review_ready
 
-- [ ] `cancel_run` 后 `apply_fake_script` 失败；取消后文件不变
-- [ ] `advance_run_clock` 超过 15 min → `run_state=interrupted`，restart 后 `load_run` 仍在
-- [ ] 一次模拟 provider timeout 会重试；连续第二次 timeout 中断
-- [ ] 越权写入仍不重试
-- [ ] 无子进程被拉起
+- [x] `cancel_run` 后 `apply_fake_script` 失败；取消后文件不变
+- [x] `advance_run_clock` 超过 15 min → `run_state=interrupted`，restart 后 `load_run` 仍在
+- [x] 一次模拟 provider timeout 会重试；连续第二次 timeout 中断
+- [x] 越权写入仍不重试
+- [x] 无子进程被拉起
+
+
+## Implementation Checkpoint
+
+**2026-09-15 / review_ready**：`advance_run_clock` 15 min → `interrupted`/`error_code=timeout`。`{tool:timeout}` 第一次重试仍 active，第二次中断。`cancel_run` 后 apply 失败。越权写不增加 timeout count。`agent_run.rs` 无 process spawn。未 push、不自审。

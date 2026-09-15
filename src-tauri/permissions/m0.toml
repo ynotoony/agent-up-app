@@ -25,5 +25,6 @@ commands.allow = [
   "finish_run",
   "commit_changes",
   "cancel_run",
-  "load_run"
+  "load_run",
+  "advance_run_clock"
 ]

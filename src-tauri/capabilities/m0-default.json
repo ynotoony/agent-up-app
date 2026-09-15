@@ -1,6 +1,6 @@
 {
   "identifier": "m0-default",
-  "description": "Deny-by-default M0\u2013M5 capability: twenty-four typed commands and runtime events.",
+  "description": "Deny-by-default M0\u2013M5 capability: twenty-five typed commands and runtime events.",
   "windows": [
     "main"
   ],

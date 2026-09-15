@@ -60,6 +60,7 @@ for command in [
     "commit_changes",
     "cancel_run",
     "load_run",
+    "advance_run_clock",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")

@@ -620,6 +620,29 @@
       ],
       "capability": "project_read",
       "emits": []
+    },
+    {
+      "name": "advance_run_clock",
+      "input_required": [
+        "project_id",
+        "run_id",
+        "elapsed_ms",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
     }
   ]
 }

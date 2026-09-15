@@ -148,8 +148,13 @@ impl Runtime {
             Err(err) => return err.into_value(CMD),
         };
         let mut prepared: Vec<(String, String, Option<String>)> = Vec::new();
+        let mut saw_timeout = false;
         for call in call_list {
             let tool = call.get("tool").and_then(Value::as_str).unwrap_or("");
+            if tool == "timeout" {
+                saw_timeout = true;
+                continue;
+            }
             let rel = call.get("relative_path").and_then(Value::as_str).unwrap_or("");
             if !valid_relative_path(rel) {
                 return fail(CMD, "invalid_input", "relative_path is invalid.", Some(json!({"field": "relative_path"})));
@@ -177,6 +182,41 @@ impl Runtime {
                     return fail(CMD, "invalid_input", "tool is invalid.", Some(json!({"field": "tool"})));
                 }
             }
+        }
+        if saw_timeout {
+            let prior = fact["content"]["provider_timeout_count"].as_i64().unwrap_or(0);
+            if prior >= 1 {
+                return match close_run(
+                    self,
+                    CMD,
+                    project_id,
+                    run_id,
+                    expected_revision,
+                    "interrupted",
+                    0,
+                    0,
+                    None,
+                    false,
+                    Some("timeout"),
+                ) {
+                    Ok(value) => value,
+                    Err(err) => err.into_value(CMD),
+                };
+            }
+            let mut content = fact["content"].clone();
+            content["provider_timeout_count"] = json!(1);
+            let written = remap_command(
+                self.write_fact(project_id, run_id, "run", content, json!({}), expected_revision, None),
+                CMD,
+            );
+            if written["ok"] != true {
+                return written;
+            }
+            let mut data = written["data"].clone();
+            if let Some(obj) = data.as_object_mut() {
+                obj.insert("retried".to_string(), json!(true));
+            }
+            return json!({"ok": true, "command": CMD, "data": data});
         }
         let mut results = Vec::new();
         for (tool, rel, content) in &prepared {
@@ -217,6 +257,76 @@ impl Runtime {
         json!({"ok": true, "command": CMD, "data": data})
     }
 
+
+    pub fn advance_run_clock(
+        &mut self,
+        project_id: &str,
+        run_id: &str,
+        elapsed_ms: i64,
+        expected_revision: i64,
+    ) -> Value {
+        const CMD: &str = "advance_run_clock";
+        if !valid_id(project_id) {
+            return fail(CMD, "invalid_input", "project_id is invalid.", Some(json!({"field": "project_id"})));
+        }
+        if !valid_id(run_id) {
+            return fail(CMD, "invalid_input", "run_id is invalid.", Some(json!({"field": "run_id"})));
+        }
+        if elapsed_ms < 0 {
+            return fail(CMD, "invalid_input", "elapsed_ms is invalid.", Some(json!({"field": "elapsed_ms"})));
+        }
+        if expected_revision < 0 {
+            return fail(CMD, "invalid_input", "expected_revision is invalid.", Some(json!({"field": "expected_revision"})));
+        }
+        let Some(bound) = self.projects.get(project_id).cloned() else {
+            return fail(CMD, "not_initialized", "No bound initialized project was found for this project_id.", None);
+        };
+        let agentup = agentup_dir(&bound.root);
+        let fact = match latest_run_fact(&agentup, run_id) {
+            Ok(fact) => fact,
+            Err(err) => return err.into_value(CMD),
+        };
+        if fact["revision"].as_i64() != Some(expected_revision) {
+            return fail(
+                CMD,
+                "revision_conflict",
+                "expected_revision does not match the current fact revision.",
+                Some(json!({"revision": fact["revision"]})),
+            );
+        }
+        if fact["content"]["run_state"] != "active" {
+            return fail(CMD, "invalid_input", "run is not active.", Some(json!({"field": "run_id"})));
+        }
+        let provider = fact["content"]["provider"].as_str().unwrap_or("");
+        if !matches!(provider, "fake" | "replay") {
+            return fail(CMD, "invalid_input", "provider cannot advance a fake clock.", Some(json!({"field": "provider"})));
+        }
+        if elapsed_ms >= 900_000 {
+            return match close_run(
+                self,
+                CMD,
+                project_id,
+                run_id,
+                expected_revision,
+                "interrupted",
+                0,
+                0,
+                None,
+                false,
+                Some("timeout"),
+            ) {
+                Ok(value) => value,
+                Err(err) => err.into_value(CMD),
+            };
+        }
+        let mut content = fact["content"].clone();
+        content["elapsed_ms"] = json!(elapsed_ms);
+        remap_command(
+            self.write_fact(project_id, run_id, "run", content, json!({}), expected_revision, None),
+            CMD,
+        )
+    }
+
     pub fn finish_run(
         &mut self,
         project_id: &str,
@@ -238,6 +348,7 @@ impl Runtime {
             token_output,
             verdict.as_deref(),
             true,
+            None,
         ) {
             Ok(value) => value,
             Err(err) => err.into_value(CMD),
@@ -262,6 +373,7 @@ impl Runtime {
             0,
             None,
             false,
+            None,
         ) {
             Ok(value) => value,
             Err(err) => err.into_value(CMD),
@@ -371,6 +483,7 @@ fn close_run(
     token_output: i64,
     verdict: Option<&str>,
     require_review_verdict: bool,
+    error_code: Option<&str>,
 ) -> Result<Value, AppError> {
     if !valid_id(project_id) {
         return Err(AppError::with_details("invalid_input", "project_id is invalid.", json!({"field": "project_id"})));
@@ -421,6 +534,9 @@ fn close_run(
         if let Some(verdict) = verdict {
             content["verdict"] = json!(verdict);
         }
+    }
+    if let Some(code) = error_code {
+        content["error_code"] = json!(code);
     }
     Ok(remap_command(
         runtime.write_fact(project_id, run_id, "run", content, json!({}), expected_revision, None),

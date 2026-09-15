@@ -396,6 +396,21 @@ fn load_run(
     result
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn advance_run_clock(
+    project_id: String,
+    run_id: String,
+    elapsed_ms: i64,
+    expected_revision: i64,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.advance_run_clock(&project_id, &run_id, elapsed_ms, expected_revision);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -427,7 +442,8 @@ pub fn run() {
             finish_run,
             commit_changes,
             cancel_run,
-            load_run
+            load_run,
+            advance_run_clock
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");

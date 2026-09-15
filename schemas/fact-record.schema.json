@@ -467,6 +467,14 @@
             "pass",
             "fail"
           ]
+        },
+        "elapsed_ms": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provider_timeout_count": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },
