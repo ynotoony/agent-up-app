@@ -14,7 +14,7 @@
 
 **Blocked by:** SPEC-003 批准（当前 proposed）。M0-03 done。
 
-**Status:** blocked
+**Status:** in_progress
 
 - [ ] fact-record schema 以 type-specific content 取代八类 generic object。
 - [ ] 上列类型各有至少一条 fixture 写入/读回测试。
@@ -23,4 +23,4 @@
 
 ## Implementation Checkpoint
 
-待 SPEC-003 批准后领取。
+**2026-09-15 / in_progress**：在 SPEC-003 仍为 proposed 时先落地 schema（与 M0-02 同期合同方式相同）。不把 SPEC-003 标成 approved。writer/reader 测试另提交。

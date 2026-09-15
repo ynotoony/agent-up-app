@@ -2,16 +2,551 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "urn:agentup:schema:event",
   "title": "AgentUp Event",
-  "description": "M0 event envelope with event, aggregate, delivery and payload correlation.",
-  "oneOf": [{ "$ref": "#/$defs/scan" }, { "$ref": "#/$defs/initialized" }, { "$ref": "#/$defs/created" }, { "$ref": "#/$defs/rehydrated" }],
+  "description": "Event envelope for M0 runtime notifications/persisted events and M1 fact events.",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/scan"
+    },
+    {
+      "$ref": "#/$defs/initialized"
+    },
+    {
+      "$ref": "#/$defs/created"
+    },
+    {
+      "$ref": "#/$defs/rehydrated"
+    },
+    {
+      "$ref": "#/$defs/discussion-posted"
+    },
+    {
+      "$ref": "#/$defs/task-state-changed"
+    },
+    {
+      "$ref": "#/$defs/scope-updated"
+    },
+    {
+      "$ref": "#/$defs/decision-recorded"
+    },
+    {
+      "$ref": "#/$defs/result-published"
+    }
+  ],
   "$defs": {
-    "id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
-    "time": { "type": "string", "format": "date-time" },
-    "fp": { "type": "string", "pattern": "^fp-v1:[0-9a-f]{16}$" },
-    "base": { "type": "object", "additionalProperties": false, "required": ["event_id", "event_type", "aggregate_type", "aggregate_id", "aggregate_revision", "source", "occurred_at", "delivery", "payload"], "properties": { "event_id": { "$ref": "#/$defs/id" }, "event_type": { "type": "string" }, "aggregate_type": { "type": "string" }, "aggregate_id": { "$ref": "#/$defs/id" }, "aggregate_revision": { "type": "integer", "minimum": 1 }, "source": { "type": "string", "enum": ["user", "agent", "system", "tool"] }, "occurred_at": { "$ref": "#/$defs/time" }, "delivery": { "enum": ["persisted", "runtime_notification"] }, "payload": { "type": "object" } } },
-    "scan": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "event_type": { "const": "project.scan_completed" }, "aggregate_type": { "const": "project" }, "source": { "enum": ["system", "tool"] }, "delivery": { "const": "runtime_notification" }, "payload": { "type": "object", "additionalProperties": false, "required": ["project_id", "root_fingerprint", "agentup_state"], "properties": { "project_id": { "$ref": "#/$defs/id" }, "root_fingerprint": { "$ref": "#/$defs/fp" }, "agentup_state": { "enum": ["absent", "present", "invalid"] } } } } }] },
-    "initialized": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "event_type": { "const": "project.initialized" }, "aggregate_type": { "const": "project" }, "source": { "const": "system" }, "delivery": { "const": "persisted" }, "aggregate_revision": { "const": 1 }, "payload": { "type": "object", "additionalProperties": false, "required": ["project_id", "manifest_id", "manifest_revision", "initialized_at", "root_fingerprint"], "properties": { "project_id": { "$ref": "#/$defs/id" }, "manifest_id": { "$ref": "#/$defs/id" }, "manifest_revision": { "const": 1 }, "initialized_at": { "$ref": "#/$defs/time" }, "root_fingerprint": { "$ref": "#/$defs/fp" } } } } }] },
-    "created": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "event_type": { "const": "request.created" }, "aggregate_type": { "const": "request" }, "source": { "const": "user" }, "delivery": { "const": "persisted" }, "aggregate_revision": { "const": 1 }, "payload": { "type": "object", "additionalProperties": false, "required": ["request_id", "fact_revision", "lifecycle"], "properties": { "request_id": { "$ref": "#/$defs/id" }, "fact_revision": { "const": 1 }, "lifecycle": { "const": "draft" } } } } }] },
-    "rehydrated": { "allOf": [{ "$ref": "#/$defs/base" }, { "properties": { "event_type": { "const": "request.rehydrated" }, "aggregate_type": { "const": "request" }, "source": { "const": "system" }, "delivery": { "const": "runtime_notification" }, "payload": { "type": "object", "additionalProperties": false, "required": ["request_id", "request_revision"], "properties": { "request_id": { "$ref": "#/$defs/id" }, "request_revision": { "type": "integer", "minimum": 1 } } } } }] }
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fp": {
+      "type": "string",
+      "pattern": "^fp-v1:[0-9a-f]{16}$"
+    },
+    "base": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "event_id",
+        "event_type",
+        "aggregate_type",
+        "aggregate_id",
+        "aggregate_revision",
+        "source",
+        "occurred_at",
+        "delivery",
+        "payload"
+      ],
+      "properties": {
+        "event_id": {
+          "$ref": "#/$defs/id"
+        },
+        "event_type": {
+          "type": "string"
+        },
+        "aggregate_type": {
+          "type": "string"
+        },
+        "aggregate_id": {
+          "$ref": "#/$defs/id"
+        },
+        "aggregate_revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "user",
+            "agent",
+            "system",
+            "tool"
+          ]
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/time"
+        },
+        "delivery": {
+          "enum": [
+            "persisted",
+            "runtime_notification"
+          ]
+        },
+        "payload": {
+          "type": "object"
+        }
+      }
+    },
+    "scan": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "project.scan_completed"
+            },
+            "aggregate_type": {
+              "const": "project"
+            },
+            "delivery": {
+              "const": "runtime_notification"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "project_id",
+                "root_fingerprint",
+                "agentup_state"
+              ],
+              "properties": {
+                "project_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "root_fingerprint": {
+                  "$ref": "#/$defs/fp"
+                },
+                "agentup_state": {
+                  "enum": [
+                    "absent",
+                    "present",
+                    "invalid"
+                  ]
+                }
+              }
+            },
+            "source": {
+              "enum": [
+                "system",
+                "tool"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "initialized": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "project.initialized"
+            },
+            "aggregate_type": {
+              "const": "project"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "project_id",
+                "manifest_id",
+                "manifest_revision",
+                "initialized_at",
+                "root_fingerprint"
+              ],
+              "properties": {
+                "project_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "manifest_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "manifest_revision": {
+                  "const": 1
+                },
+                "initialized_at": {
+                  "$ref": "#/$defs/time"
+                },
+                "root_fingerprint": {
+                  "$ref": "#/$defs/fp"
+                }
+              }
+            },
+            "source": {
+              "const": "system"
+            },
+            "aggregate_revision": {
+              "const": 1
+            }
+          }
+        }
+      ]
+    },
+    "created": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "request.created"
+            },
+            "aggregate_type": {
+              "const": "request"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "request_id",
+                "fact_revision",
+                "lifecycle"
+              ],
+              "properties": {
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "fact_revision": {
+                  "const": 1
+                },
+                "lifecycle": {
+                  "const": "draft"
+                }
+              }
+            },
+            "source": {
+              "const": "user"
+            },
+            "aggregate_revision": {
+              "const": 1
+            }
+          }
+        }
+      ]
+    },
+    "rehydrated": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "request.rehydrated"
+            },
+            "aggregate_type": {
+              "const": "request"
+            },
+            "delivery": {
+              "const": "runtime_notification"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "request_id",
+                "request_revision"
+              ],
+              "properties": {
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "const": "system"
+            }
+          }
+        }
+      ]
+    },
+    "discussion-posted": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "discussion.posted"
+            },
+            "aggregate_type": {
+              "const": "discussion"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "discussion_id",
+                "request_id",
+                "fact_revision"
+              ],
+              "properties": {
+                "discussion_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "fact_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "enum": [
+                "user",
+                "agent",
+                "system"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "task-state-changed": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "task.state_changed"
+            },
+            "aggregate_type": {
+              "const": "task"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "task_id",
+                "request_id",
+                "task_state",
+                "fact_revision"
+              ],
+              "properties": {
+                "task_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "task_state": {
+                  "enum": [
+                    "ready",
+                    "in_progress",
+                    "blocked",
+                    "review_ready",
+                    "review_pass",
+                    "review_fail",
+                    "done"
+                  ]
+                },
+                "fact_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "const": "system"
+            }
+          }
+        }
+      ]
+    },
+    "scope-updated": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "scope.updated"
+            },
+            "aggregate_type": {
+              "const": "scope"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "scope_id",
+                "request_id",
+                "task_id",
+                "fact_revision"
+              ],
+              "properties": {
+                "scope_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "task_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "fact_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "enum": [
+                "user",
+                "agent",
+                "system"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "decision-recorded": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "decision.recorded"
+            },
+            "aggregate_type": {
+              "const": "decision"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "decision_id",
+                "request_id",
+                "status",
+                "fact_revision"
+              ],
+              "properties": {
+                "decision_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "status": {
+                  "enum": [
+                    "open",
+                    "chosen",
+                    "cancelled"
+                  ]
+                },
+                "fact_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "const": "user"
+            }
+          }
+        }
+      ]
+    },
+    "result-published": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/base"
+        },
+        {
+          "properties": {
+            "event_type": {
+              "const": "result.published"
+            },
+            "aggregate_type": {
+              "const": "result"
+            },
+            "delivery": {
+              "const": "persisted"
+            },
+            "payload": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "result_id",
+                "request_id",
+                "version",
+                "fact_revision"
+              ],
+              "properties": {
+                "result_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "request_id": {
+                  "$ref": "#/$defs/id"
+                },
+                "version": {
+                  "type": "integer",
+                  "minimum": 1
+                },
+                "fact_revision": {
+                  "type": "integer",
+                  "minimum": 1
+                }
+              }
+            },
+            "source": {
+              "const": "system"
+            }
+          }
+        }
+      ]
+    }
   }
 }

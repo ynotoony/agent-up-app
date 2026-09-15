@@ -4,7 +4,7 @@
 
 # Schemas
 
-This directory contains the machine-checkable contracts for project facts and runtime events. The schemas describe the M0 envelope only; they do not make SQLite, the renderer, or a runtime implementation a source of truth.
+This directory contains the machine-checkable contracts for project facts and runtime events. The schemas describe M0 envelopes and M1 type-specific fact/event content. They do not make SQLite, the renderer, or a runtime implementation a source of truth.
 
 ## Direct members
 
