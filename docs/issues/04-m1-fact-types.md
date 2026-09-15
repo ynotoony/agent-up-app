@@ -12,9 +12,9 @@
 
 **What to build:** 不打开 UI，也能把讨论、计划、任务、范围、运行、决定、结果和附件元数据写成事实并读回来；旧 revision 和重复事件被拒绝。
 
-**Blocked by:** SPEC-003 批准（当前 proposed）。M0-03 done。
+**Blocked by:** SPEC-003 approved。M0-03 done。
 
-**Status:** review_fail
+**Status:** review_ready
 
 - [x] fact-record schema 以 type-specific content 取代八类 generic object。
 - [x] 上列类型各有至少一条 fixture 写入/读回测试。
@@ -31,6 +31,8 @@
 - `python3 tests/m0_schema_parse.py` → schema JSON parse 通过。
 - `git diff --check` → 无错误。
 下一步：独立 Review（本 Implementation 不自审）。不 push。
+
+- **2026-09-15 / coordination**：用户默认批准 SPEC-003。实现未改。blocker 已满足，重开独立 Review。
 
 ## Independent Review Checkpoint
 

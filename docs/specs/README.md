@@ -18,11 +18,11 @@
 | `README.md` | 层索引 | 写作规则、状态机与规格模板。 |
 | `001-m0-foundation.md` | 规格 | M0 状态、事实、事件和 command 合同；已批准。 |
 | `002-m0-runtime-contract.md` | 规格 | M0 command/event、capabilities、威胁模型和 schema 引用；已批准。 |
-| `003-m1-fact-layer.md` | 规格候选 | M1 八类事实 content、事件与 SQLite 投影；`proposed`。 |
+| `003-m1-fact-layer.md` | 规格 | M1 八类事实 content、事件与 SQLite 投影；已批准。 |
 
 ## 状态机
 
-`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。当前 `001-m0-foundation.md` 与 `002-m0-runtime-contract.md` 为 `approved`；`003-m1-fact-layer.md` 为 `proposed`。
+`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。当前 `001-m0-foundation.md`、`002-m0-runtime-contract.md` 与 `003-m1-fact-layer.md` 均为 `approved`。
 
 ## 写作规则（两条硬规则）
 

@@ -121,3 +121,8 @@
 
 - **Artifact Plan（ApprovalState: approved）**：用户目标为完成 EXEC-001；W0 已 done，命中触发矩阵需要新规格与 ≥2 张票。创建 `docs/specs/003-m1-fact-layer.md`（proposed）、`docs/issues/04-m1-fact-types.md`、`docs/issues/05-m1-sqlite-projection.md`。
 - **范围**：不实现 writer，不建 SQLite，不预建 `.agentup` 子目录。
+
+## 2026-09-15 - 默认批准 SPEC-003
+
+- **批准依据**：用户指示「默认批准。我只看最后结果。」作为对 EXEC-001 默认建议与当时 proposed 规格的可追溯批准。
+- **范围**：SPEC-003 → approved；M1-01 blocker 满足，实现未改，重开独立 Review。

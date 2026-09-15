@@ -1,12 +1,12 @@
 <!-- Input: SPEC-001/002、EXEC-001 W1、开发计划 §3 事实类型。 -->
 <!-- Output: M1 其余用户事实类型的 content 合同、目录布局、SQLite 投影与重建规则。 -->
-<!-- Pos: M1 事实层合同；proposed，批准前不得把未定义 content 写入实现。 -->
+<!-- Pos: M1 事实层合同；approved，驱动 M1-01/M1-02。 -->
 
 # SPEC-003 — M1 事实层合同
 
-**ApprovalState:** proposed
+**ApprovalState:** approved
 
-**依据**：M0-03 `done`；EXEC-001 W1 要求其余用户事实类型可脱离 UI 存活，且 SQLite 只做投影。本文件补齐 SPEC-002 显式冻结的 generic content。
+**依据**：用户于 2026-09-15 指示「默认批准。我只看最后结果。」作为可追溯批准；本规格及 EXEC-001 后续默认建议按已批准执行。
 
 ## 目标与边界
 

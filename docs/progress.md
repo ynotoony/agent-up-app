@@ -11,7 +11,7 @@
 | M0-02 Runtime 合同 | done | 2026-09-15；Independent Review pass 后用户回复「继续」批准 `SPEC-002`；见 `docs/issues/02-m0-runtime-contract.md` | M0-03 runtime 恢复切片 |
 | EXEC-001 首版执行计划 | approved | 2026-09-15；见 `docs/execution-plan.md` | W1：批准 SPEC-003 后领取 M1-01 |
 | M0-03 Runtime 恢复切片 | done | 2026-09-15；独立 Review pass；实现在 `codex/m0-03-runtime` | W1：事实层 type-specific schema 与 writer/reader |
-| SPEC-003 M1 事实层合同 | proposed | 2026-09-15；`docs/specs/003-m1-fact-layer.md` | 用户批准后 M1-01 可领取 |
+| SPEC-003 M1 事实层合同 | approved | 2026-09-15；`docs/specs/003-m1-fact-layer.md` | 已批准；M1-01 重审 |
 | M1-01 事实类型落地 | review_ready | 2026-09-15；writer/reader 测试绿；见 `docs/issues/04-m1-fact-types.md` | 独立 Review；SPEC-003 仍为 proposed |
 | M1-02 SQLite 投影 | blocked | 票 `docs/issues/05-m1-sqlite-projection.md` | 等待 M1-01 done |
 
