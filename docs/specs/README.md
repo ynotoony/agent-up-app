@@ -24,6 +24,7 @@
 | `006-m3-discussion.md` | 规格 | M3 讨论与附件；已批准。 |
 | `007-m4-scope-task.md` | 规格 | M4 范围版本/差异与任务状态事件；已批准。 |
 | `008-m5-agent-m0c.md` | 规格 | M5 fake/replay Agent 与 M0-C 门；已批准。 |
+| `009-m5-reliability.md` | 规格 | M5.5 取消/超时/重试/崩溃/子进程清理；已批准。 |
 
 ## 状态机
 

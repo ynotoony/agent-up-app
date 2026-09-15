@@ -478,6 +478,35 @@ artifacts:
     platform: neutral
     update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
 
+  - id: spec-009-m5-reliability
+    path: docs/specs/009-m5-reliability.md
+    kind: spec
+    authority: 权威层级第 3 级（批准规格）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: EXEC-001 W5.5；fake agent 之后的运行可靠性门；用户默认批准
+    read_when: 实施 M5.5 可靠性或票 11 时
+    sync_on: 契约、行为
+    depends_on: [specs-readme, spec-008-m5-agent-m0c, progress]
+    generated_from: EXEC-001 W5.5；用户默认批准
+    platform: neutral
+    update_policy: "ApprovalState: approved 后作为当前规格；重大变化新建规格并 supersede 本文件"
+  - id: issue-11-m5-reliability
+    path: docs/issues/11-m5-reliability.md
+    kind: task
+    authority: 权威层级第 3 级（任务合同）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: W5.5 需要取消/超时/重试/崩溃/子进程清理垂直切片；Blocked by M5-01 与 SPEC-009
+    read_when: 领取或恢复 M5.5 时
+    sync_on: 拓扑、行为
+    depends_on: [issues-readme, spec-009-m5-reliability, issue-10-m5-fake-agent, progress]
+    generated_from: EXEC-001 W5.5 拆票
+    platform: neutral
+    update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
+
   - id: agent-readme
     path: docs/agent/README.md
     kind: index

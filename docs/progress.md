@@ -22,3 +22,4 @@
 | M4-01 范围与任务切片 | done | 2026-09-15；Independent Review pass；branch `codex/w4-scope-task` | W5 M0-C 规格 |
 | SPEC-008 M5 fake agent / M0-C | approved | 2026-09-15；用户默认批准；`docs/specs/008-m5-agent-m0c.md` | 票 10 C3 Implementation |
 | M5-01 fake Agent 切片 | done | 2026-09-15；Independent Review pass；branch `codex/w5-fake-agent` | W5.5 运行可靠性门 |
+| SPEC-009 M5 运行可靠性 | approved | 2026-09-15；用户默认批准；`docs/specs/009-m5-reliability.md` | 票 11 C3 Implementation |
