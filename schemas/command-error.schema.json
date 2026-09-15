@@ -23,7 +23,8 @@
         "list_projects",
         "register_project",
         "rebind_project",
-        "remove_agentup"
+        "remove_agentup",
+        "preview_remove_agentup"
       ]
     },
     "error": {

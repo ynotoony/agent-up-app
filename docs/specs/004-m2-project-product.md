@@ -23,6 +23,7 @@ App 私有索引（应用数据目录内的 sqlite/json，**不是**项目事实
 | `list_projects` | 无 | 返回登记项；对每项做 canonicalize，更新 `path_state`；不写项目目录 |
 | `register_project` | 只写 App 索引 | 输入已 scan 的 `project_id`+canonical path；拒绝根外/文件 |
 | `rebind_project` | 只写 App 索引 | 旧 path missing 时绑到新 canonical 目录；校验 project_id 与 manifest 一致 |
+| `preview_remove_agentup` | 无 | 只读校验后签发一次性 confirmation_token；列出将备份/删除的 `.agentup` |
 | `remove_agentup` | 写项目根 `.agentup/` | 必须 confirmation_token；先把 `.agentup/` 复制到 sibling `.agentup.backup.<utc>`，再删除 `.agentup/`；**不得**删其他文件 |
 
 `scan_project` 成功后可登记。renderer 仍无 fs/shell。新 command 加入 allowlist capability。

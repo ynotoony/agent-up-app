@@ -246,9 +246,9 @@ fn remove_agentup_backs_up_then_deletes_only_agentup() {
     assert!(root.join("README.md").exists());
     assert!(root.join(".git/HEAD").exists());
 
-    let token = runtime
-        .mint_remove_confirmation(&project_id, root.to_str().unwrap())
-        .expect("remove token");
+    let preview = runtime.preview_remove_agentup(&project_id, root.to_str().unwrap());
+    let pdata = assert_ok(&preview, "preview_remove_agentup");
+    let token = pdata["confirmation_token"].as_str().unwrap();
     let removed = runtime.remove_agentup(&project_id, root.to_str().unwrap(), &token);
     let data = assert_ok(&removed, "remove_agentup");
     let backup = data["backup_relative_path"].as_str().unwrap();

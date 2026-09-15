@@ -130,6 +130,19 @@ fn rebind_project(
 }
 
 #[tauri::command(rename_all = "snake_case")]
+fn preview_remove_agentup(
+    project_id: String,
+    project_path: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.preview_remove_agentup(&project_id, &project_path);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
 fn remove_agentup(
     project_id: String,
     project_path: String,
@@ -159,6 +172,7 @@ pub fn run() {
             list_projects,
             register_project,
             rebind_project,
+            preview_remove_agentup,
             remove_agentup
         ])
         .run(tauri::generate_context!())

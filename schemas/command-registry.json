@@ -231,6 +231,30 @@
       ],
       "capability": "project_agentup_write",
       "emits": []
+    },
+    {
+      "name": "preview_remove_agentup",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "confirmation_token",
+        "requires_confirmation",
+        "planned_paths"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "not_initialized",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
     }
   ]
 }

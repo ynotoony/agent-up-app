@@ -166,12 +166,28 @@ impl Runtime {
         )
     }
 
+    pub fn preview_remove_agentup(&mut self, project_id: &str, project_path: &str) -> Value {
+        const CMD: &str = "preview_remove_agentup";
+        match self.mint_remove_confirmation(project_id, project_path) {
+            Ok(token) => ok(
+                CMD,
+                serde_json::json!({
+                    "project_id": project_id,
+                    "confirmation_token": token,
+                    "requires_confirmation": true,
+                    "planned_paths": [".agentup"]
+                }),
+            ),
+            Err(err) => err,
+        }
+    }
+
     pub fn mint_remove_confirmation(
         &mut self,
         project_id: &str,
         project_path: &str,
     ) -> Result<String, Value> {
-        const CMD: &str = "remove_agentup";
+        const CMD: &str = "preview_remove_agentup";
         if !valid_id(project_id) {
             return Err(fail(
                 CMD,

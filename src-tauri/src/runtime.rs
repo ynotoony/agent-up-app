@@ -8,7 +8,7 @@ use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-const COMMANDS: [&str; 9] = [
+const COMMANDS: [&str; 10] = [
     "scan_project",
     "preview_initialize",
     "initialize_project",
@@ -18,6 +18,7 @@ const COMMANDS: [&str; 9] = [
     "register_project",
     "rebind_project",
     "remove_agentup",
+    "preview_remove_agentup",
 ];
 const MAX_SCAN_FILES: usize = 50_000;
 const ID_PATTERN_MAX: usize = 200;
@@ -739,11 +740,11 @@ impl AppError {
     }
 }
 
-fn ok(command: &str, data: Value) -> Value {
+pub(crate) fn ok(command: &str, data: Value) -> Value {
     json!({ "ok": true, "command": command, "data": data })
 }
 
-fn fail(command: &str, code: &str, message: &str, details: Option<Value>) -> Value {
+pub(crate) fn fail(command: &str, code: &str, message: &str, details: Option<Value>) -> Value {
     let mut error = Map::new();
     error.insert("code".to_string(), json!(code));
     error.insert("message".to_string(), json!(sanitize_message(message)));

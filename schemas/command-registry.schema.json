@@ -14,8 +14,8 @@
     },
     "commands": {
       "type": "array",
-      "minItems": 9,
-      "maxItems": 9,
+      "minItems": 10,
+      "maxItems": 10,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/command"
@@ -137,6 +137,19 @@
               }
             }
           }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "preview_remove_agentup"
+              }
+            }
+          }
         }
       ]
     }
@@ -183,7 +196,8 @@
             "list_projects",
             "register_project",
             "rebind_project",
-            "remove_agentup"
+            "remove_agentup",
+            "preview_remove_agentup"
           ]
         },
         "input_required": {
@@ -684,6 +698,55 @@
               },
               "capability": {
                 "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "preview_remove_agentup"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "confirmation_token",
+                  "requires_confirmation",
+                  "planned_paths"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "not_initialized",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
               },
               "emits": {
                 "const": []

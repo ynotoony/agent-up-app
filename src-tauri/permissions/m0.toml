@@ -10,5 +10,6 @@ commands.allow = [
   "list_projects",
   "register_project",
   "rebind_project",
+  "preview_remove_agentup",
   "remove_agentup"
 ]
