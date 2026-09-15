@@ -25,3 +25,4 @@
 | SPEC-009 M5 运行可靠性 | approved | 2026-09-15；用户默认批准；`docs/specs/009-m5-reliability.md` | 已批准；票 11 done |
 | M5.5 运行可靠性切片 | done | 2026-09-15；Independent Review pass；branch `codex/w5.5-reliability` | W6 结果与下一轮 |
 | SPEC-010 M6 结果与历史 | approved | 2026-09-15；用户默认批准；`docs/specs/010-m6-results.md` | 已批准；下一步票 12 C2 Implementation |
+| M6-01 结果与下一轮切片 | done | 2026-09-15；Independent Review pass；branch `codex/w6-results` | W7 三场景与打包 |
