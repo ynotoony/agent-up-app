@@ -1132,10 +1132,42 @@ fn persist_request(root: &Path, request_id: &str, fact: &Value, event: &Value) -
             "The event id already exists in the persisted event log.",
         ));
     }
-    write_json_atomic(&fact_path, fact)?;
-    if let Err(err) = write_json_atomic(&event_path, event) {
+    write_json_exclusive(&fact_path, fact)?;
+    if let Err(err) = write_json_exclusive(&event_path, event) {
         let _ = fs::remove_file(&fact_path);
         return Err(err);
+    }
+    Ok(())
+}
+
+fn write_json_exclusive(path: &Path, value: &Value) -> Result<(), AppError> {
+    let tmp = path.with_extension("json.tmp");
+    {
+        let mut file = OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&tmp)
+            .map_err(AppError::from_io)?;
+        let payload = serde_json::to_vec_pretty(value)
+            .map_err(|_| AppError::code("io_error", "Failed to encode JSON."))?;
+        file.write_all(&payload).map_err(AppError::from_io)?;
+        file.write_all(b"\n").map_err(AppError::from_io)?;
+        file.flush().map_err(AppError::from_io)?;
+        file.sync_all().map_err(AppError::from_io)?;
+    }
+    if let Err(err) = fs::hard_link(&tmp, path) {
+        let _ = fs::remove_file(&tmp);
+        if path.exists() {
+            return Err(AppError::code(
+                "already_exists",
+                "Refusing to replace an existing fact or event file.",
+            ));
+        }
+        return Err(AppError::from_io(err));
+    }
+    let _ = fs::remove_file(&tmp);
+    if let Some(parent) = path.parent() {
+        let _ = fsync_dir(parent);
     }
     Ok(())
 }

@@ -14,7 +14,7 @@
 
 **Blocked by:** M2-01 done；SPEC-005 approved。
 
-**Status:** review_fail
+**Status:** review_ready
 
 - [ ] 五类变化均有失败/拒绝测试，且不写意外文件
 - [ ] 不削弱已有 M0/M1/M2 测试
@@ -22,6 +22,8 @@
 ## Implementation Checkpoint
 
 **2026-09-15 / review_ready**：五类外部变化测试在 `src-tauri/tests/m2_5_external.rs`，cargo test 5 passed。未削弱既有套件。
+
+- **2026-09-15 / review_ready**：补 `write_json_exclusive`（hard_link 不覆盖）；测试打到 `revision_conflict`+`details.revision`、事实未改、无第二事件；失效路径上 `list_projects.path_state=missing`、`initialize_project`/`scan_project` 为 `path_not_found` 且不创建 `.agentup`。
 
 ## Independent Review Checkpoint
 

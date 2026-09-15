@@ -81,20 +81,25 @@ fn symlink_escape_does_not_write() {
     assert!(!root.join(".agentup").exists());
 }
 
-#[test]
-fn concurrent_stale_revision_does_not_drop_new_fact() {
-    let (_tmp, root) = tmp_project();
-    let mut a = AppRuntime::new();
-    let (project_id, fingerprint) = scan_id_fp(&mut a, &root);
-    let preview = a.preview_initialize(&project_id, root.to_str().unwrap(), &fingerprint);
+fn initialize(runtime: &mut AppRuntime, root: &Path) -> String {
+    let (project_id, fingerprint) = scan_id_fp(runtime, root);
+    let preview = runtime.preview_initialize(&project_id, root.to_str().unwrap(), &fingerprint);
     let token = assert_ok(&preview, "preview_initialize")["confirmation_token"]
         .as_str()
         .unwrap()
         .to_string();
     assert_ok(
-        &a.initialize_project(&project_id, root.to_str().unwrap(), &token, &fingerprint),
+        &runtime.initialize_project(&project_id, root.to_str().unwrap(), &token, &fingerprint),
         "initialize_project",
     );
+    project_id
+}
+
+#[test]
+fn concurrent_stale_revision_does_not_drop_new_fact() {
+    let (_tmp, root) = tmp_project();
+    let mut a = AppRuntime::new();
+    let project_id = initialize(&mut a, &root);
     let created = a.create_request(
         &project_id,
         "req-1",
@@ -102,39 +107,69 @@ fn concurrent_stale_revision_does_not_drop_new_fact() {
         json!({}),
         0,
     );
-    assert_ok(&created, "create_request");
+    let first_event = assert_ok(&created, "create_request")["event_id"].as_str().unwrap().to_string();
 
     let mut b = AppRuntime::new();
-    assert_ok(
-        &b.load_project(root.to_str().unwrap(), Some(&project_id)),
-        "load_project",
-    );
-    let stale = b.create_request(
+    let loaded_v = b.load_project(root.to_str().unwrap(), Some(&project_id));
+    let loaded = assert_ok(&loaded_v, "load_project");
+    let events_before = loaded["events"].as_array().unwrap().len();
+    let dup = b.create_request(
         &project_id,
         "req-1",
         json!({"title": "two", "body": "body-two", "lifecycle": "draft"}),
         json!({}),
         0,
     );
-    assert_err(&stale, "create_request", "already_exists");
-    let conflict = a.create_request(
+    assert_err(&dup, "create_request", "already_exists");
+    let conflict = b.create_request(
         &project_id,
         "req-1",
         json!({"title": "three", "body": "body-three", "lifecycle": "draft"}),
         json!({}),
-        0,
+        1,
     );
-    assert_err(&conflict, "create_request", "already_exists");
+    assert_err(&conflict, "create_request", "revision_conflict");
+    assert_eq!(conflict["error"]["details"]["revision"], 1);
+
+    let again_v = a.load_project(root.to_str().unwrap(), Some(&project_id));
+    let again = assert_ok(&again_v, "load_project");
+    let facts = again["facts"].as_array().unwrap();
+    let request = facts.iter().find(|f| f["type"] == "request").unwrap();
+    assert_eq!(request["content"]["title"], "one");
+    let events = again["events"].as_array().unwrap();
+    assert_eq!(events.len(), events_before);
+    assert!(events.iter().any(|e| e["event_id"] == first_event));
 }
 
 #[test]
 fn missing_directory_is_not_initialized() {
+    let app_dir = TempDir::new().unwrap();
+    let mut runtime = AppRuntime::with_app_data_dir(app_dir.path().to_path_buf());
     let dir = TempDir::new().unwrap();
     fs::write(dir.path().join("README.md"), "x").unwrap();
     let root = dir.path().canonicalize().unwrap();
+    let (project_id, fingerprint) = scan_id_fp(&mut runtime, &root);
+    let preview = runtime.preview_initialize(&project_id, root.to_str().unwrap(), &fingerprint);
+    let token = assert_ok(&preview, "preview_initialize")["confirmation_token"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    assert_ok(
+        &runtime.register_project(&project_id, root.to_str().unwrap()),
+        "register_project",
+    );
     let gone = root.to_string_lossy().to_string();
     drop(dir);
-    let mut runtime = AppRuntime::new();
+    let listed_v = runtime.list_projects();
+    let listed = assert_ok(&listed_v, "list_projects");
+    let item = listed["projects"].as_array().unwrap()
+        .iter()
+        .find(|p| p["project_id"] == project_id)
+        .expect("registered");
+    assert_eq!(item["path_state"], "missing");
     let scan = runtime.scan_project(&gone);
     assert_err(&scan, "scan_project", "path_not_found");
+    let init = runtime.initialize_project(&project_id, &gone, &token, &fingerprint);
+    assert_err(&init, "initialize_project", "path_not_found");
+    assert!(!Path::new(&gone).join(".agentup").exists());
 }
