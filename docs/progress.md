@@ -9,7 +9,7 @@
 | AgentUp Tauri 2 初始化 | done | 2026-09-14；治理骨架、根 Git、`.gitignore`、登记和静态校验通过；见本次提交 | M0：形成 schema、状态机、Tauri command/event 草案 |
 | M0-01 状态与事实合同 | done | 2026-09-14；见 `docs/issues/01-m0-foundation.md` 与 `docs/specs/001-m0-foundation.md`；diff/YAML/重复状态扫描通过 | M0-02：JSON Schema、API 产物、capabilities 与威胁模型 |
 | M0-02 Runtime 合同 | done | 2026-09-15；Independent Review pass 后用户回复「继续」批准 `SPEC-002`；见 `docs/issues/02-m0-runtime-contract.md` | M0-03 runtime 恢复切片 |
-| EXEC-001 首版执行计划 | approved | 2026-09-15；见 `docs/execution-plan.md` | W4 退出；下一步 W5 |
+| EXEC-001 首版执行计划 | approved | 2026-09-15；见 `docs/execution-plan.md` | W5 退出；下一步 W5.5 |
 | M0-03 Runtime 恢复切片 | done | 2026-09-15；独立 Review pass；实现在 `codex/m0-03-runtime` | W1：事实层 type-specific schema 与 writer/reader |
 | SPEC-003 M1 事实层合同 | approved | 2026-09-15；`docs/specs/003-m1-fact-layer.md` | 已批准；M1-01 重审 |
 | M1-01 事实类型落地 | done | 2026-09-15；独立 Review pass；`codex/m1-01-writer` | W2 |
@@ -21,3 +21,4 @@
 | M3-01 讨论与附件切片 | done | 2026-09-15；独立 Review pass；`codex/w3-discussion` | W4 范围与任务 |
 | M4-01 范围与任务切片 | done | 2026-09-15；Independent Review pass；branch `codex/w4-scope-task` | W5 M0-C 规格 |
 | SPEC-008 M5 fake agent / M0-C | approved | 2026-09-15；用户默认批准；`docs/specs/008-m5-agent-m0c.md` | 票 10 C3 Implementation |
+| M5-01 fake Agent 切片 | done | 2026-09-15；Independent Review pass；branch `codex/w5-fake-agent` | W5.5 运行可靠性门 |
