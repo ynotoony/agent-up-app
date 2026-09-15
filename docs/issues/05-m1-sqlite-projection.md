@@ -14,7 +14,7 @@
 
 **Blocked by:** 04 — M1-01 事实类型合同落地。
 
-**Status:** blocked
+**Status:** in_progress
 
 - [ ] 投影缺失不阻止 load。
 - [ ] 损坏投影不改写事实，返回可读错误或触发只读重建。
@@ -23,4 +23,4 @@
 
 ## Implementation Checkpoint
 
-待 M1-01 done 后领取。
+**2026-09-15 / in_progress**：M1-01 done。领取 C3 Implementation。SQLite 不得成为事实源。

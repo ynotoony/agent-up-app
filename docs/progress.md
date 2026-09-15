@@ -13,6 +13,6 @@
 | M0-03 Runtime 恢复切片 | done | 2026-09-15；独立 Review pass；实现在 `codex/m0-03-runtime` | W1：事实层 type-specific schema 与 writer/reader |
 | SPEC-003 M1 事实层合同 | approved | 2026-09-15；`docs/specs/003-m1-fact-layer.md` | 已批准；M1-01 重审 |
 | M1-01 事实类型落地 | review_ready | 2026-09-15；writer/reader 测试绿；见 `docs/issues/04-m1-fact-types.md` | 独立 Review；SPEC-003 仍为 proposed |
-| M1-02 SQLite 投影 | blocked | 票 `docs/issues/05-m1-sqlite-projection.md` | 等待 M1-01 done |
+| M1-02 SQLite 投影 | in_progress | 票 `docs/issues/05-m1-sqlite-projection.md` | C3 Implementation |
 
 状态取值：完整 `TaskState` 为 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done`；本表可展示其中摘要，但明细与 Review 状态必须写任务票 Checkpoint。

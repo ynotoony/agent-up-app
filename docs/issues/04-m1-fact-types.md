@@ -14,7 +14,7 @@
 
 **Blocked by:** SPEC-003 approved。M0-03 done。
 
-**Status:** review_ready
+**Status:** done
 
 - [x] fact-record schema 以 type-specific content 取代八类 generic object。
 - [x] 上列类型各有至少一条 fixture 写入/读回测试。
@@ -81,3 +81,46 @@
 ### 下一步
 
 交回 Implementation/Coordinator：先由用户把 SPEC-003 标为 `approved`（或改合同后再批），blocker 满足后重新派独立 Review。本 Review 不代批规格、不改代码。
+
+- **2026-09-15 / review_pass**
+- **结论**：pass。先前唯一 P0（SPEC-003 未批准 / blocker 未满足）已关闭：`docs/specs/003-m1-fact-layer.md` `ApprovalState: approved`（commit `636ba8e`），票 `Blocked by: SPEC-003 approved。M0-03 done。`。实现相对 `ffa3f1b` 未改。对照 **approved** SPEC-003（含 `facts/` 布局、UTF-8 字节、附件最新 revision 配额语义、内部 reader 读回）六项核对成立。不得用「曾经 fail」再否决；绿测也未掩盖与 approved 规格互相否定的 P0。
+- **审查范围**：`docs/issues/04-m1-fact-types.md` 任务合同与既有 Checkpoint（只读，本 Review 只改 Status 并追加本段）、`docs/specs/003-m1-fact-layer.md`（approved）、`docs/specs/README.md`、`docs/specs/001-m0-foundation.md` / `002-m0-runtime-contract.md`（CAS/`revision_conflict`）、`schemas/fact-record.schema.json`、`schemas/event.schema.json`、`src-tauri/src/{lib,runtime,typed_facts}.rs`、`src-tauri/tests/m1_facts.rs`、`src-tauri/permissions/m0.toml`、`src-tauri/capabilities/m0-default.json`。未改 schemas/src/src-tauri/SPEC 正文，未改写 2026-09-15 fail 原文，未 commit、未代修。
+- **独立性**：新 Review 执行体；本会话首条指令即为独立审查。未参与 M1-01 Implementation（`ffa3f1b` / `3fd1124`），未共享该实现上下文。身份：Review 执行体；模型：grok-4.6；时间：2026-09-15 13:49 CST。依据 `R-RR-002`，此路径可独立。
+- **Diff / 证据快照**：`HEAD=636ba8e4b58ad2803cc66946392de2c90042fd03`（分支 `codex/spec-003-approved`）。writer 仍为 `ffa3f1b`；`31e684b`/`636ba8e` 只改规格与记录。审查前工作区仅未跟踪 `src-tauri/gen/`；本 Review 只追加本 Checkpoint 并将 Status 改为 `review_pass`。
+
+### P0
+
+| P0 | 判断 | 证据 |
+| --- | --- | --- |
+| SPEC-003 未批准却驱动 C2 实施/审查通过 | **已关闭** | 规格头 `ApprovalState: approved` 与批准依据：`docs/specs/003-m1-fact-layer.md:7-9`。目录「已批准」：`docs/specs/README.md` 目录清单与状态机。票 blocker：`docs/issues/04-m1-fact-types.md:15`。Git：`636ba8e docs(spec-003): approve on user default-approve instruction`。 |
+
+无未关闭、足以单独否决本票的 P0 机器合同互斥。
+
+### 逐项验收（对照票核对清单与 approved SPEC-003）
+
+| 必须核对 | 判断 | 证据 |
+| --- | --- | --- |
+| 1. 八类 type-specific content | 成立 | schema `oneOf` 仅为 request/project/manifest + 八类 M1，无 generic object：`schemas/fact-record.schema.json:6-40`。八类 `$defs/*-content` 均 `additionalProperties: false`。writer `normalize_typed_content` + `deny_unknown_fields`：`typed_facts.rs:526-537,593-881`。 |
+| 2. 写入可读回（内部 reader）；`facts/` 布局 | 成立 | 路径 `.agentup/facts/<type>s/<id>.r<revision>.json`：`typed_facts.rs:96,257-268,344`；`create_dir_all` 仅 persist 时：`typed_facts.rs:342-343`。fixture 八类落盘，`drop` 后 `load_project` + `read_fact` 字段一致：`src-tauri/tests/m1_facts.rs:197-257`。SPEC-003：「读回」= runtime 内部 reader；不要求 `load_project.data.facts` 返回八类：`docs/specs/003-m1-fact-layer.md` 目录节。 |
+| 3. `revision_conflict` 带当前 revision | 成立 | CAS：`typed_facts.rs:99-110`，`error.details.revision` 为当前 revision。测试 r1→r2 后 expected=1 被拒，`details.revision=2`，listing 不变，读回 body 仍为 second：`m1_facts.rs:259-317`。 |
+| 4. `event_replay` 不二次落盘 | 成立 | persist 在写新事实前若事件文件已存在则 `event_replay`：`typed_facts.rs:352-360`。测试另一 `fact_id` 重放同一 `event_id`，listing 不变且 `disc-other` 读不到：`m1_facts.rs:319-355`。五类持久事件写入并在重启后出现在 `load_project` events：`typed_facts.rs:384-461`，`m1_facts.rs:237-247`。无持久事件的类型丢弃调用方 `event_id`、不查唯一性：`typed_facts.rs:163-175,461`；与 approved SPEC-003 事件节一致。 |
+| 5. 附件无字节；超限拒绝 | 成立（配额实现偏严，见残留） | content 禁止 `bytes`/`data`/`content`：`typed_facts.rs:850-857`；schema 无字节字段且 `additionalProperties: false`。单文件 10 MiB：`typed_facts.rs:5,477-483`，schema `maximum: 10485760`。单需求 100 MiB：`typed_facts.rs:6,504-512`。测试：带 bytes → `malformed_fact`；10MiB+1 → `invalid_input`；10×10MiB 后再 +1 拒绝且不落 overflow：`m1_facts.rs:358-433`。 |
+| 6. 无新 renderer fs/shell；无 SQLite 事实源 | 成立 | invoke 仍五命令：`src-tauri/src/lib.rs:101-107`。capability 无 fs/shell/network：`src-tauri/capabilities/m0-default.json:5-8`；权限白名单仍五 M0 command：`src-tauri/permissions/m0.toml:4-10`。`write_fact`/`read_fact` 仅 runtime 内部方法。全 `src-tauri` 无 sqlite/rusqlite/sqlx。`load_facts` 仍只扫 `facts/requests`（`runtime.rs:1257-1282`）。SPEC-003 验收 3（删 SQLite 重建）属 M1-02，本票不实现 SQLite。 |
+
+### 非阻断残留（不构成 fail）
+
+- 附件总额扫描目录内全部 `.json`，只跳过正在写入的 `fact_id`，未按「每个 id 的当前最新 revision」合计：`typed_facts.rs:486-503`。对**其他 id 的旧 revision**会重复累加，比 approved 口径更严，可能误拒；测试未覆盖附件更新路径，因此不单独否决。这不是「绿测洗过互斥」：它不接受规格要拒绝的超限写入。
+- writer 额外要求 `relative_path` 以 `attachments/` 开头：`typed_facts.rs:863-865`；approved 规格只禁止绝对路径。
+- `discussion.body`：规格为 100000 UTF-8 **字节**（writer `String::len()` 正确）；schema `maxLength: 100000` 按 JSON Schema 计字符。ASCII fixture 遮住该缝。
+
+### 验证（本 Review 复跑）
+
+| 检查 | 结果 | 环境 |
+| --- | --- | --- |
+| `cargo test --manifest-path src-tauri/Cargo.toml --offline --lib --tests` | pass：lib 0；`tests/m0_runtime.rs` 7 passed；`tests/m1_facts.rs` 4 passed（`eight_typed_facts_persist_and_reload_after_restart`、`stale_revision_is_rejected_and_does_not_overwrite`、`duplicate_event_id_is_event_replay_and_does_not_apply_again`、`attachment_rejects_bytes_and_oversize`） | rustc/cargo 1.94.0；macOS aarch64；cwd `/Users/bic/Projects/agent-up`；2026-09-15 13:49 CST |
+| `python3 tests/m0_schema_parse.py` | pass：6 个 schema JSON 可解析，`schema parse ok` | Python 3.14.6；同 cwd |
+| `git diff --check` | pass：无空白错误 | git；相对 `HEAD=636ba8e` |
+
+### 下一步
+
+移交 Commit。本 Review 不改代码、不 commit。
