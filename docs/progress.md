@@ -19,3 +19,4 @@
 | M2-01 项目产品切片 | done | 2026-09-15；独立 Review pass；`codex/m2-project-product` | W2.5 外部变化门 |
 | M2.5 外部变化门 | done | 2026-09-15；独立 Review pass；`codex/w2.5-external` | W3 讨论与附件 |
 | M3-01 讨论与附件切片 | done | 2026-09-15；独立 Review pass；`codex/w3-discussion` | W4 范围与任务 |
+| M4-01 范围与任务切片 | in_progress | 2026-09-15；`docs/issues/09-m4-scope-task.md` | C2 Implementation |
