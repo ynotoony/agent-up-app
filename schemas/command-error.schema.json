@@ -39,7 +39,12 @@
         "commit_changes",
         "cancel_run",
         "load_run",
-        "advance_run_clock"
+        "advance_run_clock",
+        "publish_result",
+        "accept_result",
+        "reject_result",
+        "submit_feedback",
+        "load_result_history"
       ]
     },
     "error": {

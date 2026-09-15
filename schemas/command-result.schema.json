@@ -39,7 +39,12 @@
         "commit_changes",
         "cancel_run",
         "load_run",
-        "advance_run_clock"
+        "advance_run_clock",
+        "publish_result",
+        "accept_result",
+        "reject_result",
+        "submit_feedback",
+        "load_result_history"
       ]
     },
     "data": {
@@ -1687,6 +1692,249 @@
                     "const": "request.created"
                   }
                 }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "publish_result"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "accept_result"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "reject_result"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "submit_feedback"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "task": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_result_history"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "request_id",
+              "results"
+            ],
+            "properties": {
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "results": {
+                "type": "array"
               }
             }
           }

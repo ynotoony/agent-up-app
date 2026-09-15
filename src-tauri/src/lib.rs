@@ -411,6 +411,43 @@ fn advance_run_clock(
     result
 }
 
+
+#[tauri::command(rename_all = "snake_case")]
+fn publish_result(project_id: String, result_id: String, request_id: String, summary: String, evidence_paths: Option<Vec<String>>, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.publish_result(&project_id, &result_id, &request_id, &summary, evidence_paths);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+#[tauri::command(rename_all = "snake_case")]
+fn accept_result(project_id: String, request_id: String, source_result_id: String, result_id: String, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.accept_result(&project_id, &request_id, &source_result_id, &result_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+#[tauri::command(rename_all = "snake_case")]
+fn reject_result(project_id: String, request_id: String, source_result_id: String, result_id: String, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.reject_result(&project_id, &request_id, &source_result_id, &result_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+#[tauri::command(rename_all = "snake_case")]
+fn submit_feedback(project_id: String, request_id: String, body: String, title: Option<String>, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.submit_feedback(&project_id, &request_id, &body, title);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+#[tauri::command(rename_all = "snake_case")]
+fn load_result_history(project_id: String, request_id: String, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.load_result_history(&project_id, &request_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -443,7 +480,12 @@ pub fn run() {
             commit_changes,
             cancel_run,
             load_run,
-            advance_run_clock
+            advance_run_clock,
+            publish_result,
+            accept_result,
+            reject_result,
+            submit_feedback,
+            load_result_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");

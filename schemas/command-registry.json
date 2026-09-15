@@ -643,6 +643,134 @@
       ],
       "capability": "project_agentup_write",
       "emits": []
+    },
+    {
+      "name": "publish_result",
+      "input_required": [
+        "project_id",
+        "result_id",
+        "request_id",
+        "summary"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "result.published"
+      ]
+    },
+    {
+      "name": "accept_result",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "source_result_id",
+        "result_id"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "result.published",
+        "decision.recorded"
+      ]
+    },
+    {
+      "name": "reject_result",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "source_result_id",
+        "result_id"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "result.published",
+        "decision.recorded"
+      ]
+    },
+    {
+      "name": "submit_feedback",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "body"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "discussion.posted"
+      ]
+    },
+    {
+      "name": "load_result_history",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "request_id",
+        "results"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
     }
   ]
 }

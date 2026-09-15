@@ -14,10 +14,14 @@
 
 **Blocked by:** W5.5 done；SPEC-010 approved。
 
-**Status:** ready
+**Status:** review_ready
 
-- [ ] 两次 `publish_result`；`load_result_history` 两个版本；第一版 content 不变
-- [ ] 接受后再拒绝后续版本；旧 accepted 仍 accepted；拒绝不删文件
-- [ ] 接受后 `submit_feedback` 有讨论且 result content 不变
-- [ ] drop Runtime 后历史仍从 `.agentup/` 事实恢复，不靠 SQLite
-- [ ] `evidence_paths` 相对通过；绝对路径 `invalid_input`
+- [x] 两次 `publish_result`；`load_result_history` 两个版本；第一版 content 不变
+- [x] 接受后再拒绝后续版本；旧 accepted 仍 accepted；拒绝不删文件
+- [x] 接受后 `submit_feedback` 有讨论且 result content 不变
+- [x] drop Runtime 后历史仍从 `.agentup/` 事实恢复，不靠 SQLite
+- [x] `evidence_paths` 相对通过；绝对路径 `invalid_input`
+
+## Implementation Checkpoint
+
+**2026-09-15 / review_ready**：五条 command。未 push、不自审。

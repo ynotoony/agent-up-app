@@ -61,6 +61,11 @@ for command in [
     "cancel_run",
     "load_run",
     "advance_run_clock",
+    "publish_result",
+    "accept_result",
+    "reject_result",
+    "submit_feedback",
+    "load_result_history",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")
