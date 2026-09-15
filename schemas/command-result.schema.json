@@ -1,0 +1,401 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:command-result",
+  "title": "AgentUp Command Success Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "data"
+  ],
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "command": {
+      "enum": [
+        "scan_project",
+        "preview_initialize",
+        "initialize_project",
+        "create_request",
+        "load_project"
+      ]
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "scan_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_name",
+              "project_type",
+              "documents",
+              "agentup_state",
+              "root_fingerprint"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "project_type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "relative_path",
+                    "document_type"
+                  ],
+                  "properties": {
+                    "relative_path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "document_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                }
+              },
+              "agentup_state": {
+                "enum": [
+                  "absent",
+                  "present",
+                  "invalid"
+                ]
+              },
+              "root_fingerprint": {
+                "$ref": "#/$defs/fp"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "preview_initialize"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "planned_paths",
+              "root_fingerprint",
+              "confirmation_token",
+              "requires_confirmation"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "planned_paths": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/relative-path"
+                }
+              },
+              "root_fingerprint": {
+                "$ref": "#/$defs/fp"
+              },
+              "confirmation_token": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "requires_confirmation": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "initialize_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "manifest",
+              "initialized_at",
+              "initialization_event_id"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "manifest": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "project_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "manifest"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "project_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "initialized_at": {
+                "$ref": "#/$defs/time"
+              },
+              "initialization_event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "create_request"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "request.created"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "manifest",
+              "facts",
+              "events",
+              "requests",
+              "project_id"
+            ],
+            "properties": {
+              "manifest": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "project_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "manifest"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "project_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "requests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "request_id",
+                    "revision",
+                    "lifecycle"
+                  ],
+                  "properties": {
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lifecycle": {
+                      "const": "draft"
+                    }
+                  }
+                }
+              },
+              "project_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "fp": {
+      "type": "string",
+      "pattern": "^fp-v1:[0-9a-f]{16}$"
+    },
+    "relative-path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\u0000-\\u001F]+$"
+    }
+  }
+}

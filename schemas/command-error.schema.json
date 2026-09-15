@@ -1,0 +1,120 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:command-error",
+  "title": "AgentUp Command Error Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "error"
+  ],
+  "properties": {
+    "ok": {
+      "const": false
+    },
+    "command": {
+      "enum": [
+        "scan_project",
+        "preview_initialize",
+        "initialize_project",
+        "create_request",
+        "load_project"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "invalid_input",
+            "path_not_found",
+            "path_outside_project",
+            "permission_denied",
+            "not_initialized",
+            "already_initialized",
+            "confirmation_required",
+            "confirmation_expired",
+            "revision_conflict",
+            "already_exists",
+            "malformed_fact",
+            "malformed_event",
+            "event_replay",
+            "io_error"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "details": {
+          "$ref": "#/$defs/details"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "revision_conflict"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "details"
+            ],
+            "properties": {
+              "details": {
+                "type": "object",
+                "required": [
+                  "revision"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\u0000-\\u001F]+$"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+        }
+      }
+    }
+  }
+}

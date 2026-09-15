@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:fact-record",
+  "title": "AgentUp Fact Record",
+  "description": "M0 persisted fact envelope with type-specific content.",
+  "oneOf": [
+    { "$ref": "#/$defs/request-record" },
+    { "$ref": "#/$defs/project-record" },
+    { "$ref": "#/$defs/manifest-record" },
+    { "$ref": "#/$defs/generic-record" }
+  ],
+  "$defs": {
+    "stable-id": { "type": "string", "minLength": 1, "maxLength": 200, "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$" },
+    "iso-date-time": { "type": "string", "format": "date-time" },
+    "root-fingerprint": { "type": "string", "pattern": "^fp-v1:[0-9a-f]{16}$" },
+    "common": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "type", "schema_version", "project_id", "request_id", "revision", "source", "created_at", "updated_at", "content", "metadata"],
+      "properties": {
+        "id": { "$ref": "#/$defs/stable-id" }, "type": { "type": "string" }, "schema_version": { "const": 1 },
+        "project_id": { "$ref": "#/$defs/stable-id" }, "request_id": { "anyOf": [{ "$ref": "#/$defs/stable-id" }, { "type": "null" }] },
+        "revision": { "type": "integer", "minimum": 1 }, "source": { "type": "string", "enum": ["user", "agent", "system", "tool"] },
+        "created_at": { "$ref": "#/$defs/iso-date-time" }, "updated_at": { "$ref": "#/$defs/iso-date-time" },
+        "content": { "type": "object" }, "metadata": { "type": "object" }
+      }
+    },
+    "request-content": {
+      "type": "object", "additionalProperties": false, "required": ["lifecycle", "title", "body"],
+      "description": "schema_version 1 freezes RequestLifecycle to draft; other lifecycles require a later approved schema version.",
+      "properties": { "lifecycle": { "const": "draft" }, "title": { "type": "string", "minLength": 1, "maxLength": 500 }, "body": { "type": "string", "minLength": 1, "maxLength": 100000 } }
+    },
+    "project-content": {
+      "type": "object", "additionalProperties": false, "required": ["project_name", "project_type", "root_fingerprint", "initialized"],
+      "properties": { "project_name": { "type": "string", "minLength": 1, "maxLength": 500 }, "project_type": { "type": "string", "minLength": 1, "maxLength": 100 }, "root_fingerprint": { "$ref": "#/$defs/root-fingerprint" }, "initialized": { "type": "boolean" } }
+    },
+    "manifest-content": {
+      "type": "object", "additionalProperties": false, "required": ["format_version", "project_id", "revision", "initialized_at", "root_fingerprint"],
+      "properties": { "format_version": { "const": 1 }, "project_id": { "$ref": "#/$defs/stable-id" }, "revision": { "const": 1 }, "initialized_at": { "$ref": "#/$defs/iso-date-time" }, "root_fingerprint": { "$ref": "#/$defs/root-fingerprint" } }
+    },
+    "generic-content": { "type": "object", "minProperties": 1 },
+    "request-record": { "allOf": [{ "$ref": "#/$defs/common" }, { "properties": { "type": { "const": "request" }, "request_id": { "$ref": "#/$defs/stable-id" }, "source": { "const": "user" }, "content": { "$ref": "#/$defs/request-content" } } }] },
+    "project-record": { "allOf": [{ "$ref": "#/$defs/common" }, { "properties": { "type": { "const": "project" }, "request_id": { "type": "null" }, "source": { "enum": ["system", "tool"] }, "content": { "$ref": "#/$defs/project-content" } } }] },
+    "manifest-record": { "allOf": [{ "$ref": "#/$defs/common" }, { "properties": { "type": { "const": "manifest" }, "request_id": { "type": "null" }, "source": { "const": "system" }, "content": { "$ref": "#/$defs/manifest-content" } } }] },
+    "generic-record": { "allOf": [{ "$ref": "#/$defs/common" }, { "properties": { "type": { "enum": ["discussion", "plan", "task", "scope", "run", "decision", "result", "attachment"] }, "content": { "$ref": "#/$defs/generic-content" } } }] }
+  }
+}
