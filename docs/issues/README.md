@@ -52,3 +52,4 @@
 | `09-m4-scope-task.md` | 任务票 | M4 范围与任务；in_progress。 |
 | `10-m5-fake-agent.md` | 任务票 | M5 fake Implement/Review；ready。 |
 | `11-m5-reliability.md` | 任务票 | M5.5 运行可靠性；ready。 |
+| `12-m6-results.md` | 任务票 | M6 结果与历史；ready。 |

@@ -25,10 +25,11 @@
 | `007-m4-scope-task.md` | 规格 | M4 范围版本/差异与任务状态事件；已批准。 |
 | `008-m5-agent-m0c.md` | 规格 | M5 fake/replay Agent 与 M0-C 门；已批准。 |
 | `009-m5-reliability.md` | 规格 | M5.5 取消/超时/重试/崩溃/子进程清理；已批准。 |
+| `010-m6-results.md` | 规格 | M6 不可变结果版本、反馈开新一轮、历史不污染当前目标；已批准。 |
 
 ## 状态机
 
-`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。当前 `001-m0-foundation.md`、`002-m0-runtime-contract.md` 与 `003-m1-fact-layer.md` 均为 `approved`。
+`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。当前 `001`–`010` 均为 `approved`。
 
 ## 写作规则（两条硬规则）
 

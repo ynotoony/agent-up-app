@@ -507,6 +507,35 @@ artifacts:
     platform: neutral
     update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
 
+  - id: spec-010-m6-results
+    path: docs/specs/010-m6-results.md
+    kind: spec
+    authority: 权威层级第 3 级（批准规格）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: EXEC-001 W6；不可变结果版本、反馈开新一轮、历史不污染当前目标；用户默认批准
+    read_when: 实施 M6 结果历史或票 12 时
+    sync_on: 契约、行为
+    depends_on: [specs-readme, spec-003-m1-fact-layer, progress]
+    generated_from: EXEC-001 W6；用户默认批准
+    platform: neutral
+    update_policy: "ApprovalState: approved 后作为当前规格；重大变化新建规格并 supersede 本文件"
+  - id: issue-12-m6-results
+    path: docs/issues/12-m6-results.md
+    kind: task
+    authority: 权威层级第 3 级（任务合同）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: W6 需要不可变结果版本/反馈/历史垂直切片；Blocked by W5.5 与 SPEC-010
+    read_when: 领取或恢复 M6-01 时
+    sync_on: 拓扑、行为
+    depends_on: [issues-readme, spec-010-m6-results, issue-11-m5-reliability, progress]
+    generated_from: EXEC-001 W6 拆票
+    platform: neutral
+    update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
+
   - id: agent-readme
     path: docs/agent/README.md
     kind: index
