@@ -4,6 +4,7 @@ use std::io::{self, Write};
 use std::path::{Component, Path, PathBuf};
 
 use chrono::{SecondsFormat, Utc};
+use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
@@ -1336,3 +1337,4 @@ fn known_command(name: &str) -> bool {
 }
 
 include!("typed_facts.rs");
+include!("projection.rs");
