@@ -20,6 +20,7 @@
 | `002-m0-runtime-contract.md` | 规格 | M0 command/event、capabilities、威胁模型和 schema 引用；已批准。 |
 | `003-m1-fact-layer.md` | 规格 | M1 八类事实 content、事件与 SQLite 投影；已批准。 |
 | `004-m2-project-product.md` | 规格 | M2 项目登记/失效/重绑定/删除备份；已批准。 |
+| `005-m2-external-change.md` | 规格 | W2.5 外部变化门；已批准。 |
 
 ## 状态机
 
