@@ -274,7 +274,9 @@
         "malformed_fact",
         "malformed_event",
         "event_replay",
-        "io_error"
+        "io_error",
+        "conflict",
+        "review_required"
       ]
     },
     "command": {
@@ -309,7 +311,13 @@
             "diff_scope",
             "put_task",
             "set_task_state",
-            "load_board"
+            "load_board",
+            "start_run",
+            "apply_fake_script",
+            "finish_run",
+            "commit_changes",
+            "cancel_run",
+            "load_run"
           ]
         },
         "input_required": {

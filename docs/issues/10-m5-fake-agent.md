@@ -14,11 +14,16 @@
 
 **Blocked by:** W4 done；SPEC-008 approved。
 
-**Status:** ready
+**Status:** review_ready
 
-- [ ] Fake implement 能写范围内文件；范围外 write 被拒绝，该文件不变
-- [ ] Review `verdict=fail` → `commit_changes` 失败且文件保持原样；`pass` → `commit_changes` 成功
-- [ ] 不可信 discussion 不能改 `prompt_version` 或绕过 scope
-- [ ] Drop Runtime 后新 `load_run` 从 `.agentup/` 恢复 `run_state`
-- [ ] 第三路并发 `start_run` 被拒绝
-- [ ] 无真实 HTTP
+- [x] Fake implement 能写范围内文件；范围外 write 被拒绝，该文件不变
+- [x] Review `verdict=fail` → `commit_changes` 失败且文件保持原样；`pass` → `commit_changes` 成功
+- [x] 不可信 discussion 不能改 `prompt_version` 或绕过 scope
+- [x] Drop Runtime 后新 `load_run` 从 `.agentup/` 恢复 `run_state`
+- [x] 第三路并发 `start_run` 被拒绝
+- [x] 无真实 HTTP
+
+
+## Implementation Checkpoint
+
+**2026-09-15 / review_ready**：C3 交付六条 command：`start_run`、`apply_fake_script`、`finish_run`、`commit_changes`、`cancel_run`、`load_run`。fake write 只碰 included scope；越权 `invalid_input` 且文件不变。Review fail → `review_required`；pass 后 `commit_changes` 写 decision。第三路 active `conflict`。不接 HTTP。未 push、不自审。

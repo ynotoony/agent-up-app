@@ -1,7 +1,9 @@
 {
   "identifier": "m0-default",
-  "description": "Deny-by-default M0/M2/M3/M4 capability: eighteen typed commands and runtime events.",
-  "windows": ["main"],
+  "description": "Deny-by-default M0\u2013M5 capability: twenty-four typed commands and runtime events.",
+  "windows": [
+    "main"
+  ],
   "permissions": [
     "core:event:allow-listen",
     "core:event:allow-unlisten",

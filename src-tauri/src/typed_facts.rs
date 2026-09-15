@@ -724,6 +724,16 @@ struct RunContent {
     ended_at: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     error_code: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    prompt_version: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    provider: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    token_input: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    token_output: Option<i64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    verdict: Option<String>,
 }
 
 fn parse_run(content: &Value) -> Result<RunContent, AppError> {
@@ -750,6 +760,24 @@ fn parse_run(content: &Value) -> Result<RunContent, AppError> {
     }
     if let Some(code) = &parsed.error_code {
         if code.is_empty() || code.len() > 100 {
+            return Err(parse_err());
+        }
+    }
+    if let Some(prompt_version) = &parsed.prompt_version {
+        if prompt_version.is_empty() || prompt_version.len() > 200 {
+            return Err(parse_err());
+        }
+    }
+    if let Some(provider) = &parsed.provider {
+        if !matches!(provider.as_str(), "fake" | "replay") {
+            return Err(parse_err());
+        }
+    }
+    if parsed.token_input.unwrap_or(0) < 0 || parsed.token_output.unwrap_or(0) < 0 {
+        return Err(parse_err());
+    }
+    if let Some(verdict) = &parsed.verdict {
+        if !matches!(verdict.as_str(), "pass" | "fail") {
             return Err(parse_err());
         }
     }

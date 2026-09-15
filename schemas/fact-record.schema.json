@@ -442,6 +442,31 @@
           "type": "string",
           "minLength": 1,
           "maxLength": 100
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "provider": {
+          "enum": [
+            "fake",
+            "replay"
+          ]
+        },
+        "token_input": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "token_output": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail"
+          ]
         }
       }
     },

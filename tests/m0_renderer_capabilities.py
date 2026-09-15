@@ -54,6 +54,12 @@ for command in [
     "put_task",
     "set_task_state",
     "load_board",
+    "start_run",
+    "apply_fake_script",
+    "finish_run",
+    "commit_changes",
+    "cancel_run",
+    "load_run",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")

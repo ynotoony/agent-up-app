@@ -288,6 +288,114 @@ fn load_board(
     result
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn start_run(
+    project_id: String,
+    run_id: String,
+    request_id: String,
+    task_id: String,
+    kind: String,
+    provider: String,
+    prompt_version: String,
+    expected_revision: i64,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.start_run(
+        &project_id,
+        &run_id,
+        &request_id,
+        &task_id,
+        &kind,
+        &provider,
+        &prompt_version,
+        expected_revision,
+    );
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn apply_fake_script(
+    project_id: String,
+    run_id: String,
+    calls: Value,
+    expected_revision: i64,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.apply_fake_script(&project_id, &run_id, calls, expected_revision);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn finish_run(
+    project_id: String,
+    run_id: String,
+    expected_revision: i64,
+    token_input: i64,
+    token_output: i64,
+    verdict: Option<String>,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.finish_run(
+        &project_id,
+        &run_id,
+        expected_revision,
+        token_input,
+        token_output,
+        verdict,
+    );
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn commit_changes(
+    project_id: String,
+    task_id: String,
+    request_id: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.commit_changes(&project_id, &task_id, &request_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn cancel_run(
+    project_id: String,
+    run_id: String,
+    expected_revision: i64,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.cancel_run(&project_id, &run_id, expected_revision);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn load_run(
+    project_id: String,
+    run_id: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.load_run(&project_id, &run_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -313,7 +421,13 @@ pub fn run() {
             diff_scope,
             put_task,
             set_task_state,
-            load_board
+            load_board,
+            start_run,
+            apply_fake_script,
+            finish_run,
+            commit_changes,
+            cancel_run,
+            load_run
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");
