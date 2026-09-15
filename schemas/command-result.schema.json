@@ -19,7 +19,11 @@
         "preview_initialize",
         "initialize_project",
         "create_request",
-        "load_project"
+        "load_project",
+        "list_projects",
+        "register_project",
+        "rebind_project",
+        "remove_agentup"
       ]
     },
     "data": {
@@ -369,6 +373,191 @@
               },
               "project_id": {
                 "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "list_projects"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "projects"
+            ],
+            "properties": {
+              "projects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "project_id",
+                    "project_path",
+                    "registered_at",
+                    "last_seen_at",
+                    "path_state"
+                  ],
+                  "properties": {
+                    "project_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "project_path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4000
+                    },
+                    "registered_at": {
+                      "$ref": "#/$defs/time"
+                    },
+                    "last_seen_at": {
+                      "$ref": "#/$defs/time"
+                    },
+                    "path_state": {
+                      "enum": [
+                        "ok",
+                        "missing",
+                        "not_dir",
+                        "unreadable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "register_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_path",
+              "registered_at",
+              "path_state"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "registered_at": {
+                "$ref": "#/$defs/time"
+              },
+              "path_state": {
+                "enum": [
+                  "ok",
+                  "missing",
+                  "not_dir",
+                  "unreadable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "rebind_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_path",
+              "path_state"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "path_state": {
+                "enum": [
+                  "ok",
+                  "missing",
+                  "not_dir",
+                  "unreadable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "remove_agentup"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "backup_relative_path"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "backup_relative_path": {
+                "$ref": "#/$defs/relative-path"
               }
             }
           }

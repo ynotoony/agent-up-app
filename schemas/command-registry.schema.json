@@ -14,8 +14,8 @@
     },
     "commands": {
       "type": "array",
-      "minItems": 5,
-      "maxItems": 5,
+      "minItems": 9,
+      "maxItems": 9,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/command"
@@ -85,6 +85,58 @@
               }
             }
           }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "list_projects"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "register_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "rebind_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "remove_agentup"
+              }
+            }
+          }
         }
       ]
     }
@@ -127,7 +179,11 @@
             "preview_initialize",
             "initialize_project",
             "create_request",
-            "load_project"
+            "load_project",
+            "list_projects",
+            "register_project",
+            "rebind_project",
+            "remove_agentup"
           ]
         },
         "input_required": {
@@ -443,6 +499,194 @@
                 "const": [
                   "request.rehydrated"
                 ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "list_projects"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "projects"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "register_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "registered_at",
+                  "path_state"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "rebind_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "path_state"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "not_initialized",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "remove_agentup"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "confirmation_token"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "backup_relative_path"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "confirmation_required",
+                  "confirmation_expired",
+                  "path_outside_project",
+                  "not_initialized",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
               }
             }
           }

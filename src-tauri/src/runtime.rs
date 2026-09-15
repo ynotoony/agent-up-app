@@ -8,12 +8,16 @@ use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-const COMMANDS: [&str; 5] = [
+const COMMANDS: [&str; 9] = [
     "scan_project",
     "preview_initialize",
     "initialize_project",
     "create_request",
     "load_project",
+    "list_projects",
+    "register_project",
+    "rebind_project",
+    "remove_agentup",
 ];
 const MAX_SCAN_FILES: usize = 50_000;
 const ID_PATTERN_MAX: usize = 200;
@@ -23,8 +27,15 @@ struct BoundProject {
     root: PathBuf,
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum ConfirmationKind {
+    Initialize,
+    Remove,
+}
+
 #[derive(Clone)]
 struct Confirmation {
+    kind: ConfirmationKind,
     project_id: String,
     root: PathBuf,
     fingerprint: String,
@@ -38,16 +49,33 @@ enum WalkItem {
     Symlink { rel: String, target: String },
 }
 
-#[derive(Default)]
 pub struct Runtime {
     projects: HashMap<String, BoundProject>,
     tokens: HashMap<String, Confirmation>,
     notifications: Vec<(String, Value)>,
+    app_index: Connection,
+    app_data_dir: Option<PathBuf>,
 }
 
 impl Runtime {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            projects: HashMap::new(),
+            tokens: HashMap::new(),
+            notifications: Vec::new(),
+            app_index: open_app_index(None).expect("in-memory app index"),
+            app_data_dir: None,
+        }
+    }
+
+    pub fn with_app_data_dir(dir: PathBuf) -> Self {
+        Self {
+            projects: HashMap::new(),
+            tokens: HashMap::new(),
+            notifications: Vec::new(),
+            app_index: open_app_index(Some(&dir)).expect("app index"),
+            app_data_dir: Some(dir),
+        }
     }
 
     pub fn take_notifications(&mut self) -> Vec<(String, Value)> {
@@ -184,6 +212,7 @@ impl Runtime {
         self.tokens.insert(
             token.clone(),
             Confirmation {
+                kind: ConfirmationKind::Initialize,
                 project_id: project_id.to_string(),
                 root,
                 fingerprint: fingerprint.clone(),
@@ -256,6 +285,14 @@ impl Runtime {
                 None,
             );
         };
+        if confirmation.kind != ConfirmationKind::Initialize {
+            return fail(
+                CMD,
+                "confirmation_expired",
+                "The confirmation token is not bound to initialization.",
+                None,
+            );
+        }
         if confirmation.project_id != project_id || confirmation.root != root {
             return fail(
                 CMD,
@@ -1338,3 +1375,4 @@ fn known_command(name: &str) -> bool {
 
 include!("typed_facts.rs");
 include!("projection.rs");
+include!("project_index.rs");

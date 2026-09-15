@@ -143,6 +143,94 @@
       "emits": [
         "request.rehydrated"
       ]
+    },
+    {
+      "name": "list_projects",
+      "input_required": [],
+      "output_required": [
+        "projects"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "register_project",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "project_path",
+        "registered_at",
+        "path_state"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "rebind_project",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "project_path",
+        "path_state"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "not_initialized",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "remove_agentup",
+      "input_required": [
+        "project_id",
+        "project_path",
+        "confirmation_token"
+      ],
+      "output_required": [
+        "project_id",
+        "backup_relative_path"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "confirmation_required",
+        "confirmation_expired",
+        "path_outside_project",
+        "not_initialized",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
     }
   ]
 }

@@ -4,7 +4,7 @@ use std::sync::Mutex;
 
 use runtime::Runtime;
 use serde_json::Value;
-use tauri::{AppHandle, Emitter, State};
+use tauri::{AppHandle, Emitter, Manager, State};
 
 pub use runtime::Runtime as AppRuntime;
 
@@ -95,15 +95,71 @@ fn load_project(
     result
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn list_projects(app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.list_projects();
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn register_project(
+    project_id: String,
+    project_path: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.register_project(&project_id, &project_path);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn rebind_project(
+    project_id: String,
+    project_path: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.rebind_project(&project_id, &project_path);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn remove_agentup(
+    project_id: String,
+    project_path: String,
+    confirmation_token: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.remove_agentup(&project_id, &project_path, &confirmation_token);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
-        .manage(Mutex::new(Runtime::new()))
+        .setup(|app| {
+            let dir = app.path().app_data_dir().map_err(|err| err.to_string())?;
+            app.manage(Mutex::new(Runtime::with_app_data_dir(dir)));
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             scan_project,
             preview_initialize,
             initialize_project,
             create_request,
-            load_project
+            load_project,
+            list_projects,
+            register_project,
+            rebind_project,
+            remove_agentup
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");

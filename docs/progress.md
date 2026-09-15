@@ -16,4 +16,4 @@
 | M1-02 SQLite 投影 | done | 2026-09-15；独立 Review pass；`codex/m1-02-sqlite` | W2 项目列表/失效/删除备份 |
 
 状态取值：完整 `TaskState` 为 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done`；本表可展示其中摘要，但明细与 Review 状态必须写任务票 Checkpoint。
-| M2-01 项目产品切片 | in_progress | 2026-09-15；`docs/issues/06-m2-project-product.md`；SPEC-004 approved | C3 Implementation |
+| M2-01 项目产品切片 | review_ready | 2026-09-15；`docs/issues/06-m2-project-product.md`；cargo/python/diff-check 见票 Checkpoint | 独立 Review |

@@ -19,7 +19,11 @@
         "preview_initialize",
         "initialize_project",
         "create_request",
-        "load_project"
+        "load_project",
+        "list_projects",
+        "register_project",
+        "rebind_project",
+        "remove_agentup"
       ]
     },
     "error": {
