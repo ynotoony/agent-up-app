@@ -20,3 +20,4 @@
 | M2.5 外部变化门 | done | 2026-09-15；独立 Review pass；`codex/w2.5-external` | W3 讨论与附件 |
 | M3-01 讨论与附件切片 | done | 2026-09-15；独立 Review pass；`codex/w3-discussion` | W4 范围与任务 |
 | M4-01 范围与任务切片 | done | 2026-09-15；Independent Review pass；branch `codex/w4-scope-task` | W5 M0-C 规格 |
+| SPEC-008 M5 fake agent / M0-C | approved | 2026-09-15；用户默认批准；`docs/specs/008-m5-agent-m0c.md` | 票 10 C3 Implementation |

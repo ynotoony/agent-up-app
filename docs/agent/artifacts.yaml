@@ -449,6 +449,35 @@ artifacts:
     platform: neutral
     update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
 
+  - id: spec-008-m5-agent-m0c
+    path: docs/specs/008-m5-agent-m0c.md
+    kind: spec
+    authority: 权威层级第 3 级（批准规格）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: EXEC-001 W5；M0-C 门与 fake/replay provider 合同；用户默认批准
+    read_when: 实施 M5 fake Agent、M0-C 或票 10 时
+    sync_on: 契约、行为
+    depends_on: [specs-readme, spec-003-m1-fact-layer, progress]
+    generated_from: EXEC-001 W5；用户默认批准
+    platform: neutral
+    update_policy: "ApprovalState: approved 后作为当前规格；重大变化新建规格并 supersede 本文件"
+  - id: issue-10-m5-fake-agent
+    path: docs/issues/10-m5-fake-agent.md
+    kind: task
+    authority: 权威层级第 3 级（任务合同）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: W5 需要 fake Implement/Review 垂直切片；Blocked by W4 与 SPEC-008
+    read_when: 领取或恢复 M5-01 时
+    sync_on: 拓扑、行为
+    depends_on: [issues-readme, spec-008-m5-agent-m0c, progress]
+    generated_from: EXEC-001 W5 拆票
+    platform: neutral
+    update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
+
   - id: agent-readme
     path: docs/agent/README.md
     kind: index

@@ -50,3 +50,4 @@
 | `07-m2-external-change.md` | 任务票 | W2.5 外部变化门；in_progress。 |
 | `08-m3-discussion.md` | 任务票 | M3 讨论与附件；review_ready。 |
 | `09-m4-scope-task.md` | 任务票 | M4 范围与任务；in_progress。 |
+| `10-m5-fake-agent.md` | 任务票 | M5 fake Implement/Review；ready。 |
