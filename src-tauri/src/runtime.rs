@@ -8,7 +8,7 @@ use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-const COMMANDS: [&str; 13] = [
+const COMMANDS: [&str; 18] = [
     "scan_project",
     "preview_initialize",
     "initialize_project",
@@ -22,6 +22,11 @@ const COMMANDS: [&str; 13] = [
     "post_discussion",
     "add_attachment",
     "load_request_thread",
+    "put_scope",
+    "diff_scope",
+    "put_task",
+    "set_task_state",
+    "load_board",
 ];
 const MAX_SCAN_FILES: usize = 50_000;
 const ID_PATTERN_MAX: usize = 200;
@@ -1456,5 +1461,6 @@ fn known_command(name: &str) -> bool {
 
 include!("typed_facts.rs");
 include!("discussion.rs");
+include!("scope_task.rs");
 include!("projection.rs");
 include!("project_index.rs");

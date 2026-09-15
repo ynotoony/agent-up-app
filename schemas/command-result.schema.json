@@ -27,7 +27,12 @@
         "preview_remove_agentup",
         "post_discussion",
         "add_attachment",
-        "load_request_thread"
+        "load_request_thread",
+        "put_scope",
+        "diff_scope",
+        "put_task",
+        "set_task_state",
+        "load_board"
       ]
     },
     "data": {
@@ -869,6 +874,350 @@
         }
       }
     }
+    ,
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_scope"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "scope"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "scope.updated"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "diff_scope"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "added",
+              "removed",
+              "changed"
+            ],
+            "properties": {
+              "scope_id": {
+                "$ref": "#/$defs/id"
+              },
+              "from_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "to_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "added": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/relative-path"
+                }
+              },
+              "removed": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/relative-path"
+                }
+              },
+              "changed": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/relative-path"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_task"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "task"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": ["object", "null"]
+              },
+              "event_id": {
+                "type": ["string", "null"]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "set_task_state"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "task"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "task.state_changed"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_board"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "request_id",
+              "tasks"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "task_id",
+                    "title",
+                    "parent_id",
+                    "depends_on",
+                    "task_state"
+                  ],
+                  "properties": {
+                    "task_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "title": {
+                      "type": "string"
+                    },
+                    "parent_id": {
+                      "type": ["string", "null"]
+                    },
+                    "depends_on": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/id"
+                      }
+                    },
+                    "task_state": {
+                      "enum": [
+                        "ready",
+                        "in_progress",
+                        "blocked",
+                        "review_ready",
+                        "review_pass",
+                        "review_fail",
+                        "done"
+                      ]
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "scope": {
+                      "type": ["object", "null"]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+
   ],
   "$defs": {
     "id": {

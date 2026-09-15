@@ -1,6 +1,6 @@
 [[permission]]
 identifier = "allow-m0-commands"
-description = "Allow only the M0, M2 and M3 typed runtime commands."
+description = "Allow only the M0, M2, M3 and M4 typed runtime commands."
 commands.allow = [
   "scan_project",
   "preview_initialize",
@@ -14,5 +14,10 @@ commands.allow = [
   "remove_agentup",
   "post_discussion",
   "add_attachment",
-  "load_request_thread"
+  "load_request_thread",
+  "put_scope",
+  "diff_scope",
+  "put_task",
+  "set_task_state",
+  "load_board"
 ]

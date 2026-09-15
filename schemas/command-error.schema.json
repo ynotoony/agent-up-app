@@ -27,7 +27,12 @@
         "preview_remove_agentup",
         "post_discussion",
         "add_attachment",
-        "load_request_thread"
+        "load_request_thread",
+        "put_scope",
+        "diff_scope",
+        "put_task",
+        "set_task_state",
+        "load_board"
       ]
     },
     "error": {

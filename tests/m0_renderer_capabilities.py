@@ -49,6 +49,11 @@ for command in [
     "post_discussion",
     "add_attachment",
     "load_request_thread",
+    "put_scope",
+    "diff_scope",
+    "put_task",
+    "set_task_state",
+    "load_board",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")

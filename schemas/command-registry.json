@@ -336,6 +336,143 @@
       ],
       "capability": "project_read",
       "emits": []
+    },
+    {
+      "name": "put_scope",
+      "input_required": [
+        "project_id",
+        "scope_id",
+        "request_id",
+        "task_id",
+        "entries",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "scope.updated"
+      ]
+    },
+    {
+      "name": "diff_scope",
+      "input_required": [
+        "scope_id",
+        "from_revision",
+        "to_revision"
+      ],
+      "output_required": [
+        "added",
+        "removed",
+        "changed"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "put_task",
+      "input_required": [
+        "project_id",
+        "task_id",
+        "request_id",
+        "title",
+        "parent_id",
+        "depends_on",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "set_task_state",
+      "input_required": [
+        "task_id",
+        "task_state",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "load_board",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "tasks"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
     }
   ]
 }

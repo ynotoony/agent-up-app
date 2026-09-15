@@ -14,8 +14,8 @@
     },
     "commands": {
       "type": "array",
-      "minItems": 13,
-      "maxItems": 13,
+      "minItems": 18,
+      "maxItems": 18,
       "uniqueItems": true,
       "items": {
         "$ref": "#/$defs/command"
@@ -189,6 +189,71 @@
               }
             }
           }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_scope"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "diff_scope"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_task"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "set_task_state"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_board"
+              }
+            }
+          }
         }
       ]
     }
@@ -239,7 +304,12 @@
             "preview_remove_agentup",
             "post_discussion",
             "add_attachment",
-            "load_request_thread"
+            "load_request_thread",
+            "put_scope",
+            "diff_scope",
+            "put_task",
+            "set_task_state",
+            "load_board"
           ]
         },
         "input_required": {
@@ -285,7 +355,9 @@
               "project.initialized",
               "request.created",
               "request.rehydrated",
-              "discussion.posted"
+              "discussion.posted",
+              "scope.updated",
+              "task.state_changed"
             ]
           },
           "uniqueItems": true
@@ -929,6 +1001,268 @@
                   "request_id",
                   "discussions",
                   "attachments"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_scope"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "scope_id",
+                  "request_id",
+                  "task_id",
+                  "entries",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "scope.updated"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "diff_scope"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "scope_id",
+                  "from_revision",
+                  "to_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "added",
+                  "removed",
+                  "changed"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_task"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "task_id",
+                  "request_id",
+                  "title",
+                  "parent_id",
+                  "depends_on",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "set_task_state"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "task_id",
+                  "task_state",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_board"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "tasks"
                 ]
               },
               "side_effect": {
