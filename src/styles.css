@@ -1,0 +1,44 @@
+:root {
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  color: #111;
+  background: #f6f6f4;
+}
+body {
+  margin: 0;
+}
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px;
+}
+label,
+input,
+textarea,
+button,
+pre {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+}
+input,
+textarea {
+  margin: 4px 0 12px;
+  padding: 8px;
+}
+button {
+  margin: 0 0 12px;
+  padding: 8px 12px;
+  width: auto;
+}
+.row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+pre {
+  background: #111;
+  color: #f6f6f4;
+  padding: 12px;
+  overflow: auto;
+  min-height: 180px;
+}

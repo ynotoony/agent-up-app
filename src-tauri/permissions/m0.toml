@@ -1,0 +1,10 @@
+[[permission]]
+identifier = "allow-m0-commands"
+description = "Allow only the five M0 runtime commands."
+commands.allow = [
+  "scan_project",
+  "preview_initialize",
+  "initialize_project",
+  "create_request",
+  "load_project"
+]

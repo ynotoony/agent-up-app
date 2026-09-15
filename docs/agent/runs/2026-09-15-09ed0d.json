@@ -1,0 +1,67 @@
+{
+  "run_id": "2026-09-15-09ed0d",
+  "mode": "delivery",
+  "phase": "implementation",
+  "task": "03-m0-runtime",
+  "status": {
+    "session": "active",
+    "task": "review_ready",
+    "request": null,
+    "approval": null
+  },
+  "scope": "M0-03: initialize Tauri 2 + renderer at repo root; implement five typed commands, deny-by-default capabilities, fp-v1 fingerprint, typed error envelope; external behavior tests for the ticket acceptance path. No real Agent, SQLite fact source, attachments, or user project source writes. No git commit/push.",
+  "baseline": {
+    "vcs_ref": "8c6eee996750595a793f32b262d69d82180a8639",
+    "workspace_fingerprint": "fp-v1:7bbfd8d22f8d711b"
+  },
+  "modified_files": [
+    "/Users/bic/Projects/agent-up/README.md",
+    "/Users/bic/Projects/agent-up/package.json",
+    "/Users/bic/Projects/agent-up/package-lock.json",
+    "/Users/bic/Projects/agent-up/tsconfig.json",
+    "/Users/bic/Projects/agent-up/tsconfig.node.json",
+    "/Users/bic/Projects/agent-up/vite.config.ts",
+    "/Users/bic/Projects/agent-up/index.html",
+    "/Users/bic/Projects/agent-up/src/main.tsx",
+    "/Users/bic/Projects/agent-up/src/App.tsx",
+    "/Users/bic/Projects/agent-up/src/styles.css",
+    "/Users/bic/Projects/agent-up/src/vite-env.d.ts",
+    "/Users/bic/Projects/agent-up/src-tauri/Cargo.toml",
+    "/Users/bic/Projects/agent-up/src-tauri/Cargo.lock",
+    "/Users/bic/Projects/agent-up/src-tauri/build.rs",
+    "/Users/bic/Projects/agent-up/src-tauri/tauri.conf.json",
+    "/Users/bic/Projects/agent-up/src-tauri/capabilities/m0-default.json",
+    "/Users/bic/Projects/agent-up/src-tauri/permissions/m0.toml",
+    "/Users/bic/Projects/agent-up/src-tauri/src/main.rs",
+    "/Users/bic/Projects/agent-up/src-tauri/src/lib.rs",
+    "/Users/bic/Projects/agent-up/src-tauri/src/runtime.rs",
+    "/Users/bic/Projects/agent-up/src-tauri/tests/m0_runtime.rs",
+    "/Users/bic/Projects/agent-up/src-tauri/icons/icon.png",
+    "/Users/bic/Projects/agent-up/src-tauri/icons/32x32.png",
+    "/Users/bic/Projects/agent-up/src-tauri/icons/128x128.png",
+    "/Users/bic/Projects/agent-up/tests/m0_schema_parse.py",
+    "/Users/bic/Projects/agent-up/tests/m0_renderer_capabilities.py",
+    "/Users/bic/Projects/agent-up/docs/agent/runs/README.md",
+    "/Users/bic/Projects/agent-up/docs/agent/README.md",
+    "/Users/bic/Projects/agent-up/docs/agent/artifacts.yaml",
+    "/Users/bic/Projects/agent-up/docs/issues/03-m0-runtime.md",
+    "/Users/bic/Projects/agent-up/docs/issues/README.md",
+    "/Users/bic/Projects/agent-up/docs/progress.md",
+    "/Users/bic/Projects/agent-up/docs/changes.md"
+  ],
+  "last_verified": {
+    "command": "python3 tests/m0_schema_parse.py && python3 tests/m0_renderer_capabilities.py && cargo test --manifest-path src-tauri/Cargo.toml --offline --lib --tests && npx tsc --noEmit && git diff --check",
+    "result": "schema JSON parse ok (6 files); renderer capability static check ok; cargo test 7 passed; tsc ok; git diff --check ok. Draft 2020-12 validator N/A + reason: no jsonschema/ajv installed.",
+    "at": "2026-09-15T13:08:11+08:00"
+  },
+  "next_step": "Independent Review by an executor who did not implement this slice. Do not git commit until review_pass.",
+  "blocker": "",
+  "network": "available",
+  "updated_at": "2026-09-15T13:08:11+08:00",
+  "independent_review": {
+    "verdict": "pass",
+    "ticket_ref": "docs/issues/03-m0-runtime.md",
+    "checkpoint": "Independent Review Checkpoint / 2026-09-15",
+    "at": "2026-09-15T13:14:46+08:00"
+  }
+}

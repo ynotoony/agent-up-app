@@ -1,0 +1,29 @@
+[package]
+name = "agent-up"
+version = "0.1.0"
+description = "AgentUp M0 runtime"
+authors = ["AgentUp"]
+edition = "2021"
+default-run = "agent-up"
+
+[lib]
+name = "agent_up_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+chrono = { version = "0.4", default-features = false, features = ["clock", "std"] }
+getrandom = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tauri = { version = "2", features = [] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+codegen-units = 1
+lto = true

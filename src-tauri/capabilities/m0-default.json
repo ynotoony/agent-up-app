@@ -1,0 +1,10 @@
+{
+  "identifier": "m0-default",
+  "description": "Deny-by-default M0 capability: five typed commands and four runtime events.",
+  "windows": ["main"],
+  "permissions": [
+    "core:event:allow-listen",
+    "core:event:allow-unlisten",
+    "allow-m0-commands"
+  ]
+}

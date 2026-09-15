@@ -111,3 +111,8 @@
 - **未做**：真实 Agent、SQLite 事实源、附件、项目源码写入、git commit/push。
 - **验证**：schema JSON parse；renderer capability 静态检查；`cargo test` 7 passed；`git diff --check`。
 - **同步门槛**：拓扑（新增 `src/`、`src-tauri/`、`tests/`、`docs/agent/runs/`）；行为（M0 command 可用）。根 README、`docs/agent/README.md`、`artifacts.yaml` 已登记。
+
+## 2026-09-15 - M0-03 Review pass 并提交实现
+
+- **范围**：M0-03 独立 Review pass；实现提交到分支 `codex/m0-03-runtime`（一事一提交）。未 push，未拆 M1 空目录。
+- **状态**：M0-03 `TaskState: done`；EXEC-001 W0 退出条件达到，W1 票待拆。
