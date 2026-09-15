@@ -44,4 +44,5 @@
 | `02-m0-runtime-contract.md` | 任务票 | M0-02 Schema、API、capabilities 和威胁模型；已完成。 |
 | `03-m0-runtime.md` | 任务票 | M0-03 五命令恢复切片；done。 |
 | `04-m1-fact-types.md` | 任务票 | M1-01 八类事实 schema 与读写测试；blocked on SPEC-003。 |
-| `05-m1-sqlite-projection.md` | 任务票 | M1-02 SQLite 投影重建；blocked on M1-01。 |
+| `05-m1-sqlite-projection.md` | 任务票 | M1-02 SQLite 投影重建；done。 |
+| `06-m2-project-product.md` | 任务票 | M2 项目产品切片；in_progress。 |
