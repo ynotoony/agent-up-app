@@ -1198,7 +1198,16 @@ fn load_persisted_events(agentup: &Path) -> Result<Vec<Value>, AppError> {
         let event_type = event["event_type"].as_str().unwrap_or("");
         let delivery = event["delivery"].as_str().unwrap_or("");
         if delivery != "persisted"
-            || !matches!(event_type, "project.initialized" | "request.created")
+            || !matches!(
+                event_type,
+                "project.initialized"
+                    | "request.created"
+                    | "discussion.posted"
+                    | "task.state_changed"
+                    | "scope.updated"
+                    | "decision.recorded"
+                    | "result.published"
+            )
         {
             return Err(AppError::code(
                 "malformed_event",
@@ -1325,3 +1334,5 @@ fn now_rfc3339() -> String {
 fn known_command(name: &str) -> bool {
     COMMANDS.contains(&name)
 }
+
+include!("typed_facts.rs");
