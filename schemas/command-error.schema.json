@@ -24,7 +24,10 @@
         "register_project",
         "rebind_project",
         "remove_agentup",
-        "preview_remove_agentup"
+        "preview_remove_agentup",
+        "post_discussion",
+        "add_attachment",
+        "load_request_thread"
       ]
     },
     "error": {

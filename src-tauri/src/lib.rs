@@ -15,11 +15,7 @@ fn emit_notifications(app: &AppHandle, runtime: &mut Runtime) {
 }
 
 #[tauri::command(rename_all = "snake_case")]
-fn scan_project(
-    project_path: String,
-    app: AppHandle,
-    state: State<'_, Mutex<Runtime>>,
-) -> Value {
+fn scan_project(project_path: String, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
     let mut runtime = state.lock().expect("runtime mutex");
     let result = runtime.scan_project(&project_path);
     emit_notifications(&app, &mut runtime);
@@ -156,6 +152,49 @@ fn remove_agentup(
     result
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn post_discussion(
+    project_id: String,
+    request_id: String,
+    body: String,
+    attachment_ids: Option<Vec<String>>,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.post_discussion(&project_id, &request_id, &body, attachment_ids);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn add_attachment(
+    project_id: String,
+    request_id: String,
+    media_type: String,
+    bytes: Vec<u8>,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.add_attachment(&project_id, &request_id, &media_type, &bytes);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
+#[tauri::command(rename_all = "snake_case")]
+fn load_request_thread(
+    project_id: String,
+    request_id: String,
+    app: AppHandle,
+    state: State<'_, Mutex<Runtime>>,
+) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.load_request_thread(&project_id, &request_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -173,7 +212,10 @@ pub fn run() {
             register_project,
             rebind_project,
             preview_remove_agentup,
-            remove_agentup
+            remove_agentup,
+            post_discussion,
+            add_attachment,
+            load_request_thread
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");

@@ -1,6 +1,6 @@
 [[permission]]
 identifier = "allow-m0-commands"
-description = "Allow only the M0 and M2 typed runtime commands."
+description = "Allow only the M0, M2 and M3 typed runtime commands."
 commands.allow = [
   "scan_project",
   "preview_initialize",
@@ -11,5 +11,8 @@ commands.allow = [
   "register_project",
   "rebind_project",
   "preview_remove_agentup",
-  "remove_agentup"
+  "remove_agentup",
+  "post_discussion",
+  "add_attachment",
+  "load_request_thread"
 ]

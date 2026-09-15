@@ -255,6 +255,87 @@
       ],
       "capability": "project_read",
       "emits": []
+    },
+    {
+      "name": "post_discussion",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "body"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "discussion.posted"
+      ]
+    },
+    {
+      "name": "add_attachment",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "media_type",
+        "bytes"
+      ],
+      "output_required": [
+        "fact",
+        "relative_path",
+        "byte_length",
+        "sha256"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "already_exists",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "load_request_thread",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "discussions",
+        "attachments"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
     }
   ]
 }

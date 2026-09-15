@@ -46,6 +46,9 @@ for command in [
     "register_project",
     "rebind_project",
     "remove_agentup",
+    "post_discussion",
+    "add_attachment",
+    "load_request_thread",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")

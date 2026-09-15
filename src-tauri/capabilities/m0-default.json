@@ -1,6 +1,6 @@
 {
   "identifier": "m0-default",
-  "description": "Deny-by-default M0/M2 capability: nine typed commands and four runtime events.",
+  "description": "Deny-by-default M0/M2/M3 capability: thirteen typed commands and runtime events.",
   "windows": ["main"],
   "permissions": [
     "core:event:allow-listen",

@@ -18,4 +18,4 @@
 状态取值：完整 `TaskState` 为 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done`；本表可展示其中摘要，但明细与 Review 状态必须写任务票 Checkpoint。
 | M2-01 项目产品切片 | done | 2026-09-15；独立 Review pass；`codex/m2-project-product` | W2.5 外部变化门 |
 | M2.5 外部变化门 | done | 2026-09-15；独立 Review pass；`codex/w2.5-external` | W3 讨论与附件 |
-| M3-01 讨论与附件切片 | in_progress | 2026-09-15；`docs/issues/08-m3-discussion.md` | C3 Implementation |
+| M3-01 讨论与附件切片 | review_ready | 2026-09-15；`docs/issues/08-m3-discussion.md` | Independent Review |

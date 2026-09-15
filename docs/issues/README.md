@@ -48,4 +48,4 @@
 | `06-m2-project-product.md` | 任务票 | M2 项目产品切片；review_ready。 |
 
 | `07-m2-external-change.md` | 任务票 | W2.5 外部变化门；in_progress。 |
-| `08-m3-discussion.md` | 任务票 | M3 讨论与附件；in_progress。 |
+| `08-m3-discussion.md` | 任务票 | M3 讨论与附件；review_ready。 |

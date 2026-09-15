@@ -24,7 +24,10 @@
         "register_project",
         "rebind_project",
         "remove_agentup",
-        "preview_remove_agentup"
+        "preview_remove_agentup",
+        "post_discussion",
+        "add_attachment",
+        "load_request_thread"
       ]
     },
     "data": {
@@ -604,6 +607,261 @@
                 "minItems": 1,
                 "items": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "post_discussion"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "discussion"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "discussion.posted"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "add_attachment"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "relative_path",
+              "byte_length",
+              "sha256"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "attachment"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "relative_path": {
+                "$ref": "#/$defs/relative-path"
+              },
+              "byte_length": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_request_thread"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "request_id",
+              "discussions",
+              "attachments"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "discussions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "type",
+                    "request_id",
+                    "content"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "type": {
+                      "const": "discussion"
+                    },
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "content": {
+                      "type": "object",
+                      "required": [
+                        "body",
+                        "posted_at"
+                      ],
+                      "properties": {
+                        "body": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100000
+                        },
+                        "posted_at": {
+                          "$ref": "#/$defs/time"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "request_id",
+                    "relative_path",
+                    "media_type",
+                    "byte_length",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "relative_path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "media_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "byte_length": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10485760
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
                 }
               }
             }

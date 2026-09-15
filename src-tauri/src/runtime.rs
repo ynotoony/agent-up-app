@@ -8,7 +8,7 @@ use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-const COMMANDS: [&str; 10] = [
+const COMMANDS: [&str; 13] = [
     "scan_project",
     "preview_initialize",
     "initialize_project",
@@ -19,6 +19,9 @@ const COMMANDS: [&str; 10] = [
     "rebind_project",
     "remove_agentup",
     "preview_remove_agentup",
+    "post_discussion",
+    "add_attachment",
+    "load_request_thread",
 ];
 const MAX_SCAN_FILES: usize = 50_000;
 const ID_PATTERN_MAX: usize = 200;
@@ -46,8 +49,15 @@ struct Confirmation {
 }
 
 enum WalkItem {
-    File { rel: String, path: PathBuf, len: u64 },
-    Symlink { rel: String, target: String },
+    File {
+        rel: String,
+        path: PathBuf,
+        len: u64,
+    },
+    Symlink {
+        rel: String,
+        target: String,
+    },
 }
 
 pub struct Runtime {
@@ -103,7 +113,12 @@ impl Runtime {
             Err(err) => return err.into_value(CMD),
         };
         if !valid_id(&project_id) {
-            return fail(CMD, "io_error", "Project identity is not a valid stable id.", None);
+            return fail(
+                CMD,
+                "io_error",
+                "Project identity is not a valid stable id.",
+                None,
+            );
         }
         self.projects
             .insert(project_id.clone(), BoundProject { root: root.clone() });
@@ -202,7 +217,12 @@ impl Runtime {
         let event_id = format!("evt-init-{}", random_hex(8));
         let manifest_id = format!("manifest-{}", random_hex(8));
         if !valid_id(&event_id) || !valid_id(&manifest_id) {
-            return fail(CMD, "io_error", "Failed to allocate initialization identifiers.", None);
+            return fail(
+                CMD,
+                "io_error",
+                "Failed to allocate initialization identifiers.",
+                None,
+            );
         }
         let planned_paths = vec![
             ".agentup/manifest.json".to_string(),
@@ -318,9 +338,7 @@ impl Runtime {
                 None,
             );
         }
-        if fingerprint != expected_root_fingerprint
-            || fingerprint != confirmation.fingerprint
-        {
+        if fingerprint != expected_root_fingerprint || fingerprint != confirmation.fingerprint {
             self.tokens.remove(confirmation_token);
             return fail(
                 CMD,
@@ -502,8 +520,14 @@ impl Runtime {
         } else {
             content_obj.insert("lifecycle".to_string(), json!("draft"));
         }
-        let title = content_obj.get("title").and_then(Value::as_str).unwrap_or("");
-        let body = content_obj.get("body").and_then(Value::as_str).unwrap_or("");
+        let title = content_obj
+            .get("title")
+            .and_then(Value::as_str)
+            .unwrap_or("");
+        let body = content_obj
+            .get("body")
+            .and_then(Value::as_str)
+            .unwrap_or("");
         if title.is_empty() || title.len() > 500 || body.is_empty() || body.len() > 100_000 {
             return fail(
                 CMD,
@@ -512,7 +536,10 @@ impl Runtime {
                 Some(json!({"field": "content"})),
             );
         }
-        if content_obj.keys().any(|key| !matches!(key.as_str(), "lifecycle" | "title" | "body")) {
+        if content_obj
+            .keys()
+            .any(|key| !matches!(key.as_str(), "lifecycle" | "title" | "body"))
+        {
             return fail(
                 CMD,
                 "malformed_fact",
@@ -727,11 +754,17 @@ impl AppError {
 
     fn from_io(err: io::Error) -> Self {
         match err.kind() {
-            io::ErrorKind::NotFound => Self::code("path_not_found", "The selected path was not found."),
-            io::ErrorKind::PermissionDenied => {
-                Self::code("permission_denied", "Permission was denied for the selected path.")
+            io::ErrorKind::NotFound => {
+                Self::code("path_not_found", "The selected path was not found.")
             }
-            _ => Self::code("io_error", "The command failed because of a safe I/O error."),
+            io::ErrorKind::PermissionDenied => Self::code(
+                "permission_denied",
+                "Permission was denied for the selected path.",
+            ),
+            _ => Self::code(
+                "io_error",
+                "The command failed because of a safe I/O error.",
+            ),
         }
     }
 
@@ -1048,7 +1081,12 @@ fn infer_project_type(items: &[WalkItem]) -> &'static str {
     }
 }
 
-fn commit_initialize(root: &Path, manifest: &Value, event: &Value, event_id: &str) -> Result<(), AppError> {
+fn commit_initialize(
+    root: &Path,
+    manifest: &Value,
+    event: &Value,
+    event_id: &str,
+) -> Result<(), AppError> {
     if let Err(err) = reject_agentup_symlink(root) {
         return Err(err);
     }
@@ -1104,7 +1142,12 @@ fn commit_initialize(root: &Path, manifest: &Value, event: &Value, event_id: &st
     Ok(())
 }
 
-fn persist_request(root: &Path, request_id: &str, fact: &Value, event: &Value) -> Result<(), AppError> {
+fn persist_request(
+    root: &Path,
+    request_id: &str,
+    fact: &Value,
+    event: &Value,
+) -> Result<(), AppError> {
     reject_agentup_symlink(root)?;
     let agentup = agentup_dir(root);
     if !agentup.is_dir() {
@@ -1220,7 +1263,10 @@ fn validate_manifest(manifest: &Value) -> Result<(), AppError> {
     let revision_ok = manifest["revision"] == 1;
     let source_ok = manifest["source"] == "system";
     let id_ok = manifest["id"].as_str().map(valid_id).unwrap_or(false);
-    let project_ok = manifest["project_id"].as_str().map(valid_id).unwrap_or(false);
+    let project_ok = manifest["project_id"]
+        .as_str()
+        .map(valid_id)
+        .unwrap_or(false);
     let content = &manifest["content"];
     let content_ok = content["format_version"] == 1
         && content["revision"] == 1
@@ -1381,7 +1427,9 @@ fn valid_id(value: &str) -> bool {
 fn valid_fingerprint(value: &str) -> bool {
     value.len() == 22
         && value.starts_with("fp-v1:")
-        && value[6..].chars().all(|ch| matches!(ch, '0'..='9' | 'a'..='f'))
+        && value[6..]
+            .chars()
+            .all(|ch| matches!(ch, '0'..='9' | 'a'..='f'))
 }
 
 fn sha256_hex(bytes: &[u8]) -> String {
@@ -1407,5 +1455,6 @@ fn known_command(name: &str) -> bool {
 }
 
 include!("typed_facts.rs");
+include!("discussion.rs");
 include!("projection.rs");
 include!("project_index.rs");
