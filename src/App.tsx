@@ -69,7 +69,7 @@ export default function App() {
 
   return (
     <main>
-      <h1>AgentUp M0</h1>
+      <h1>AgentUp</h1>
       <p>Select a project directory, preview with zero writes, confirm initialization, then create a draft request.</p>
       <label htmlFor="project-path">Project directory</label>
       <input
@@ -134,6 +134,20 @@ export default function App() {
       >
         create_request
       </button>
+      <div className="row">
+        <button type="button" onClick={() => void invoke("post_discussion", { projectId, requestId, body })}>
+          post_discussion
+        </button>
+        <button type="button" onClick={() => void invoke("load_board", { projectId, requestId })}>
+          load_board
+        </button>
+        <button type="button" onClick={() => void invoke("load_result_history", { projectId, requestId })}>
+          load_result_history
+        </button>
+        <button type="button" onClick={() => void invoke("export_diagnostics", { projectId })}>
+          export_diagnostics
+        </button>
+      </div>
       <h2>Result</h2>
       <pre>{output}</pre>
       <h2>Events</h2>

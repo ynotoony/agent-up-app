@@ -448,6 +448,14 @@ fn load_result_history(project_id: String, request_id: String, app: AppHandle, s
     result
 }
 
+#[tauri::command(rename_all = "snake_case")]
+fn export_diagnostics(project_id: String, app: AppHandle, state: State<'_, Mutex<Runtime>>) -> Value {
+    let mut runtime = state.lock().expect("runtime mutex");
+    let result = runtime.export_diagnostics(&project_id);
+    emit_notifications(&app, &mut runtime);
+    result
+}
+
 pub fn run() {
     tauri::Builder::default()
         .setup(|app| {
@@ -485,7 +493,8 @@ pub fn run() {
             accept_result,
             reject_result,
             submit_feedback,
-            load_result_history
+            load_result_history,
+            export_diagnostics
         ])
         .run(tauri::generate_context!())
         .expect("error while running AgentUp");

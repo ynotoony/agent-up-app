@@ -771,6 +771,25 @@
       ],
       "capability": "project_read",
       "emits": []
+    },
+    {
+      "name": "export_diagnostics",
+      "input_required": [
+        "project_id"
+      ],
+      "output_required": [
+        "diagnostic_id",
+        "relative_path"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
     }
   ]
 }

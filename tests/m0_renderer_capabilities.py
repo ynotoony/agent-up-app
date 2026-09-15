@@ -66,6 +66,7 @@ for command in [
     "reject_result",
     "submit_feedback",
     "load_result_history",
+    "export_diagnostics",
 ]:
     if command not in permissions:
         violations.append(f"missing command allow {command}")

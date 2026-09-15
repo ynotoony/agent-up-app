@@ -44,7 +44,8 @@
         "accept_result",
         "reject_result",
         "submit_feedback",
-        "load_result_history"
+        "load_result_history",
+        "export_diagnostics"
       ]
     },
     "error": {

@@ -44,7 +44,8 @@
         "accept_result",
         "reject_result",
         "submit_feedback",
-        "load_result_history"
+        "load_result_history",
+        "export_diagnostics"
       ]
     },
     "data": {
@@ -1935,6 +1936,38 @@
               },
               "results": {
                 "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "export_diagnostics"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "diagnostic_id",
+              "relative_path"
+            ],
+            "properties": {
+              "diagnostic_id": {
+                "type": "string"
+              },
+              "relative_path": {
+                "type": "string"
               }
             }
           }

@@ -8,7 +8,7 @@ use rusqlite::{params, Connection};
 use serde_json::{json, Map, Value};
 use sha2::{Digest, Sha256};
 
-const COMMANDS: [&str; 30] = [
+const COMMANDS: [&str; 31] = [
     "scan_project",
     "preview_initialize",
     "initialize_project",
@@ -39,6 +39,7 @@ const COMMANDS: [&str; 30] = [
     "reject_result",
     "submit_feedback",
     "load_result_history",
+    "export_diagnostics",
 ];
 const MAX_SCAN_FILES: usize = 50_000;
 const ID_PATTERN_MAX: usize = 200;
@@ -1476,5 +1477,6 @@ include!("discussion.rs");
 include!("scope_task.rs");
 include!("agent_run.rs");
 include!("results.rs");
+include!("diagnostics.rs");
 include!("projection.rs");
 include!("project_index.rs");

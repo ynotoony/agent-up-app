@@ -14,9 +14,13 @@
 
 **Blocked by:** W6 done；SPEC-011 approved。
 
-**Status:** ready
+**Status:** review_ready
 
-- [ ] S1–S3 E2E
-- [ ] export_diagnostics 脱敏
-- [ ] bundle.active true 且无 updater
-- [ ] 隐私与手动更新说明
+- [x] S1–S3 E2E
+- [x] export_diagnostics 脱敏
+- [x] bundle.active true 且无 updater
+- [x] 隐私与手动更新说明
+
+## Implementation Checkpoint
+
+**2026-09-15 / review_ready**：S1–S3 E2E、export_diagnostics、bundle.active、无 updater。未 push、不自审。
