@@ -116,3 +116,8 @@
 
 - **范围**：M0-03 独立 Review pass；实现提交到分支 `codex/m0-03-runtime`（一事一提交）。未 push，未拆 M1 空目录。
 - **状态**：M0-03 `TaskState: done`；EXEC-001 W0 退出条件达到，W1 票待拆。
+
+## 2026-09-15 - 提出 SPEC-003 并拆 W1 票
+
+- **Artifact Plan（ApprovalState: approved）**：用户目标为完成 EXEC-001；W0 已 done，命中触发矩阵需要新规格与 ≥2 张票。创建 `docs/specs/003-m1-fact-layer.md`（proposed）、`docs/issues/04-m1-fact-types.md`、`docs/issues/05-m1-sqlite-projection.md`。
+- **范围**：不实现 writer，不建 SQLite，不预建 `.agentup` 子目录。

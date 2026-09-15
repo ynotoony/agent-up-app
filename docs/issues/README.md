@@ -42,4 +42,6 @@
 | `README.md` | 层索引 | 说明任务票规则、切片和依赖。 |
 | `01-m0-foundation.md` | 任务票 | M0-01 状态与事实合同；已完成。 |
 | `02-m0-runtime-contract.md` | 任务票 | M0-02 Schema、API、capabilities 和威胁模型；已完成。 |
-| `03-m0-runtime.md` | 任务票 | M0-03 五命令恢复切片与威胁外部行为测试；review_ready。 |
+| `03-m0-runtime.md` | 任务票 | M0-03 五命令恢复切片；done。 |
+| `04-m1-fact-types.md` | 任务票 | M1-01 八类事实 schema 与读写测试；blocked on SPEC-003。 |
+| `05-m1-sqlite-projection.md` | 任务票 | M1-02 SQLite 投影重建；blocked on M1-01。 |

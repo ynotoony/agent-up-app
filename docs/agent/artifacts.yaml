@@ -405,6 +405,50 @@ artifacts:
     platform: neutral
     update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
 
+
+  - id: spec-003-m1-fact-layer
+    path: docs/specs/003-m1-fact-layer.md
+    kind: spec
+    authority: 权威层级第 3 级（规格与接口合同）
+    owner: Coordinator（主 agent）
+    lifecycle: Conditional
+    status: generated
+    trigger: M0-03 done；EXEC-001 W1 需要其余事实类型合同
+    read_when: 实施 M1 writer/reader 或 SQLite 投影时
+    sync_on: 契约、行为
+    depends_on: [specs-readme, spec-001-m0-foundation, spec-002-m0-runtime-contract]
+    generated_from: EXEC-001 W1 与开发计划 §3 事实类型
+    platform: neutral
+    update_policy: "ApprovalState: proposed；用户批准后驱动 M1-01"
+  - id: issue-04-m1-fact-types
+    path: docs/issues/04-m1-fact-types.md
+    kind: task
+    authority: 权威层级第 3 级（任务合同）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: SPEC-003 提出；需要独立任务合同
+    read_when: 领取或恢复 M1-01 时
+    sync_on: 拓扑、行为
+    depends_on: [issues-readme, spec-003-m1-fact-layer, progress]
+    generated_from: EXEC-001 W1 拆票
+    platform: neutral
+    update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
+  - id: issue-05-m1-sqlite-projection
+    path: docs/issues/05-m1-sqlite-projection.md
+    kind: task
+    authority: 权威层级第 3 级（任务合同）
+    owner: Coordinator（主 agent）或按授权的 Implementation 执行体
+    lifecycle: Conditional
+    status: generated
+    trigger: W1 需要 SQLite 投影重建票；Blocked by M1-01
+    read_when: 领取或恢复 M1-02 时
+    sync_on: 拓扑、行为
+    depends_on: [issues-readme, spec-003-m1-fact-layer, issue-04-m1-fact-types, progress]
+    generated_from: EXEC-001 W1 拆票
+    platform: neutral
+    update_policy: 状态机更新；Checkpoint 只追加，不覆盖历史事实
+
   - id: agent-readme
     path: docs/agent/README.md
     kind: index

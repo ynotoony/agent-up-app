@@ -9,7 +9,10 @@
 | AgentUp Tauri 2 初始化 | done | 2026-09-14；治理骨架、根 Git、`.gitignore`、登记和静态校验通过；见本次提交 | M0：形成 schema、状态机、Tauri command/event 草案 |
 | M0-01 状态与事实合同 | done | 2026-09-14；见 `docs/issues/01-m0-foundation.md` 与 `docs/specs/001-m0-foundation.md`；diff/YAML/重复状态扫描通过 | M0-02：JSON Schema、API 产物、capabilities 与威胁模型 |
 | M0-02 Runtime 合同 | done | 2026-09-15；Independent Review pass 后用户回复「继续」批准 `SPEC-002`；见 `docs/issues/02-m0-runtime-contract.md` | M0-03 runtime 恢复切片 |
-| EXEC-001 首版执行计划 | approved | 2026-09-15；见 `docs/execution-plan.md` | W0 完成后拆 W1 事实层票 |
+| EXEC-001 首版执行计划 | approved | 2026-09-15；见 `docs/execution-plan.md` | W1：批准 SPEC-003 后领取 M1-01 |
 | M0-03 Runtime 恢复切片 | done | 2026-09-15；独立 Review pass；实现在 `codex/m0-03-runtime` | W1：事实层 type-specific schema 与 writer/reader |
+| SPEC-003 M1 事实层合同 | proposed | 2026-09-15；`docs/specs/003-m1-fact-layer.md` | 用户批准后 M1-01 可领取 |
+| M1-01 事实类型落地 | blocked | 票 `docs/issues/04-m1-fact-types.md` | 等待 SPEC-003 批准 |
+| M1-02 SQLite 投影 | blocked | 票 `docs/issues/05-m1-sqlite-projection.md` | 等待 M1-01 done |
 
 状态取值：完整 `TaskState` 为 `ready / in_progress / blocked / review_ready / review_pass / review_fail / done`；本表可展示其中摘要，但明细与 Review 状态必须写任务票 Checkpoint。
