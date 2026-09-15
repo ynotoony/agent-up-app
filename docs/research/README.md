@@ -17,7 +17,7 @@
 | 名字 | 地位 | 功能 |
 | --- | --- | --- |
 | `README.md` | 层索引 | 归档规则与报告模板。 |
-| `<YYYY-MM>-<slug>.md` | 调研报告 | 一项调研的证据与结论。 |
+| `2026-09-retro-skill.md` | 调研报告 | `mattpocock/skills` 的 retro skill 评估；暂不实施。 |
 
 ## 报告模板
 

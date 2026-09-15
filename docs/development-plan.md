@@ -134,22 +134,7 @@ Tauri 2 Rust runtime
 
 ### 3.2 记录通用字段
 
-所有事实记录必须包含：
-
-```json
-{
-  "id": "stable-id",
-  "project_id": "project-id",
-  "request_id": "request-id",
-  "revision": 1,
-  "status": "current-status",
-  "source": "user|agent|system|tool",
-  "created_at": "ISO-8601",
-  "updated_at": "ISO-8601",
-  "content": {},
-  "metadata": {}
-}
-```
+当前批准的事实 envelope、状态命名空间、revision 和原子写入规则见 [`SPEC-001`](./specs/001-m0-foundation.md)。本计划不重复字段结构，避免与 schema 和规格产生第二套定义。
 
 ### 3.3 事实类型
 
@@ -162,7 +147,7 @@ Tauri 2 Rust runtime
 - `decision`：问题、选项、推荐理由、用户选择和影响。
 - `result`：不可变交付版本、预览、证据和验收状态。
 - `attachment`：图片元数据和项目内相对路径。
-- `event`：不可变的追加事件。
+- `event`：独立于事实 record envelope 的不可变追加记录，其合同见 `SPEC-001`。
 
 ### 3.4 版本规则
 
@@ -262,24 +247,7 @@ Tauri 2 Rust runtime
 
 ### 7.1 状态机
 
-实现状态：
-
-```text
-draft
-→ understanding
-→ discussion
-→ waiting_user_decision / waiting_info
-→ planning
-→ executing
-→ reviewing
-→ fixing
-→ result_ready
-→ accepted
-```
-
-旁路状态：`failed`、`paused`、`cancelled`、`rejected`。
-
-禁止用户直接设置状态；所有状态变化必须来自 use-case 和事件。
+唯一的用户可见需求生命周期是 `RequestLifecycle`，当前批准的状态、转换边界和与 `TaskState`/`Phase` 的映射见 [`docs/specs/001-m0-foundation.md`](./specs/001-m0-foundation.md)。本计划不再维护第二套状态机。用户不能直接设置状态；所有状态变化必须来自 use-case 和事件。
 
 ### 7.2 自动拆分
 

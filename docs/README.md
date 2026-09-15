@@ -16,8 +16,9 @@
 
 | 名字 | 地位 | 功能 |
 | --- | --- | --- |
-| `development-process.md` | 流程权威 | 读取阶梯、三阶段门禁、恢复和提交协议。 |
-| `development-plan.md` | 开发计划 | 产品、事实层、runtime、测试和发布计划。 |
+| `development-process.md` | 流程权威 | 读取阶梯、风险分级门禁、恢复和提交协议。 |
+| `development-plan.md` | 开发计划 | 产品、事实层、runtime、测试和发布计划（待确认）。 |
+| `execution-plan.md` | 执行计划 | 首版波次、场景脚本和预算默认值；`ApprovalState: approved`。 |
 | `CONTEXT.md` | 领域上下文 | 用户、Agent、任务、讨论、范围和结果术语。 |
 | `progress.md` | 当前记录 | 里程碑状态和可验证检查点。 |
 | `changes.md` | 追加记录 | 需求和治理变更审计。 |

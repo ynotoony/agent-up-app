@@ -22,4 +22,9 @@ AgentUp 是一个基于 Tauri 2 的本地 Agent 工作台。生产 App 从仓库
 | `AGENTS.md` | 路由入口 | 指向唯一开发流程和项目边界。 |
 | `.gitignore` | 仓库配置 | 忽略原型、依赖、构建产物和本地敏感数据。 |
 | `docs/` | 治理文档 | 保存开发流程、计划、规格和记录。 |
+| `schemas/` | 机器契约 | 保存事实记录和 runtime 事件的 JSON Schema。 |
+| `src/` | renderer | Vite/React 界面；只能 typed invoke 五个 command。 |
+| `src-tauri/` | runtime | Tauri 2 runtime、五条 command 与最小 capabilities。 |
+| `tests/` | 验证 | schema 解析与 renderer capability 静态检查。 |
+| `package.json` | 前端清单 | renderer 依赖与脚本；不包含 fs/shell 插件。 |
 | `properties/` | 未跟踪参考 | React 原型、截图和设计压缩包；不进 Git。 |

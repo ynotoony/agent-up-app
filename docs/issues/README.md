@@ -34,3 +34,12 @@
 ```
 
 不写具体文件路径和代码片段（它们过期最快；原型片段例外规则见 [`../specs/README.md`](../specs/README.md)）。票内 Checkpoint 区追加记录：最后检查点、已修改范围、验证命令与结果（失败也记录）、下一步。
+
+## 目录清单
+
+| 名字 | 地位 | 功能 |
+| --- | --- | --- |
+| `README.md` | 层索引 | 说明任务票规则、切片和依赖。 |
+| `01-m0-foundation.md` | 任务票 | M0-01 状态与事实合同；已完成。 |
+| `02-m0-runtime-contract.md` | 任务票 | M0-02 Schema、API、capabilities 和威胁模型；已完成。 |
+| `03-m0-runtime.md` | 任务票 | M0-03 五命令恢复切片与威胁外部行为测试；review_ready。 |

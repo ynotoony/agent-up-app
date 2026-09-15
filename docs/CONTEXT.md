@@ -11,7 +11,7 @@
 
 **用户**：提出需求、评论、做关键决定、暂停或继续任务、反馈和接受结果。_Avoid:_ 直接编辑事实文件。
 
-**主 Agent**：理解需求、质疑范围、拆分任务、整合结果并向用户汇报。_Avoid:_ 执行者、审查者。
+**主 Agent**：理解需求、质疑范围、拆分任务、整合结果并向用户汇报；在 C0/C1 低风险范围内可以直接实施。_Avoid:_ 自己审查自己的实现。
 
 **执行 Agent**：按已确认范围实施任务。_Avoid:_ 主 Agent、审查 Agent。
 
@@ -29,9 +29,7 @@
 
 ## 状态
 
-需求主路径：`draft → understanding → discussion → planning → executing → reviewing → fixing → result_ready → accepted`。
-
-旁路状态：`waiting_user_decision`、`waiting_info`、`failed`、`paused`、`cancelled`、`rejected`。
+**需求生命周期**：需求从提出、讨论、执行到验收的用户可见生命周期；当前批准的状态和值域与转换见 [`SPEC-001`](./specs/001-m0-foundation.md)，本文件不重复维护状态机。
 
 Review 失败禁止 Commit；用户接受不能由系统自动推断。
 

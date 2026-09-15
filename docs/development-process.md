@@ -398,7 +398,7 @@ Session（agent_session）是单次会话的易失上下文，随时可能中断
 | `ApprovalState` | `draft` / `proposed` / `approved` | 审批状态，与 TaskState 分开；approved 由可追溯用户明确指令产生 |
 | `Phase` | `coordination` / `intake` / `triage` / `implementation` / `review` / `commit` | 工作阶段，不是产品领域状态 |
 
-产品计划可定义自己的领域生命周期状态；产品状态不与上述交付状态混用。`ApprovalState: draft` 表示未定稿草案，`proposed` 表示已提交用户审阅，`approved` 表示用户在明确范围内作出的可追溯确认；草案不得覆盖当前 approved 规范，后续会话沿用仍在范围内的 approved 指令。
+产品领域生命周期使用 `RequestLifecycle`，当前值域与转换由批准规格 [`SPEC-001`](./specs/001-m0-foundation.md) 定义；它不与上述交付状态混用。`ApprovalState: draft` 表示未定稿草案，`proposed` 表示已提交用户审阅，`approved` 表示用户在明确范围内作出的可追溯确认；草案不得覆盖当前 approved 规范，后续会话沿用仍在范围内的 approved 指令。
 
 #### R-DP-012 状态模型取值固定 `MUST`
 

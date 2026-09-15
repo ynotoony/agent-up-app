@@ -16,11 +16,12 @@
 | 名字 | 地位 | 功能 |
 | --- | --- | --- |
 | `README.md` | 层索引 | 写作规则、状态机与规格模板。 |
-| `<NN>-<slug>.md` | 规格 | 一条已确认需求；新建时复制下方模板。 |
+| `001-m0-foundation.md` | 规格 | M0 状态、事实、事件和 command 合同；已批准。 |
+| `002-m0-runtime-contract.md` | 规格 | M0 command/event、capabilities、威胁模型和 schema 引用；已批准。 |
 
 ## 状态机
 
-`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。
+`draft → proposed → approved → superseded`。`draft`/`proposed` 可供审阅并落盘；只有 `approved` 规格可驱动实施。被取代的规格在文件头标注取代者编号，不删除。当前 `001-m0-foundation.md` 与 `002-m0-runtime-contract.md` 的 `ApprovalState` 均为 `approved`。
 
 ## 写作规则（两条硬规则）
 
