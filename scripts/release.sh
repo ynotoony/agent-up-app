@@ -92,10 +92,20 @@ fi
 [ "$SKIP_PUBLISH" -eq 1 ] || say "$TAG 无冲突"
 
 say "5/7 构建（.app ＋ .dmg）"
-pnpm dist >"$DIST_LOG" 2>&1 || { tail -20 "$DIST_LOG" >&2; die "构建失败"; }
-DMG=$(ls -t src-tauri/target/release/bundle/dmg/*"$VERSION"*.dmg 2>/dev/null | head -1 || true)
-[ -n "$DMG" ] || { tail -20 "$DIST_LOG" >&2; die "未找到文件名含 $VERSION 的 DMG 产物——确认 tauri.conf.json bundle targets 含 dmg"; }
-say "构建完成：$(basename "$DMG")（$(du -h "$DMG" | cut -f1)）"
+if ! pnpm exec tauri build --bundles app >"$DIST_LOG" 2>&1; then
+  tail -20 "$DIST_LOG" >&2; die "构建失败"
+fi
+DMG=""
+for ATTEMPT in 1 2 3; do
+  if pnpm exec tauri build --bundles dmg >>"$DIST_LOG" 2>&1; then
+    DMG=$(ls -t src-tauri/target/release/bundle/dmg/*"$VERSION"*.dmg 2>/dev/null | head -1 || true)
+    [ -n "$DMG" ] && break
+  fi
+  say "  第 ${ATTEMPT} 次 DMG 打包未成功（bundle_dmg.sh 的 Finder AppleScript 存在挂载竞态），5 秒后重试…"
+  sleep 5
+done
+[ -n "$DMG" ] || { tail -20 "$DIST_LOG" >&2; die "DMG 打包连续 3 次失败——稍后系统空闲时单独执行 pnpm exec tauri build --bundles dmg，成功后再跑本脚本（tag/Release 段未开始，无半成品）"; }
+say "构建完成：$(basename "${DMG}")（$(du -h "${DMG}" | cut -f1)）"
 
 say "6/7 DMG 挂载验证"
 MNT=$(mktemp -d "${TMPDIR:-/tmp}/agentup-mnt.XXXXXX")
