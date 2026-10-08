@@ -1,0 +1,1210 @@
+{
+  "schema_version": 1,
+  "commands": [
+    {
+      "name": "scan_project",
+      "input_required": [
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "project_name",
+        "project_type",
+        "documents",
+        "agentup_state",
+        "root_fingerprint"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "permission_denied",
+        "path_outside_project",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": [
+        "project.scan_completed"
+      ]
+    },
+    {
+      "name": "preview_initialize",
+      "input_required": [
+        "project_id",
+        "project_path",
+        "expected_root_fingerprint"
+      ],
+      "output_required": [
+        "project_id",
+        "planned_paths",
+        "root_fingerprint",
+        "confirmation_token",
+        "requires_confirmation"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "permission_denied",
+        "path_outside_project",
+        "already_initialized",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "initialize_project",
+      "input_required": [
+        "project_id",
+        "project_path",
+        "confirmation_token",
+        "expected_root_fingerprint"
+      ],
+      "output_required": [
+        "project_id",
+        "manifest",
+        "initialized_at",
+        "initialization_event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "confirmation_required",
+        "confirmation_expired",
+        "path_outside_project",
+        "already_initialized",
+        "permission_denied",
+        "io_error",
+        "malformed_event"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "project.initialized"
+      ]
+    },
+    {
+      "name": "create_request",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "content",
+        "metadata",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "already_exists",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "request.created"
+      ]
+    },
+    {
+      "name": "load_project",
+      "input_required": [
+        "project_path"
+      ],
+      "output_required": [
+        "manifest",
+        "facts",
+        "events",
+        "requests",
+        "damaged",
+        "damaged_events",
+        "project_id"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "not_initialized",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": [
+        "request.rehydrated"
+      ]
+    },
+    {
+      "name": "list_projects",
+      "input_required": [],
+      "output_required": [
+        "projects"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "register_project",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "project_path",
+        "registered_at",
+        "path_state"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "rebind_project",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "project_path",
+        "path_state"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "not_initialized",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "remove_agentup",
+      "input_required": [
+        "project_id",
+        "project_path",
+        "confirmation_token"
+      ],
+      "output_required": [
+        "project_id",
+        "mode",
+        "backup_relative_path",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "confirmation_required",
+        "confirmation_expired",
+        "path_outside_project",
+        "not_initialized",
+        "already_exists",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "preview_remove_agentup",
+      "input_required": [
+        "project_id",
+        "project_path"
+      ],
+      "output_required": [
+        "project_id",
+        "confirmation_token",
+        "requires_confirmation",
+        "planned_paths",
+        "counts"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "not_initialized",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "post_discussion",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "body"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "discussion.posted"
+      ]
+    },
+    {
+      "name": "add_attachment",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "media_type",
+        "bytes"
+      ],
+      "output_required": [
+        "fact",
+        "relative_path",
+        "byte_length",
+        "sha256"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "already_exists",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "load_request_thread",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "discussions",
+        "attachments",
+        "total_discussions",
+        "limit",
+        "offset",
+        "has_more"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "put_scope",
+      "input_required": [
+        "project_id",
+        "scope_id",
+        "request_id",
+        "task_id",
+        "entries",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "scope.updated"
+      ]
+    },
+    {
+      "name": "diff_scope",
+      "input_required": [
+        "scope_id",
+        "from_revision",
+        "to_revision"
+      ],
+      "output_required": [
+        "scope_id",
+        "from_revision",
+        "to_revision",
+        "added",
+        "removed",
+        "changed"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "put_task",
+      "input_required": [
+        "project_id",
+        "task_id",
+        "request_id",
+        "title",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "set_task_state",
+      "input_required": [
+        "task_id",
+        "task_state",
+        "expected_revision"
+      ],
+      "output_required": [
+        "fact",
+        "event",
+        "event_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "load_board",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "tasks"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "set_agent_recording",
+      "input_required": [
+        "recording"
+      ],
+      "output_required": [
+        "records",
+        "provider",
+        "model"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "malformed_fact"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "start_implement",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "task_id"
+      ],
+      "output_required": [
+        "run",
+        "run_id",
+        "output",
+        "applied"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "invalid_output",
+        "provider_error",
+        "provider_unavailable",
+        "timeout",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "start_review",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "task_id",
+        "implement_run_id"
+      ],
+      "output_required": [
+        "run",
+        "run_id",
+        "verdict",
+        "task_state"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "invalid_output",
+        "provider_error",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "commit_agent_task",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "task_id",
+        "implement_run_id",
+        "expected_revision"
+      ],
+      "output_required": [
+        "task_id",
+        "task_state",
+        "review_run_id",
+        "implement_run_id"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "publish_result",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "summary"
+      ],
+      "output_required": [
+        "result",
+        "event",
+        "result_id",
+        "version"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "result.published"
+      ]
+    },
+    {
+      "name": "load_results",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "results"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "accept_result",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "result_id",
+        "verdict"
+      ],
+      "output_required": [
+        "decision",
+        "decision_id",
+        "result_id",
+        "verdict"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "submit_result_feedback",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "result_id",
+        "body"
+      ],
+      "output_required": [
+        "discussion",
+        "task",
+        "task_id",
+        "round"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "discussion.posted",
+        "task.state_changed"
+      ]
+    },
+    {
+      "name": "compare_results",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "from_version",
+        "to_version"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "from",
+        "to",
+        "summary_changed"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "read_attachment",
+      "input_required": [
+        "project_id",
+        "attachment_id"
+      ],
+      "output_required": [
+        "attachment_id",
+        "media_type",
+        "byte_length",
+        "sha256",
+        "bytes"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_not_found",
+        "permission_denied",
+        "malformed_fact",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "read_attachment_thumbnail",
+      "input_required": [
+        "project_id",
+        "attachment_id"
+      ],
+      "output_required": [
+        "attachment_id",
+        "media_type",
+        "byte_length",
+        "sha256",
+        "width",
+        "height",
+        "source_sha256",
+        "bytes"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_not_found",
+        "permission_denied",
+        "malformed_fact",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "load_decisions",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "decisions",
+        "open_count"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "search_requests",
+      "input_required": [
+        "project_id",
+        "query"
+      ],
+      "output_required": [
+        "project_id",
+        "query",
+        "matches",
+        "total",
+        "limit"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "read_logs",
+      "input_required": [],
+      "output_required": [
+        "entries",
+        "total",
+        "limit"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "decide",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "decision_id",
+        "chosen"
+      ],
+      "output_required": [
+        "decision",
+        "decision_id",
+        "chosen",
+        "revision"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "revision_conflict",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "put_understanding",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "content",
+        "expected_revision"
+      ],
+      "output_required": [
+        "understanding",
+        "understanding_id",
+        "version",
+        "event",
+        "request",
+        "request_revision",
+        "request_event_id",
+        "lifecycle"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "understanding.published",
+        "request.lifecycle_changed"
+      ]
+    },
+    {
+      "name": "confirm_understanding",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "understanding_id",
+        "expected_revision"
+      ],
+      "output_required": [
+        "decision",
+        "decision_id",
+        "understanding_id",
+        "version",
+        "decision_event",
+        "request",
+        "request_revision",
+        "request_event_id",
+        "lifecycle"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "revision_conflict",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "decision.recorded",
+        "request.lifecycle_changed"
+      ]
+    },
+    {
+      "name": "load_understandings",
+      "input_required": [
+        "project_id",
+        "request_id"
+      ],
+      "output_required": [
+        "project_id",
+        "request_id",
+        "understandings",
+        "current_version"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "malformed_fact",
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "discover_agents",
+      "input_required": [],
+      "output_required": [
+        "agents",
+        "discovered"
+      ],
+      "side_effect": "app_config_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_write",
+      "emits": []
+    },
+    {
+      "name": "list_agents",
+      "input_required": [],
+      "output_required": [
+        "agents"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_read",
+      "emits": []
+    },
+    {
+      "name": "upsert_agent",
+      "input_required": [
+        "agent"
+      ],
+      "output_required": [
+        "agent"
+      ],
+      "side_effect": "app_config_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_write",
+      "emits": []
+    },
+    {
+      "name": "remove_agent",
+      "input_required": [
+        "agent_key"
+      ],
+      "output_required": [
+        "agent_key"
+      ],
+      "side_effect": "app_config_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_write",
+      "emits": []
+    },
+    {
+      "name": "get_agent_settings",
+      "input_required": [],
+      "output_required": [
+        "settings"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_read",
+      "emits": []
+    },
+    {
+      "name": "put_agent_settings",
+      "input_required": [
+        "settings"
+      ],
+      "output_required": [
+        "settings"
+      ],
+      "side_effect": "app_config_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "io_error"
+      ],
+      "capability": "app_config_write",
+      "emits": []
+    },
+    {
+      "name": "load_workspace",
+      "input_required": [],
+      "output_required": [
+        "needs_attention",
+        "in_progress",
+        "recently_completed",
+        "counts",
+        "damaged_projects"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "permission_denied",
+        "io_error"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "load_governance_tickets",
+      "input_required": [
+        "project_id"
+      ],
+      "output_required": [
+        "project_id",
+        "source",
+        "tickets",
+        "total",
+        "unknown_statuses"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "project_not_bound",
+        "governance_index_missing",
+        "read_failed",
+        "malformed_json",
+        "permission_denied"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "import_run",
+      "input_required": [
+        "project_id",
+        "request_id",
+        "record"
+      ],
+      "output_required": [
+        "fact",
+        "existing"
+      ],
+      "side_effect": "project_agentup_write",
+      "errors": [
+        "invalid_input",
+        "not_initialized",
+        "path_outside_project",
+        "malformed_fact",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    },
+    {
+      "name": "open_ticket_agent",
+      "input_required": [
+        "project_id",
+        "ticket_id"
+      ],
+      "output_required": [
+        "project_id",
+        "ticket_id",
+        "brief_path",
+        "terminal"
+      ],
+      "side_effect": "external",
+      "errors": [
+        "invalid_input",
+        "project_not_bound",
+        "not_initialized",
+        "malformed_fact",
+        "path_outside_project",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "agent.session_opened"
+      ]
+    },
+    {
+      "name": "assess_governance",
+      "input_required": [
+        "project_id"
+      ],
+      "output_required": [
+        "project_id",
+        "repo_class",
+        "has_git",
+        "missing_seeds"
+      ],
+      "side_effect": "none",
+      "errors": [
+        "invalid_input",
+        "project_not_bound"
+      ],
+      "capability": "project_read",
+      "emits": []
+    },
+    {
+      "name": "install_governance_files",
+      "input_required": [
+        "project_id",
+        "answers",
+        "planned_paths",
+        "expected_root_fingerprint"
+      ],
+      "output_required": [
+        "project_id",
+        "installed"
+      ],
+      "side_effect": "external",
+      "errors": [
+        "invalid_input",
+        "project_not_bound",
+        "confirmation_required",
+        "confirmation_expired",
+        "already_exists",
+        "path_outside_project",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": [
+        "governance.installed"
+      ]
+    },
+    {
+      "name": "init_empty_repo",
+      "input_required": [
+        "project_id"
+      ],
+      "output_required": [
+        "project_id",
+        "git_initialized"
+      ],
+      "side_effect": "external",
+      "errors": [
+        "invalid_input",
+        "project_not_bound",
+        "already_exists",
+        "io_error"
+      ],
+      "capability": "project_agentup_write",
+      "emits": []
+    }
+  ]
+}

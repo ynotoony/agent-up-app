@@ -1,0 +1,2481 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:command-result",
+  "title": "AgentUp Command Success Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "data"
+  ],
+  "properties": {
+    "ok": {
+      "const": true
+    },
+    "command": {
+      "enum": [
+        "scan_project",
+        "preview_initialize",
+        "initialize_project",
+        "create_request",
+        "load_project",
+        "list_projects",
+        "register_project",
+        "rebind_project",
+        "remove_agentup",
+        "preview_remove_agentup",
+        "post_discussion",
+        "add_attachment",
+        "load_request_thread",
+        "put_scope",
+        "diff_scope",
+        "put_task",
+        "set_task_state",
+        "load_board",
+        "set_agent_recording",
+        "start_implement",
+        "start_review",
+        "commit_agent_task",
+        "publish_result",
+        "load_results",
+        "accept_result",
+        "submit_result_feedback",
+        "compare_results",
+        "read_attachment",
+        "read_attachment_thumbnail",
+        "load_decisions",
+        "search_requests",
+        "read_logs",
+        "decide",
+        "put_understanding",
+        "confirm_understanding",
+        "load_understandings",
+        "discover_agents",
+        "list_agents",
+        "upsert_agent",
+        "remove_agent",
+        "get_agent_settings",
+        "put_agent_settings",
+        "load_workspace",
+        "import_run",
+        "load_governance_tickets",
+        "open_ticket_agent",
+        "assess_governance",
+        "install_governance_files",
+        "init_empty_repo"
+      ]
+    },
+    "data": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "scan_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_name",
+              "project_type",
+              "documents",
+              "agentup_state",
+              "root_fingerprint",
+              "scan"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "project_type": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "documents": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "relative_path",
+                    "document_type"
+                  ],
+                  "properties": {
+                    "relative_path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "document_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 100
+                    }
+                  }
+                }
+              },
+              "agentup_state": {
+                "enum": [
+                  "absent",
+                  "present",
+                  "invalid"
+                ]
+              },
+              "root_fingerprint": {
+                "$ref": "#/$defs/fp"
+              },
+              "scan": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "files",
+                  "truncated",
+                  "skip_reason",
+                  "walk_ms",
+                  "fingerprint_ms",
+                  "elapsed_ms",
+                  "target_ms"
+                ],
+                "properties": {
+                  "files": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "truncated": {
+                    "type": "boolean"
+                  },
+                  "skip_reason": {
+                    "enum": [
+                      null,
+                      "file_limit",
+                      "time_limit"
+                    ]
+                  },
+                  "elapsed_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "walk_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "fingerprint_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "target_ms": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "preview_initialize"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "planned_paths",
+              "root_fingerprint",
+              "confirmation_token",
+              "requires_confirmation"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "planned_paths": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "$ref": "#/$defs/relative-path"
+                }
+              },
+              "root_fingerprint": {
+                "$ref": "#/$defs/fp"
+              },
+              "confirmation_token": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2000
+              },
+              "requires_confirmation": {
+                "const": true
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "initialize_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "manifest",
+              "initialized_at",
+              "initialization_event_id"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "manifest": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "project_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "manifest"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "project_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "initialized_at": {
+                "$ref": "#/$defs/time"
+              },
+              "initialization_event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "create_request"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "request"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "request.created"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "manifest",
+              "facts",
+              "events",
+              "requests",
+              "damaged",
+              "damaged_events",
+              "project_id"
+            ],
+            "properties": {
+              "manifest": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "project_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "manifest"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "project_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "facts": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "events": {
+                "type": "array",
+                "items": {
+                  "type": "object"
+                }
+              },
+              "requests": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "request_id",
+                    "revision",
+                    "lifecycle"
+                  ],
+                  "properties": {
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "lifecycle": {
+                      "enum": [
+                        "draft",
+                        "understanding",
+                        "discussion",
+                        "waiting_user_decision",
+                        "waiting_info",
+                        "planning",
+                        "executing",
+                        "reviewing",
+                        "fixing",
+                        "result_ready",
+                        "accepted",
+                        "failed",
+                        "paused",
+                        "cancelled",
+                        "rejected"
+                      ]
+                    }
+                  }
+                }
+              },
+              "damaged": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "problem"
+                  ],
+                  "properties": {
+                    "path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "problem": {
+                      "enum": [
+                        "unreadable",
+                        "envelope"
+                      ]
+                    }
+                  }
+                }
+              },
+              "damaged_events": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "path",
+                    "problem"
+                  ],
+                  "properties": {
+                    "path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "problem": {
+                      "enum": [
+                        "unreadable",
+                        "invalid_id",
+                        "disallowed",
+                        "revision_gap"
+                      ]
+                    },
+                    "seq": {
+                      "type": "integer",
+                      "minimum": 1
+                    }
+                  }
+                }
+              },
+              "project_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "list_projects"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "projects"
+            ],
+            "properties": {
+              "projects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "project_id",
+                    "project_path",
+                    "registered_at",
+                    "last_seen_at",
+                    "path_state"
+                  ],
+                  "properties": {
+                    "project_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "project_path": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 4000
+                    },
+                    "registered_at": {
+                      "$ref": "#/$defs/time"
+                    },
+                    "last_seen_at": {
+                      "$ref": "#/$defs/time"
+                    },
+                    "path_state": {
+                      "enum": [
+                        "ok",
+                        "missing",
+                        "not_dir",
+                        "unreadable"
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "register_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_path",
+              "registered_at",
+              "path_state"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "registered_at": {
+                "$ref": "#/$defs/time"
+              },
+              "path_state": {
+                "enum": [
+                  "ok",
+                  "missing",
+                  "not_dir",
+                  "unreadable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "rebind_project"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "project_path",
+              "path_state"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "project_path": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 4000
+              },
+              "path_state": {
+                "enum": [
+                  "ok",
+                  "missing",
+                  "not_dir",
+                  "unreadable"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "remove_agentup"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "mode",
+              "event_id",
+              "backup_relative_path"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "backup_relative_path": {
+                "anyOf": [
+                  {
+                    "$ref": "#/$defs/relative-path"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "mode": {
+                "enum": [
+                  "backup",
+                  "clear"
+                ]
+              },
+              "event_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "preview_remove_agentup"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "confirmation_token",
+              "requires_confirmation",
+              "planned_paths",
+              "counts"
+            ],
+            "properties": {
+              "project_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "confirmation_token": {
+                "type": "string",
+                "minLength": 1
+              },
+              "requires_confirmation": {
+                "const": true
+              },
+              "planned_paths": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string"
+                }
+              },
+              "counts": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "project_id",
+                  "requests",
+                  "discussions",
+                  "results",
+                  "attachments",
+                  "attachment_bytes",
+                  "total_facts"
+                ],
+                "properties": {
+                  "project_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "requests": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "discussions": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "results": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "attachments": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "attachment_bytes": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total_facts": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "post_discussion"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "discussion"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "discussion.posted"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "add_attachment"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "relative_path",
+              "byte_length",
+              "sha256"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "attachment"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "relative_path": {
+                "$ref": "#/$defs/relative-path"
+              },
+              "byte_length": {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 10485760
+              },
+              "sha256": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_request_thread"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "request_id",
+              "discussions",
+              "attachments",
+              "total_discussions",
+              "limit",
+              "offset",
+              "has_more"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "discussions": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "id",
+                    "type",
+                    "request_id",
+                    "content"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "type": {
+                      "const": "discussion"
+                    },
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "content": {
+                      "type": "object",
+                      "required": [
+                        "body",
+                        "posted_at"
+                      ],
+                      "properties": {
+                        "body": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100000
+                        },
+                        "posted_at": {
+                          "$ref": "#/$defs/time"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "attachments": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "request_id",
+                    "relative_path",
+                    "media_type",
+                    "byte_length",
+                    "sha256"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "request_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "relative_path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "media_type": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 200
+                    },
+                    "byte_length": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 10485760
+                    },
+                    "sha256": {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    }
+                  }
+                }
+              },
+              "total_discussions": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "limit": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "offset": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "has_more": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_scope"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "scope"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "scope.updated"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "diff_scope"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "scope_id",
+              "from_revision",
+              "to_revision",
+              "added",
+              "removed",
+              "changed"
+            ],
+            "properties": {
+              "scope_id": {
+                "$ref": "#/$defs/id"
+              },
+              "from_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "to_revision": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "added": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/scope-entry"
+                }
+              },
+              "removed": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/$defs/scope-entry"
+                }
+              },
+              "changed": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "relative_path",
+                    "before",
+                    "after"
+                  ],
+                  "properties": {
+                    "relative_path": {
+                      "$ref": "#/$defs/relative-path"
+                    },
+                    "before": {
+                      "$ref": "#/$defs/scope-entry"
+                    },
+                    "after": {
+                      "$ref": "#/$defs/scope-entry"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_task"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "task"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "source": {
+                    "const": "user"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "task.state_changed"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "set_task_state"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "event",
+              "event_id"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "task"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "task.state_changed"
+                  }
+                }
+              },
+              "event_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_board"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "request_id",
+              "tasks"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "tasks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "title",
+                    "task_state",
+                    "parent_id",
+                    "depends_on",
+                    "revision",
+                    "scope",
+                    "subtasks"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "title": {
+                      "type": "string",
+                      "minLength": 1,
+                      "maxLength": 500
+                    },
+                    "task_state": {
+                      "$ref": "#/$defs/task-state"
+                    },
+                    "parent_id": {
+                      "anyOf": [
+                        {
+                          "$ref": "#/$defs/id"
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    },
+                    "depends_on": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/$defs/id"
+                      }
+                    },
+                    "revision": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "subtasks": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": [
+                        "total",
+                        "done",
+                        "in_progress",
+                        "blocked",
+                        "ready"
+                      ],
+                      "properties": {
+                        "total": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "done": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "in_progress": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "blocked": {
+                          "type": "integer",
+                          "minimum": 0
+                        },
+                        "ready": {
+                          "type": "integer",
+                          "minimum": 0
+                        }
+                      }
+                    },
+                    "scope": {
+                      "anyOf": [
+                        {
+                          "type": "object",
+                          "additionalProperties": false,
+                          "required": [
+                            "scope_id",
+                            "revision",
+                            "entries",
+                            "entry_count",
+                            "included_count",
+                            "updated_at"
+                          ],
+                          "properties": {
+                            "scope_id": {
+                              "$ref": "#/$defs/id"
+                            },
+                            "revision": {
+                              "type": "integer",
+                              "minimum": 1
+                            },
+                            "entries": {
+                              "type": "array",
+                              "items": {
+                                "$ref": "#/$defs/scope-entry"
+                              }
+                            },
+                            "entry_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "included_count": {
+                              "type": "integer",
+                              "minimum": 0
+                            },
+                            "updated_at": {
+                              "$ref": "#/$defs/time"
+                            }
+                          }
+                        },
+                        {
+                          "type": "null"
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "set_agent_recording"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "records",
+              "provider",
+              "model"
+            ],
+            "properties": {
+              "records": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "provider": {
+                "const": "replay"
+              },
+              "model": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "start_implement"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "run",
+              "run_id",
+              "output",
+              "applied"
+            ],
+            "properties": {
+              "run": {
+                "type": "object"
+              },
+              "run_id": {
+                "$ref": "#/$defs/id"
+              },
+              "output": {
+                "type": "object"
+              },
+              "applied": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "start_review"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "run",
+              "run_id",
+              "verdict",
+              "task_state"
+            ],
+            "properties": {
+              "run": {
+                "type": "object"
+              },
+              "run_id": {
+                "$ref": "#/$defs/id"
+              },
+              "verdict": {
+                "enum": [
+                  "pass",
+                  "fail"
+                ]
+              },
+              "task_state": {
+                "$ref": "#/$defs/task-state"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "commit_agent_task"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "task_id",
+              "task_state",
+              "review_run_id",
+              "implement_run_id"
+            ],
+            "properties": {
+              "task_id": {
+                "$ref": "#/$defs/id"
+              },
+              "task_state": {
+                "const": "done"
+              },
+              "review_run_id": {
+                "$ref": "#/$defs/id"
+              },
+              "implement_run_id": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_understanding"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "understanding",
+              "understanding_id",
+              "version",
+              "event",
+              "request",
+              "request_revision",
+              "request_event_id",
+              "lifecycle"
+            ],
+            "properties": {
+              "understanding": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "understanding"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "understanding_id": {
+                "$ref": "#/$defs/id"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "understanding.published"
+                  }
+                }
+              },
+              "request": {
+                "$ref": "#/$defs/request-fact"
+              },
+              "request_revision": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "request_event_id": {
+                "$ref": "#/$defs/id"
+              },
+              "lifecycle": {
+                "const": "understanding"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "confirm_understanding"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "decision",
+              "decision_id",
+              "understanding_id",
+              "version",
+              "decision_event",
+              "request",
+              "request_revision",
+              "request_event_id",
+              "lifecycle"
+            ],
+            "properties": {
+              "decision": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "content"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "decision"
+                  },
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "content": {
+                    "type": "object",
+                    "required": [
+                      "status",
+                      "chosen"
+                    ],
+                    "properties": {
+                      "status": {
+                        "const": "chosen"
+                      },
+                      "chosen": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      }
+                    }
+                  }
+                }
+              },
+              "decision_event": {
+                "type": "object",
+                "required": [
+                  "event_id",
+                  "event_type"
+                ],
+                "properties": {
+                  "event_id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "event_type": {
+                    "const": "decision.recorded"
+                  }
+                }
+              },
+              "decision_id": {
+                "$ref": "#/$defs/id"
+              },
+              "understanding_id": {
+                "$ref": "#/$defs/id"
+              },
+              "version": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "request": {
+                "$ref": "#/$defs/request-fact"
+              },
+              "request_revision": {
+                "type": "integer",
+                "minimum": 2
+              },
+              "request_event_id": {
+                "$ref": "#/$defs/id"
+              },
+              "lifecycle": {
+                "const": "planning"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_understandings"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "project_id",
+              "request_id",
+              "understandings",
+              "current_version"
+            ],
+            "properties": {
+              "project_id": {
+                "$ref": "#/$defs/id"
+              },
+              "request_id": {
+                "$ref": "#/$defs/id"
+              },
+              "understandings": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": [
+                    "id",
+                    "version",
+                    "goal_summary",
+                    "success_criteria",
+                    "source",
+                    "created_at"
+                  ],
+                  "properties": {
+                    "id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "version": {
+                      "type": "integer",
+                      "minimum": 1
+                    },
+                    "goal_summary": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "success_criteria": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "source": {
+                      "enum": [
+                        "initial",
+                        "user_feedback",
+                        "question_answer",
+                        "manual"
+                      ]
+                    },
+                    "risks": {
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "ambiguities": {
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "questions": {
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "user_input": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "supersedes": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "context_refs": {
+                      "type": [
+                        "array",
+                        "null"
+                      ]
+                    },
+                    "created_at": {
+                      "$ref": "#/$defs/time"
+                    }
+                  }
+                }
+              },
+              "current_version": {
+                "type": "integer",
+                "minimum": 0
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "discover_agents"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "agents",
+              "discovered"
+            ],
+            "properties": {
+              "agents": {
+                "type": "array"
+              },
+              "discovered": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "custom_agents_lost": {
+                "type": "boolean"
+              },
+              "corrupt_backup": {
+                "type": "string"
+              },
+              "warning": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "list_agents"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "agents"
+            ],
+            "properties": {
+              "agents": {
+                "type": "array"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "upsert_agent"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "agent"
+            ],
+            "properties": {
+              "agent": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "remove_agent"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "agent_key"
+            ],
+            "properties": {
+              "agent_key": {
+                "$ref": "#/$defs/id"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "get_agent_settings"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "settings"
+            ],
+            "properties": {
+              "settings": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "put_agent_settings"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "settings"
+            ],
+            "properties": {
+              "settings": {
+                "type": "object"
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "load_workspace"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "required": [
+              "needs_attention",
+              "in_progress",
+              "recently_completed",
+              "counts",
+              "damaged_projects"
+            ],
+            "properties": {
+              "needs_attention": {
+                "$ref": "#/$defs/workspace-items"
+              },
+              "in_progress": {
+                "$ref": "#/$defs/workspace-items"
+              },
+              "recently_completed": {
+                "$ref": "#/$defs/workspace-items"
+              },
+              "counts": {
+                "type": "object",
+                "required": [
+                  "needs_attention",
+                  "in_progress",
+                  "recently_completed"
+                ],
+                "properties": {
+                  "needs_attention": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "in_progress": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "recently_completed": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              },
+              "damaged_projects": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "required": [
+                    "project_id",
+                    "code"
+                  ],
+                  "properties": {
+                    "project_id": {
+                      "$ref": "#/$defs/id"
+                    },
+                    "code": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "command": {
+            "const": "import_run"
+          }
+        },
+        "required": [
+          "command"
+        ]
+      },
+      "then": {
+        "properties": {
+          "data": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "fact",
+              "existing"
+            ],
+            "properties": {
+              "fact": {
+                "type": "object",
+                "required": [
+                  "id",
+                  "type",
+                  "revision",
+                  "source",
+                  "request_id"
+                ],
+                "properties": {
+                  "id": {
+                    "$ref": "#/$defs/id"
+                  },
+                  "type": {
+                    "const": "run"
+                  },
+                  "revision": {
+                    "const": 1
+                  },
+                  "source": {
+                    "const": "governance_mirror"
+                  },
+                  "request_id": {
+                    "$ref": "#/$defs/id"
+                  }
+                }
+              },
+              "existing": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 200,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]*$"
+    },
+    "request-fact": {
+      "type": "object",
+      "required": [
+        "id",
+        "type",
+        "revision",
+        "request_id"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/id"
+        },
+        "type": {
+          "const": "request"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "request_id": {
+          "$ref": "#/$defs/id"
+        }
+      }
+    },
+    "scope-entry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relative_path",
+        "reason",
+        "source",
+        "included"
+      ],
+      "properties": {
+        "relative_path": {
+          "$ref": "#/$defs/relative-path"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000
+        },
+        "source": {
+          "enum": [
+            "user",
+            "agent",
+            "system",
+            "tool"
+          ]
+        },
+        "included": {
+          "type": "boolean"
+        }
+      }
+    },
+    "task-state": {
+      "enum": [
+        "ready",
+        "in_progress",
+        "blocked",
+        "review_ready",
+        "review_pass",
+        "review_fail",
+        "done"
+      ]
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "workspace-items": {
+      "type": "array",
+      "maxItems": 20,
+      "items": {
+        "$ref": "#/$defs/workspace-item"
+      }
+    },
+    "workspace-item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_id",
+        "project_name",
+        "kind",
+        "ref_id",
+        "title",
+        "reason",
+        "occurred_at"
+      ],
+      "properties": {
+        "project_id": {
+          "$ref": "#/$defs/id"
+        },
+        "project_name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "enum": [
+            "decision",
+            "request",
+            "task",
+            "result"
+          ]
+        },
+        "ref_id": {
+          "$ref": "#/$defs/id"
+        },
+        "title": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "occurred_at": {
+          "$ref": "#/$defs/time"
+        }
+      }
+    },
+    "fp": {
+      "type": "string",
+      "pattern": "^fp-v1:[0-9a-f]{16}$"
+    },
+    "relative-path": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1000,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\u0000-\\u001F]+$"
+    }
+  }
+}

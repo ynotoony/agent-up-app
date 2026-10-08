@@ -1,0 +1,3221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:command-registry",
+  "title": "AgentUp M0 Command Registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "commands"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "commands": {
+      "type": "array",
+      "minItems": 49,
+      "maxItems": 49,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/command"
+      },
+      "allOf": [
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "scan_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "preview_initialize"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "initialize_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "create_request"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "list_projects"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "register_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "rebind_project"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "remove_agentup"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "preview_remove_agentup"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "post_discussion"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "add_attachment"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_request_thread"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_scope"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "diff_scope"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_task"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "set_task_state"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_board"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "set_agent_recording"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "start_implement"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "start_review"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "commit_agent_task"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "publish_result"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_results"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "accept_result"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "submit_result_feedback"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "compare_results"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "read_attachment"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "properties": {
+              "name": {
+                "const": "read_attachment_thumbnail"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_decisions"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "search_requests"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "read_logs"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "decide"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_understanding"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "confirm_understanding"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_understandings"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "discover_agents"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "list_agents"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "upsert_agent"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "remove_agent"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "get_agent_settings"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "put_agent_settings"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_workspace"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "import_run"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "load_governance_tickets"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "open_ticket_agent"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "assess_governance"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "install_governance_files"
+              }
+            }
+          }
+        },
+        {
+          "contains": {
+            "type": "object",
+            "required": [
+              "name"
+            ],
+            "properties": {
+              "name": {
+                "const": "init_empty_repo"
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "error-code": {
+      "enum": [
+        "invalid_input",
+        "path_not_found",
+        "path_outside_project",
+        "permission_denied",
+        "not_initialized",
+        "already_initialized",
+        "confirmation_required",
+        "confirmation_expired",
+        "revision_conflict",
+        "already_exists",
+        "malformed_fact",
+        "malformed_event",
+        "event_replay",
+        "io_error"
+      ]
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "input_required",
+        "output_required",
+        "side_effect",
+        "errors",
+        "capability",
+        "emits"
+      ],
+      "properties": {
+        "name": {
+          "enum": [
+            "scan_project",
+            "preview_initialize",
+            "initialize_project",
+            "create_request",
+            "load_project",
+            "list_projects",
+            "register_project",
+            "rebind_project",
+            "remove_agentup",
+            "preview_remove_agentup",
+            "post_discussion",
+            "add_attachment",
+            "load_request_thread",
+            "put_scope",
+            "diff_scope",
+            "put_task",
+            "set_task_state",
+            "load_board",
+            "set_agent_recording",
+            "start_implement",
+            "start_review",
+            "commit_agent_task",
+            "publish_result",
+            "load_results",
+            "accept_result",
+            "submit_result_feedback",
+            "compare_results",
+            "read_attachment",
+            "read_attachment_thumbnail",
+            "load_decisions",
+            "search_requests",
+            "read_logs",
+            "decide",
+            "put_understanding",
+            "confirm_understanding",
+            "load_understandings",
+            "discover_agents",
+            "list_agents",
+            "upsert_agent",
+            "remove_agent",
+            "get_agent_settings",
+            "put_agent_settings",
+            "load_workspace",
+            "import_run",
+            "load_governance_tickets",
+            "open_ticket_agent",
+            "assess_governance",
+            "install_governance_files",
+            "init_empty_repo"
+          ]
+        },
+        "input_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "uniqueItems": true
+        },
+        "output_required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "side_effect": {
+          "enum": [
+            "none",
+            "project_agentup_write",
+            "app_config_write"
+          ]
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/error-code"
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "capability": {
+          "enum": [
+            "project_read",
+            "project_agentup_write",
+            "app_config_read",
+            "app_config_write"
+          ]
+        },
+        "emits": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "project.scan_completed",
+              "project.initialized",
+              "request.created",
+              "request.rehydrated",
+              "request.lifecycle_changed",
+              "discussion.posted",
+              "scope.updated",
+              "task.state_changed",
+              "decision.recorded",
+              "result.published",
+              "understanding.published"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "scan_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "project_name",
+                  "project_type",
+                  "documents",
+                  "agentup_state",
+                  "root_fingerprint"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "permission_denied",
+                  "path_outside_project",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": [
+                  "project.scan_completed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "preview_initialize"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "expected_root_fingerprint"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "planned_paths",
+                  "root_fingerprint",
+                  "confirmation_token",
+                  "requires_confirmation"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "permission_denied",
+                  "path_outside_project",
+                  "already_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "initialize_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "confirmation_token",
+                  "expected_root_fingerprint"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "manifest",
+                  "initialized_at",
+                  "initialization_event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "confirmation_required",
+                  "confirmation_expired",
+                  "path_outside_project",
+                  "already_initialized",
+                  "permission_denied",
+                  "io_error",
+                  "malformed_event"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "project.initialized"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "create_request"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "content",
+                  "metadata",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "already_exists",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "request.created"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "manifest",
+                  "facts",
+                  "events",
+                  "requests",
+                  "project_id"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "not_initialized",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": [
+                  "request.rehydrated"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "list_projects"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "projects"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "register_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "registered_at",
+                  "path_state"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "rebind_project"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "path_state"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "not_initialized",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "remove_agentup"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path",
+                  "confirmation_token"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "mode",
+                  "backup_relative_path",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "confirmation_required",
+                  "confirmation_expired",
+                  "path_outside_project",
+                  "not_initialized",
+                  "already_exists",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "preview_remove_agentup"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "project_path"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "confirmation_token",
+                  "requires_confirmation",
+                  "planned_paths"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "path_not_found",
+                  "path_outside_project",
+                  "not_initialized",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "post_discussion"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "body"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "discussion.posted"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "add_attachment"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "media_type",
+                  "bytes"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "relative_path",
+                  "byte_length",
+                  "sha256"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "already_exists",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_request_thread"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "discussions",
+                  "attachments",
+                  "total_discussions",
+                  "limit",
+                  "offset",
+                  "has_more"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_scope"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "scope_id",
+                  "request_id",
+                  "task_id",
+                  "entries",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "scope.updated"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "diff_scope"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "scope_id",
+                  "from_revision",
+                  "to_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "scope_id",
+                  "from_revision",
+                  "to_revision",
+                  "added",
+                  "removed",
+                  "changed"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_task"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "task_id",
+                  "request_id",
+                  "title",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "set_task_state"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "task_id",
+                  "task_state",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "event",
+                  "event_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_board"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "tasks"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "set_agent_recording"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "recording"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "records",
+                  "provider",
+                  "model"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "malformed_fact"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "start_implement"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "task_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "run",
+                  "run_id",
+                  "output",
+                  "applied"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "invalid_output",
+                  "provider_error",
+                  "provider_unavailable",
+                  "timeout",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "start_review"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "task_id",
+                  "implement_run_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "run",
+                  "run_id",
+                  "verdict",
+                  "task_state"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "invalid_output",
+                  "provider_error",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "commit_agent_task"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "task_id",
+                  "implement_run_id",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "task_id",
+                  "task_state",
+                  "review_run_id",
+                  "implement_run_id"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "publish_result"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "summary"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "result",
+                  "event",
+                  "result_id",
+                  "version"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "result.published"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_results"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "results"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "accept_result"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "result_id",
+                  "verdict"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "decision",
+                  "decision_id",
+                  "result_id",
+                  "verdict"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "submit_result_feedback"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "result_id",
+                  "body"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "discussion",
+                  "task",
+                  "task_id",
+                  "round"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "discussion.posted",
+                  "task.state_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "compare_results"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "from_version",
+                  "to_version"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "from",
+                  "to",
+                  "summary_changed"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "read_attachment"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "attachment_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "attachment_id",
+                  "media_type",
+                  "byte_length",
+                  "sha256",
+                  "bytes"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_not_found",
+                  "permission_denied",
+                  "malformed_fact",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "read_attachment_thumbnail"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "attachment_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "attachment_id",
+                  "media_type",
+                  "byte_length",
+                  "sha256",
+                  "width",
+                  "height",
+                  "source_sha256",
+                  "bytes"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "capability": {
+                "const": "project_read"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_decisions"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "decisions",
+                  "open_count"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "search_requests"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "query"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "query",
+                  "matches",
+                  "total",
+                  "limit"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "read_logs"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "entries",
+                  "total",
+                  "limit"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "decide"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "decision_id",
+                  "chosen"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "decision",
+                  "decision_id",
+                  "chosen",
+                  "revision"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_understanding"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "content",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "understanding",
+                  "understanding_id",
+                  "version",
+                  "event",
+                  "request",
+                  "request_revision",
+                  "request_event_id",
+                  "lifecycle"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "understanding.published",
+                  "request.lifecycle_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "confirm_understanding"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "understanding_id",
+                  "expected_revision"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "decision",
+                  "decision_id",
+                  "understanding_id",
+                  "version",
+                  "decision_event",
+                  "request",
+                  "request_revision",
+                  "request_event_id",
+                  "lifecycle"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "revision_conflict",
+                  "malformed_fact",
+                  "malformed_event",
+                  "event_replay",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "decision.recorded",
+                  "request.lifecycle_changed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_understandings"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "understandings",
+                  "current_version"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "malformed_fact",
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "discover_agents"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "agents",
+                  "discovered"
+                ]
+              },
+              "side_effect": {
+                "const": "app_config_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "list_agents"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "agents"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "upsert_agent"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "agent"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "agent"
+                ]
+              },
+              "side_effect": {
+                "const": "app_config_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "remove_agent"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "agent_key"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "agent_key"
+                ]
+              },
+              "side_effect": {
+                "const": "app_config_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "get_agent_settings"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "settings"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "put_agent_settings"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "settings"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "settings"
+                ]
+              },
+              "side_effect": {
+                "const": "app_config_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "app_config_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_workspace"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": []
+              },
+              "output_required": {
+                "const": [
+                  "needs_attention",
+                  "in_progress",
+                  "recently_completed",
+                  "counts",
+                  "damaged_projects"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "permission_denied",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "import_run"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "request_id",
+                  "record"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "fact",
+                  "existing"
+                ]
+              },
+              "side_effect": {
+                "const": "project_agentup_write"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "not_initialized",
+                  "path_outside_project",
+                  "malformed_fact",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "load_governance_tickets"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "source",
+                  "tickets",
+                  "total",
+                  "unknown_statuses"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "project_not_bound",
+                  "governance_index_missing",
+                  "read_failed",
+                  "malformed_json",
+                  "permission_denied"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "open_ticket_agent"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "ticket_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "ticket_id",
+                  "brief_path",
+                  "terminal"
+                ]
+              },
+              "side_effect": {
+                "const": "external"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "project_not_bound",
+                  "not_initialized",
+                  "malformed_fact",
+                  "path_outside_project",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "agent.session_opened"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "assess_governance"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "repo_class",
+                  "has_git",
+                  "missing_seeds"
+                ]
+              },
+              "side_effect": {
+                "const": "none"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "project_not_bound"
+                ]
+              },
+              "capability": {
+                "const": "project_read"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "install_governance_files"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id",
+                  "answers",
+                  "planned_paths",
+                  "expected_root_fingerprint"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "installed"
+                ]
+              },
+              "side_effect": {
+                "const": "external"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "project_not_bound",
+                  "confirmation_required",
+                  "confirmation_expired",
+                  "already_exists",
+                  "path_outside_project",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": [
+                  "governance.installed"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "name": {
+                "const": "init_empty_repo"
+              }
+            },
+            "required": [
+              "name"
+            ]
+          },
+          "then": {
+            "properties": {
+              "input_required": {
+                "const": [
+                  "project_id"
+                ]
+              },
+              "output_required": {
+                "const": [
+                  "project_id",
+                  "git_initialized"
+                ]
+              },
+              "side_effect": {
+                "const": "external"
+              },
+              "errors": {
+                "const": [
+                  "invalid_input",
+                  "project_not_bound",
+                  "already_exists",
+                  "io_error"
+                ]
+              },
+              "capability": {
+                "const": "project_agentup_write"
+              },
+              "emits": {
+                "const": []
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

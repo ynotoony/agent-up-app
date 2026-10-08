@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agentup:schema:command-error",
+  "title": "AgentUp Command Error Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "ok",
+    "command",
+    "error"
+  ],
+  "properties": {
+    "ok": {
+      "const": false
+    },
+    "command": {
+      "enum": [
+        "scan_project",
+        "preview_initialize",
+        "initialize_project",
+        "create_request",
+        "load_project",
+        "list_projects",
+        "register_project",
+        "rebind_project",
+        "remove_agentup",
+        "preview_remove_agentup",
+        "post_discussion",
+        "add_attachment",
+        "load_request_thread",
+        "put_scope",
+        "diff_scope",
+        "put_task",
+        "set_task_state",
+        "load_board",
+        "set_agent_recording",
+        "start_implement",
+        "start_review",
+        "commit_agent_task",
+        "publish_result",
+        "load_results",
+        "accept_result",
+        "submit_result_feedback",
+        "compare_results",
+        "read_attachment",
+        "read_attachment_thumbnail",
+        "load_decisions",
+        "search_requests",
+        "read_logs",
+        "decide",
+        "put_understanding",
+        "confirm_understanding",
+        "load_understandings",
+        "discover_agents",
+        "list_agents",
+        "upsert_agent",
+        "remove_agent",
+        "get_agent_settings",
+        "put_agent_settings",
+        "load_workspace",
+        "import_run",
+        "load_governance_tickets",
+        "open_ticket_agent",
+        "assess_governance",
+        "install_governance_files",
+        "init_empty_repo"
+      ]
+    },
+    "error": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "enum": [
+            "invalid_input",
+            "path_not_found",
+            "path_outside_project",
+            "permission_denied",
+            "not_initialized",
+            "already_initialized",
+            "confirmation_required",
+            "confirmation_expired",
+            "revision_conflict",
+            "already_exists",
+            "malformed_fact",
+            "malformed_event",
+            "project_not_bound",
+            "governance_index_missing",
+            "read_failed",
+            "event_replay",
+            "io_error"
+          ]
+        },
+        "message": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "details": {
+          "$ref": "#/$defs/details"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "code": {
+                "const": "revision_conflict"
+              }
+            },
+            "required": [
+              "code"
+            ]
+          },
+          "then": {
+            "required": [
+              "details"
+            ],
+            "properties": {
+              "details": {
+                "type": "object",
+                "required": [
+                  "revision"
+                ],
+                "properties": {
+                  "revision": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  },
+  "$defs": {
+    "details": {
+      "type": "object",
+      "additionalProperties": false,
+      "minProperties": 1,
+      "properties": {
+        "relative_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))[^\\\\\\u0000-\\u001F]+$"
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "field": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "^[A-Za-z][A-Za-z0-9_]*$"
+        }
+      }
+    }
+  }
+}
