@@ -3,9 +3,13 @@ dist/
 src-tauri/target/
 *.log
 .DS_Store
+.env
 
 # 本地事实记录：治理票/流程/血统/路线/PRD 仅存本地，不入远端（用户裁决 2026-10-08）
 /docs/
 /reference/
 /AgentUp-Harness-PRD/
 /AGENTS.md
+/rules/
+/facts/
+/.zcode/
