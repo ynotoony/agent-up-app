@@ -72,7 +72,7 @@ if ! cargo test --manifest-path src-tauri/Cargo.toml >"$TEST_LOG" 2>&1; then
 fi
 grep 'test result' "$TEST_LOG" | awk '{for(i=1;i<NF;i++){if($i=="passed;")p+=$(i-1);if($i=="failed;")f+=$(i-1)}} END{printf "    cargo test：%d 通过 / %d 失败\n",p,f}'
 
-say "4/7 tag/Release 防重（$TAG）"
+say "4/7 tag/Release 防重（${TAG}）"
 SKIP_PUBLISH=0
 if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
   if [ "$DRY_RUN" -eq 1 ]; then say "[dry-run] 本地 tag $TAG 已存在——dry-run 下视为通过，将跳过发布段"; SKIP_PUBLISH=1
