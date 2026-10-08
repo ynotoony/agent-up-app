@@ -9,7 +9,7 @@
 ```bash
 pnpm install                # 仅 pnpm
 pnpm dev                    # 开发模式（Vite HMR + Tauri 窗口）
-pnpm dist                   # 打包 .app → src-tauri/target/release/bundle/macos/
+pnpm dist                   # 打包 .app ＋ .dmg
 pnpm typecheck              # 渲染层 TS 类型检查
 pnpm test                   # Rust 端到端冒烟（全状态机，需 cargo）
 ```
@@ -22,9 +22,9 @@ pnpm test                   # Rust 端到端冒烟（全状态机，需 cargo）
 scripts/release.sh <版本号> [--notes-file <文件>] [--dry-run] [--yes]
 ```
 
-一条龙执行：预检（main 干净且与远端同步）→ 三处版本号一致性校验（`package.json` / `tauri.conf.json` / `Cargo.toml`）→ 门禁（typecheck ＋ cargo test 全绿）→ tag/Release 防重 → `pnpm dist` 构建（.app ＋ .dmg）→ DMG 挂载验证 → 确认后打 tag、推送并发布 GitHub Release（附 DMG）。
+一条龙执行：预检（main 干净且与远端同步；未跟踪的本地文件不阻塞——事实记录本就只存本地）→ 三处版本号一致性校验（`package.json` / `tauri.conf.json` / `Cargo.toml`）→ 门禁（typecheck ＋ cargo test，以命令退出码为准）→ tag/Release 防重（远端不可达时中止而非放行）→ `pnpm dist` 构建（.app ＋ .dmg）→ DMG 挂载验证 → 确认后打 tag、推送并发布 GitHub Release（附 DMG）。
 
-发版步骤：①改三处版本号并提交推送；②`pnpm test` 自查；③跑 `scripts/release.sh <版本号>`（建议先 `--dry-run`）；④脚本确认提示时回车 `y`。任一步失败即整体中止，不做部分写入。
+发版步骤：①改三处版本号并提交推送；②`pnpm test` 自查；③跑 `scripts/release.sh <版本号>`（建议先 `--dry-run`）；④脚本确认提示时回车 `y`。门禁段失败即整体中止、零写入；发布段（tag/Release）中途失败可能留下半完成态，脚本会如实提示当前状态与补救命令。
 
 - 默认**亮色**主题（底栏可切换，选择持久化）。
 - 「添加项目」（侧栏 + / 工作台按钮）直接弹出**系统文件夹选择器**，选中文件夹即创建同名项目（描述保存路径）。
