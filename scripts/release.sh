@@ -54,7 +54,7 @@ git fetch origin main --quiet
 [ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || die "本地 main 与 origin/main 不一致——先推送/拉齐"
 say "预检通过（main @ $(git rev-parse --short HEAD)，与远端同步；未跟踪的本地文件不影响发布）"
 
-say "2/7 版本一致性（$VERSION）"
+say "2/7 版本一致性（${VERSION}）"
 json_ver() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -1; }
 P_J=$(json_ver package.json); T_J=$(json_ver src-tauri/tauri.conf.json)
 C_T=$(sed -n 's/^version[[:space:]]*=[[:space:]]*"\([^"]*\)".*/\1/p' src-tauri/Cargo.toml | head -1)
