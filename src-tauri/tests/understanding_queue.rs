@@ -2,6 +2,7 @@ use agentup_harness_lib::{db, understanding_queue};
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::atomic::AtomicU64;
+use tauri::Manager;
 
 static SEQ: AtomicU64 = AtomicU64::new(0);
 
@@ -170,4 +171,39 @@ fn recover_revives_zombies_and_sets_orphans_failed() {
     assert_eq!(orphan_status, "failed", "孤儿任务应置 failed");
     let decision_status: String = conn.query_row("SELECT status FROM decisions WHERE id = 'd-stuck'", [], |r| r.get(0)).unwrap();
     assert_eq!(decision_status, "skipped", "永挂决策应 skipped");
+}
+
+// ④ 泵单例守卫回归：spawn_pump（App 启动路径）必须真正 spawn 泵并消化队列。
+// 曾因 spawn_pump 预置 PUMP_RUNNING=true，spawn_pump_state 的 swap 读到 true 直接放弃 spawn，
+// 泵从未启动、队列永不消化（2026-10-08 初始化 62 条全量卡死的根因）。
+// completed 需求会被 run_one 跳过（队列行删除），以此作为「泵跑过」的可观测信号。
+#[test]
+fn spawn_pump_actually_spawns_and_drains() {
+    let app = tauri::test::mock_app();
+    let state = state();
+    let req = {
+        let conn = state.conn.lock().unwrap();
+        conn.execute("INSERT INTO projects (id, name, status, created_at, updated_at) VALUES ('p1','测试','active','2026-01-01','2026-01-01')", []).unwrap();
+        make_requirement(&conn, "p1", "completed")
+    };
+    {
+        let conn = state.conn.lock().unwrap();
+        assert!(understanding_queue::enqueue(&conn, &req).unwrap(), "入队应成功");
+    }
+    app.manage(state_clone(&state));
+    understanding_queue::spawn_pump(app.handle().clone());
+    let deadline = std::time::Instant::now() + std::time::Duration::from_secs(10);
+    loop {
+        let n: i64 = state
+            .conn
+            .lock()
+            .unwrap()
+            .query_row("SELECT COUNT(*) FROM understanding_queue", [], |r| r.get(0))
+            .unwrap();
+        if n == 0 {
+            break;
+        }
+        assert!(std::time::Instant::now() < deadline, "泵未在 10s 内消化队列行（spawn 被单例守卫吞掉）");
+        std::thread::sleep(std::time::Duration::from_millis(50));
+    }
 }

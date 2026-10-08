@@ -128,15 +128,15 @@ async fn pump_loop(state: &AppState) {
 static PUMP_RUNNING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 /// 唤醒泵：仅当泵未在跑时启动一轮消化。需要 AppHandle 以从 Tauri 取管理的 Arc<AppState>。
-pub fn spawn_pump(app: tauri::AppHandle) {
-    if PUMP_RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
-        return; // 泵已在跑，本次入队会被本轮消化
-    }
+/// 置位守卫统一由 spawn_pump_state 的 swap 完成；本函数不得预置 PUMP_RUNNING，
+/// 否则 spawn_pump_state 的 swap 读到 true 会直接放弃 spawn，泵永远无法启动（2026-10-08 全量卡死事故根因）。
+pub fn spawn_pump<R: tauri::Runtime>(app: tauri::AppHandle<R>) {
     let state: Arc<AppState> = app.state::<std::sync::Arc<AppState>>().inner().clone();
     spawn_pump_state(state);
 }
 
 /// 同 spawn_pump，但直接持有 AppState（命令层从 State<Arc<AppState>> 调用，绕开 State 未实现 Manager 的限制）。
+/// PUMP_RUNNING 的 swap 是唯一置位点：换到 true 的一方负责 spawn，泵退出时复位。
 pub fn spawn_pump_state(state: Arc<AppState>) {
     if PUMP_RUNNING.swap(true, std::sync::atomic::Ordering::SeqCst) {
         return;
