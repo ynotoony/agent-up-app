@@ -16,6 +16,16 @@ pnpm test                   # Rust 端到端冒烟（全状态机，需 cargo）
 
 直接使用打包产物：打开 `src-tauri/target/release/bundle/macos/AgentUp Harness.app`。
 
+## 发布（标准化流程）
+
+```bash
+scripts/release.sh <版本号> [--notes-file <文件>] [--dry-run] [--yes]
+```
+
+一条龙执行：预检（main 干净且与远端同步）→ 三处版本号一致性校验（`package.json` / `tauri.conf.json` / `Cargo.toml`）→ 门禁（typecheck ＋ cargo test 全绿）→ tag/Release 防重 → `pnpm dist` 构建（.app ＋ .dmg）→ DMG 挂载验证 → 确认后打 tag、推送并发布 GitHub Release（附 DMG）。
+
+发版步骤：①改三处版本号并提交推送；②`pnpm test` 自查；③跑 `scripts/release.sh <版本号>`（建议先 `--dry-run`）；④脚本确认提示时回车 `y`。任一步失败即整体中止，不做部分写入。
+
 - 默认**亮色**主题（底栏可切换，选择持久化）。
 - 「添加项目」（侧栏 + / 工作台按钮）直接弹出**系统文件夹选择器**，选中文件夹即创建同名项目（描述保存路径）。
 数据存储于 `~/Library/Application Support/com.agentup.harness/`（SQLite + 附件）。
