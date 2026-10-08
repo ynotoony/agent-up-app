@@ -102,11 +102,14 @@ say "5/7 构建（.app ＋ .dmg；DMG 由 hdiutil 直出，不依赖 Finder Appl
 if ! pnpm exec tauri build --bundles app >"$DIST_LOG" 2>&1; then
   tail -20 "$DIST_LOG" >&2; die "构建失败"
 fi
+BUNDLE_ROOT="${CARGO_TARGET_DIR:-$(pwd)/src-tauri/target}/release/bundle"
+APP_BUNDLE="$BUNDLE_ROOT/macos/AgentUp Harness.app"
+[ -d "$APP_BUNDLE" ] || { tail -20 "$DIST_LOG" >&2; die "未找到 .app 产物：$APP_BUNDLE"; }
 ARCH=$(uname -m)
-DMG="src-tauri/target/release/bundle/dmg/AgentUp Harness_${VERSION}_${ARCH}.dmg"
-mkdir -p src-tauri/target/release/bundle/dmg
+DMG="$BUNDLE_ROOT/dmg/AgentUp Harness_${VERSION}_${ARCH}.dmg"
+mkdir -p "$BUNDLE_ROOT/dmg"
 STAGING=$(mktemp -d "${TMPDIR:-/tmp}/agentup-dmg.XXXXXX")
-cp -R "src-tauri/target/release/bundle/macos/AgentUp Harness.app" "$STAGING/"
+cp -R "$APP_BUNDLE" "$STAGING/" || { rm -rf "$STAGING"; die "复制 .app 进 staging 失败"; }
 ln -s /Applications "$STAGING/Applications"
 hdiutil create -volname "AgentUp Harness" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null \
   || { rm -rf "$STAGING"; tail -20 "$DIST_LOG" >&2; die "hdiutil 打包 DMG 失败"; }
