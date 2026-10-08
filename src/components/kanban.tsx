@@ -6,8 +6,9 @@ import type { Requirement, RequirementStatus } from '../../shared/types';
 import { cn } from '@/lib/utils';
 
 // 看板：需求状态 → 泳道。列头点色即泳道主色，列内卡片用状态点区分合并进来的具体状态。
+// initializing 是中间状态（理解队列消化中），与需求列表同口径不入看板，理解完成后自然出现；进度见项目页「初始化进度」面板。
 const COLUMNS: { label: string; dot: string; statuses: RequirementStatus[] }[] = [
-  { label: '理解中', dot: 'bg-blue-500', statuses: ['pending', 'initializing', 'understanding', 'questioning'] },
+  { label: '理解中', dot: 'bg-blue-500', statuses: ['pending', 'understanding', 'questioning'] },
   { label: '待处理', dot: 'bg-amber-500', statuses: ['awaiting_confirmation', 'waiting_decision', 'failed'] },
   { label: '执行中', dot: 'bg-primary', statuses: ['planning', 'implementing', 'verifying'] },
   { label: '已完成', dot: 'bg-emerald-500', statuses: ['completed'] },
