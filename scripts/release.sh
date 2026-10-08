@@ -7,7 +7,7 @@
 #   2. 版本一致：package.json == src-tauri/tauri.conf.json == src-tauri/Cargo.toml == 入参 X.Y.Z
 #   3. 门禁：pnpm typecheck ＋ cargo test（以 cargo 退出码为准，非零即中止）
 #   4. tag/Release 防重：v<版本> 的本地 tag、远端 tag、GitHub Release；远端不可达时中止而非放行
-#   5. 构建：pnpm dist（.app ＋ .dmg，取文件名含入参版本的最新 DMG）
+#   5. 构建：tauri build 出 .app；hdiutil 直出 DMG（含 Applications 软链，不依赖 Finder）
 #   6. DMG 验证：只读挂载，须含 AgentUp Harness.app 与 Applications 软链；退出时自动清理挂载
 #   7. 确认后：打 annotated tag → 推 tag → 建 GitHub Release → 上传 DMG
 #
@@ -98,20 +98,20 @@ elif ! gh api user --jq .login >/dev/null 2>&1; then
 fi
 [ "$SKIP_PUBLISH" -eq 1 ] || say "$TAG 无冲突"
 
-say "5/7 构建（.app ＋ .dmg）"
+say "5/7 构建（.app ＋ .dmg；DMG 由 hdiutil 直出，不依赖 Finder AppleScript——bundle_dmg.sh 的摆图标步骤在后台负载下不可靠）"
 if ! pnpm exec tauri build --bundles app >"$DIST_LOG" 2>&1; then
   tail -20 "$DIST_LOG" >&2; die "构建失败"
 fi
-DMG=""
-for ATTEMPT in 1 2 3; do
-  if pnpm exec tauri build --bundles dmg >>"$DIST_LOG" 2>&1; then
-    DMG=$(ls -t src-tauri/target/release/bundle/dmg/*"$VERSION"*.dmg 2>/dev/null | head -1 || true)
-    [ -n "$DMG" ] && break
-  fi
-  say "  第 ${ATTEMPT} 次 DMG 打包未成功（bundle_dmg.sh 的 Finder AppleScript 存在挂载竞态），5 秒后重试…"
-  sleep 5
-done
-[ -n "$DMG" ] || { tail -20 "$DIST_LOG" >&2; die "DMG 打包连续 3 次失败——稍后系统空闲时单独执行 pnpm exec tauri build --bundles dmg，成功后再跑本脚本（tag/Release 段未开始，无半成品）"; }
+ARCH=$(uname -m)
+DMG="src-tauri/target/release/bundle/dmg/AgentUp Harness_${VERSION}_${ARCH}.dmg"
+mkdir -p src-tauri/target/release/bundle/dmg
+STAGING=$(mktemp -d "${TMPDIR:-/tmp}/agentup-dmg.XXXXXX")
+cp -R "src-tauri/target/release/bundle/macos/AgentUp Harness.app" "$STAGING/"
+ln -s /Applications "$STAGING/Applications"
+hdiutil create -volname "AgentUp Harness" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null \
+  || { rm -rf "$STAGING"; tail -20 "$DIST_LOG" >&2; die "hdiutil 打包 DMG 失败"; }
+rm -rf "$STAGING"
+[ -f "$DMG" ] || die "DMG 产物缺失：$DMG"
 say "构建完成：$(basename "${DMG}")（$(du -h "${DMG}" | cut -f1)）"
 
 say "6/7 DMG 挂载验证"
