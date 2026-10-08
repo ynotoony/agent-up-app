@@ -17,6 +17,8 @@
 #     --notes-file    Release 说明文件；缺省则生成标准骨架（含实际 DMG 文件名）
 #     --dry-run       跑完 1–6 步即止，不写 tag、不推送、不发布
 #     --yes           跳过第 7 步前的人工确认（供 CI/无人值守，慎用）
+#
+# 环境变量：RELEASE_BRANCH 覆盖目标分支（默认 main；worktree/发布分支验证时用）
 set -eu
 
 cd "$(dirname "$0")/.."
@@ -48,10 +50,15 @@ TAG="v$VERSION"
 
 say "1/7 预检"
 for cmd in git cargo pnpm gh hdiutil; do command -v "$cmd" >/dev/null 2>&1 || die "缺依赖命令：$cmd"; done
-[ "$(git branch --show-current)" = "main" ] || die "须在 main 分支执行"
+RELEASE_BRANCH="${RELEASE_BRANCH:-main}"
+[ "$(git branch --show-current)" = "$RELEASE_BRANCH" ] || die "须在 ${RELEASE_BRANCH} 分支执行（可用 RELEASE_BRANCH 环境变量覆盖）"
 [ -z "$(git status --porcelain --untracked-files=no)" ] || die "跟踪文件有未提交改动——先提交或还原（版本号三处改动须已提交）"
-git fetch origin main --quiet
-[ "$(git rev-parse HEAD)" = "$(git rev-parse origin/main)" ] || die "本地 main 与 origin/main 不一致——先推送/拉齐"
+if git ls-remote --exit-code --heads origin "$RELEASE_BRANCH" >/dev/null 2>&1; then
+  git fetch origin "$RELEASE_BRANCH" --quiet
+  [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$RELEASE_BRANCH")" ] || die "本地 ${RELEASE_BRANCH} 与 origin/${RELEASE_BRANCH} 不一致——先推送/拉齐"
+else
+  say "分支 ${RELEASE_BRANCH} 无远端对应——跳过远端同步检查"
+fi
 say "预检通过（main @ $(git rev-parse --short HEAD)，与远端同步；未跟踪的本地文件不影响发布）"
 
 say "2/7 版本一致性（${VERSION}）"
