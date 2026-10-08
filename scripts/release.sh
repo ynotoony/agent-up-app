@@ -24,9 +24,10 @@ set -eu
 cd "$(dirname "$0")/.."
 MNT=""
 TMPD=$(mktemp -d "${TMPDIR:-/tmp}/agentup-release.XXXXXX")
-TEST_LOG="$TMPD/test.log"; DIST_LOG="$TMPD/dist.log"
+TEST_LOG="$TMPD/test.log"; DIST_LOG="$TMPD/dist.log"; STAGING="$TMPD/staging"; MNT="$TMPD/mnt"
 cleanup() { [ -z "$MNT" ] || hdiutil detach "$MNT" -quiet 2>/dev/null || true; rm -rf "$TMPD"; }
-trap cleanup EXIT INT TERM
+trap cleanup EXIT
+trap 'exit 130' INT TERM
 
 usage() { awk 'NR>1{ if ($0 !~ /^#/) exit; sub(/^# ?/,""); print }' "$0"; exit "${1:-0}"; }
 say() { printf '\n==> %s\n' "$1"; }
@@ -53,13 +54,18 @@ for cmd in git cargo pnpm gh hdiutil; do command -v "$cmd" >/dev/null 2>&1 || di
 RELEASE_BRANCH="${RELEASE_BRANCH:-main}"
 [ "$(git branch --show-current)" = "$RELEASE_BRANCH" ] || die "须在 ${RELEASE_BRANCH} 分支执行（可用 RELEASE_BRANCH 环境变量覆盖）"
 [ -z "$(git status --porcelain --untracked-files=no)" ] || die "跟踪文件有未提交改动——先提交或还原（版本号三处改动须已提交）"
-if git ls-remote --exit-code --heads origin "$RELEASE_BRANCH" >/dev/null 2>&1; then
+RC=0
+git ls-remote --exit-code --heads origin "$RELEASE_BRANCH" >/dev/null 2>&1 || RC=$?
+if [ "$RC" -eq 0 ]; then
   git fetch origin "$RELEASE_BRANCH" --quiet
   [ "$(git rev-parse HEAD)" = "$(git rev-parse "origin/$RELEASE_BRANCH")" ] || die "本地 ${RELEASE_BRANCH} 与 origin/${RELEASE_BRANCH} 不一致——先推送/拉齐"
+  SYNC_MSG="与 origin/${RELEASE_BRANCH} 同步"
+elif [ "$RC" -eq 2 ]; then
+  SYNC_MSG="无远端对应分支，跳过同步检查"
 else
-  say "分支 ${RELEASE_BRANCH} 无远端对应——跳过远端同步检查"
+  die "git ls-remote 失败（rc=${RC}，网络或认证问题）——无法确认与远端的关系，中止"
 fi
-say "预检通过（main @ $(git rev-parse --short HEAD)，与远端同步；未跟踪的本地文件不影响发布）"
+say "预检通过（${RELEASE_BRANCH} @ $(git rev-parse --short HEAD)，${SYNC_MSG}；未跟踪的本地文件不影响发布）"
 
 say "2/7 版本一致性（${VERSION}）"
 json_ver() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -1; }
@@ -102,18 +108,19 @@ say "5/7 构建（.app ＋ .dmg；DMG 由 hdiutil 直出，不依赖 Finder Appl
 if ! pnpm exec tauri build --bundles app >"$DIST_LOG" 2>&1; then
   tail -20 "$DIST_LOG" >&2; die "构建失败"
 fi
+if [ -n "${CARGO_TARGET_DIR:-}" ] && [ "${CARGO_TARGET_DIR#/}" = "$CARGO_TARGET_DIR" ]; then
+  die "CARGO_TARGET_DIR 需为绝对路径（当前为相对值：${CARGO_TARGET_DIR}）"
+fi
 BUNDLE_ROOT="${CARGO_TARGET_DIR:-$(pwd)/src-tauri/target}/release/bundle"
 APP_BUNDLE="$BUNDLE_ROOT/macos/AgentUp Harness.app"
 [ -d "$APP_BUNDLE" ] || { tail -20 "$DIST_LOG" >&2; die "未找到 .app 产物：$APP_BUNDLE"; }
 ARCH=$(uname -m)
 DMG="$BUNDLE_ROOT/dmg/AgentUp Harness_${VERSION}_${ARCH}.dmg"
-mkdir -p "$BUNDLE_ROOT/dmg"
-STAGING=$(mktemp -d "${TMPDIR:-/tmp}/agentup-dmg.XXXXXX")
-cp -R "$APP_BUNDLE" "$STAGING/" || { rm -rf "$STAGING"; die "复制 .app 进 staging 失败"; }
+mkdir -p "$BUNDLE_ROOT/dmg" "$STAGING"
+cp -R "$APP_BUNDLE" "$STAGING/" || die "复制 .app 进 staging 失败"
 ln -s /Applications "$STAGING/Applications"
 hdiutil create -volname "AgentUp Harness" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null \
-  || { rm -rf "$STAGING"; tail -20 "$DIST_LOG" >&2; die "hdiutil 打包 DMG 失败"; }
-rm -rf "$STAGING"
+  || { tail -20 "$DIST_LOG" >&2; die "hdiutil 打包 DMG 失败"; }
 [ -f "$DMG" ] || die "DMG 产物缺失：$DMG"
 say "构建完成：$(basename "${DMG}")（$(du -h "${DMG}" | cut -f1)）"
 
