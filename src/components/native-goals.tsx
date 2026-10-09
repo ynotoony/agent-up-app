@@ -1,5 +1,5 @@
 // Input: 已接入项目 ID、用户目标、真实规划结果与用户确认。
-// Output: App 原生目标的创建、规划、任务编辑与确认；不启动实施。
+// Output: App 原生目标的创建、规划进度、任务编辑与确认；不启动实施。
 // Pos: 项目工作区的目标面板，沿用既有组件与设计 tokens；src/ 目录登记豁免。
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
@@ -15,11 +15,26 @@ const statusLabels: Record<NativeGoal['status'], string> = {
   draft: '待规划', planning: '方案制定中', awaiting_confirmation: '待确认', ready: '计划已确认', failed: '规划失败',
 };
 
-function GoalStatus({ goal }: { goal: NativeGoal }) {
-  return <Badge className={cn('shrink-0', goal.status === 'failed' ? 'bg-destructive/10 text-destructive' : goal.status === 'draft' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary')}>
-    {goal.status === 'planning' && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
-    {statusLabels[goal.status]}
+type PendingAction = { goalId: string; kind: 'plan' | 'confirm'; startedAt: number };
+
+function GoalStatus({ goal, pending }: { goal: NativeGoal; pending?: PendingAction | null }) {
+  const active = pending?.goalId === goal.id ? pending : null;
+  const processing = Boolean(active) || goal.status === 'planning';
+  const label = active?.kind === 'confirm' ? '保存中' : active?.kind === 'plan' && goal.status !== 'planning' ? '请求规划中' : statusLabels[goal.status];
+  return <Badge className={cn('shrink-0', processing ? 'bg-primary/10 text-primary' : goal.status === 'failed' ? 'bg-destructive/10 text-destructive' : goal.status === 'draft' ? 'bg-muted text-muted-foreground' : 'bg-primary/10 text-primary')}>
+    {processing && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
+    {label}
   </Badge>;
+}
+
+function PlanningElapsed({ startedAt }: { startedAt: number }) {
+  const [now, setNow] = useState(Date.now);
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  const seconds = Math.max(0, Math.floor((now - startedAt) / 1000));
+  return <span className="tabular-nums">已等待 {seconds < 60 ? `${seconds} 秒` : `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒`}</span>;
 }
 
 export function NativeGoals({ projectId }: { projectId: string }) {
@@ -30,7 +45,7 @@ export function NativeGoals({ projectId }: { projectId: string }) {
   const [content, setContent] = useState('');
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [error, setError] = useState('');
   const alive = useRef(true);
   const readVersion = useRef(0);
@@ -50,7 +65,10 @@ export function NativeGoals({ projectId }: { projectId: string }) {
     try {
       const result = await api.goals.list(projectId);
       if (!alive.current || version !== readVersion.current) return;
-      setGoals(result);
+      setGoals((previous) => result.map((goal) => {
+        const current = previous.find((item) => item.id === goal.id);
+        return current && current.revision > goal.revision ? current : goal;
+      }));
       setSelectedId((id) => result.some((goal) => goal.id === id) ? id : result[0]?.id ?? null);
     } catch (err) {
       if (alive.current && version === readVersion.current) setError(errorMessage(err));
@@ -65,7 +83,7 @@ export function NativeGoals({ projectId }: { projectId: string }) {
     return () => { alive.current = false; readVersion.current += 1; };
   }, [refresh]);
 
-  const polling = busyId !== null || goals.some((goal) => goal.status === 'planning');
+  const polling = pendingAction !== null || goals.some((goal) => goal.status === 'planning');
   useEffect(() => {
     if (!polling) return;
     let stopped = false;
@@ -102,10 +120,11 @@ export function NativeGoals({ projectId }: { projectId: string }) {
     }
   };
 
-  const act = async (goal: NativeGoal, action: () => Promise<NativeGoal>) => {
+  const act = async (goal: NativeGoal, kind: PendingAction['kind'], action: () => Promise<NativeGoal>) => {
     if (mutation.current) return;
     mutation.current = true;
-    setBusyId(goal.id);
+    readVersion.current += 1;
+    setPendingAction({ goalId: goal.id, kind, startedAt: Date.now() });
     setError('');
     try {
       const result = await action();
@@ -117,7 +136,7 @@ export function NativeGoals({ projectId }: { projectId: string }) {
       }
     } finally {
       mutation.current = false;
-      if (alive.current) setBusyId(null);
+      if (alive.current) setPendingAction(null);
     }
   };
 
@@ -154,20 +173,30 @@ export function NativeGoals({ projectId }: { projectId: string }) {
       {!showComposer && goals.length > 0 && <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
         <nav aria-label="目标列表" className="space-y-2 lg:sticky lg:top-0">
           {goals.map((goal) => <button key={goal.id} type="button" aria-current={selectedId === goal.id ? 'true' : undefined} onClick={() => { setSelectedId(goal.id); setError(''); }} className={cn('w-full rounded-xl border bg-card p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/30', selectedId === goal.id ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-accent')}>
-            <div className="mb-2 flex items-center justify-between gap-2"><GoalStatus goal={goal} /><ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" /></div>
+            <div className="mb-2 flex items-center justify-between gap-2"><GoalStatus goal={goal} pending={pendingAction} /><ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" /></div>
             <p className="line-clamp-3 break-words text-sm font-medium leading-relaxed">{goal.content}</p>
             <p className="mt-2 text-xs text-muted-foreground">{goal.tasks.length > 0 ? `${goal.tasks.length} 个任务 · ` : ''}{new Date(goal.updated_at).toLocaleDateString('zh-CN')}</p>
           </button>)}
         </nav>
-        {selected && <GoalDetail key={`${selected.id}:${selected.revision}:${selected.status}`} goal={selected} busy={busyId !== null || selected.status === 'planning'} onPlan={(feedback) => void act(selected, () => api.goals.plan(projectId, selected.id, feedback))} onConfirm={(tasks) => void act(selected, () => api.goals.confirm(projectId, selected.id, selected.revision, tasks))} />}
+        {selected && <GoalDetail key={selected.id} goal={selected} pending={pendingAction?.goalId === selected.id ? pendingAction : null} busy={pendingAction !== null || selected.status === 'planning'} onPlan={(feedback) => void act(selected, 'plan', () => api.goals.plan(projectId, selected.id, feedback))} onConfirm={(tasks) => void act(selected, 'confirm', () => api.goals.confirm(projectId, selected.id, selected.revision, tasks))} />}
       </div>}
     </>}
   </section>;
 }
 
-function GoalDetail({ goal, busy, onPlan, onConfirm }: { goal: NativeGoal; busy: boolean; onPlan: (feedback: string) => void; onConfirm: (tasks: NativeTask[]) => void }) {
+function GoalDetail({ goal, pending, busy, onPlan, onConfirm }: { goal: NativeGoal; pending: PendingAction | null; busy: boolean; onPlan: (feedback: string) => void; onConfirm: (tasks: NativeTask[]) => void }) {
   const [feedback, setFeedback] = useState('');
   const [tasks, setTasks] = useState<NativeTask[]>(() => goal.tasks.map((task) => ({ ...task })));
+  const [planRevision, setPlanRevision] = useState(goal.revision);
+  // Only a new completed plan replaces edits; polling, startup and failure keep the draft.
+  if ((goal.status === 'awaiting_confirmation' || goal.status === 'ready') && goal.revision !== planRevision) {
+    setPlanRevision(goal.revision);
+    setTasks(goal.tasks.map((task) => ({ ...task })));
+    setFeedback('');
+  }
+  const planning = pending?.kind === 'plan' || goal.status === 'planning';
+  const confirming = pending?.kind === 'confirm';
+  const startedAt = goal.status === 'planning' && goal.run ? Date.parse(goal.run.started_at) : pending?.startedAt;
   const ready = goal.status === 'ready';
   const canConfirm = goal.status === 'awaiting_confirmation' && goal.questions.length === 0 && tasks.length > 0;
   const invalidTasks = tasks.some((task) => !task.title.trim() || !task.description.trim() || !task.acceptance.some((item) => item.trim()));
@@ -175,12 +204,13 @@ function GoalDetail({ goal, busy, onPlan, onConfirm }: { goal: NativeGoal; busy:
 
   return <div className="min-w-0 space-y-4 lg:col-span-2">
     <section className="space-y-4 rounded-xl border border-border bg-card p-5">
-      <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-medium">当前目标</h3><GoalStatus goal={goal} /></div>
+      <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-medium">当前目标</h3><GoalStatus goal={goal} pending={pending} /></div>
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{goal.content}</p>
       {goal.summary && <div className="border-t border-border pt-4"><h4 className="mb-2 text-xs font-medium text-muted-foreground">计划概述</h4><p className="whitespace-pre-wrap text-sm leading-relaxed">{goal.summary}</p></div>}
       {goal.run && <p className="text-xs text-muted-foreground">规划 Agent：{goal.run.runtime_id} · {new Date(goal.run.started_at).toLocaleString('zh-CN')}{goal.run.tokens != null ? ` · ${goal.run.tokens.toLocaleString()} tokens` : ''}</p>}
       {goal.error && <div className="space-y-2"><p role="alert" className="whitespace-pre-wrap break-words text-sm text-destructive">{goal.error}</p><Link to="/settings" className="rounded text-xs text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary/30">检查 Agent 设置</Link></div>}
-      {busy && <p role="status" className="flex items-center gap-2 text-sm text-primary"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />正在处理，请稍候。可以离开此页，稍后回来查看结果。</p>}
+      {planning && <div className="space-y-1 text-sm text-primary"><p role="status" className="flex items-center gap-2"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />{goal.status === 'planning' ? 'Agent 正在只读分析项目、制定任务计划。' : '正在请求 Agent 规划…'}</p><p className="text-xs text-muted-foreground">{startedAt != null && Number.isFinite(startedAt) && <><PlanningElapsed startedAt={startedAt} /> · </>}规划可能需要几分钟，可以离开此页，结果会自动保存。</p></div>}
+      {confirming && <p role="status" className="flex items-center gap-2 text-sm text-primary"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />正在保存确认的任务计划…</p>}
       {ready && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>任务计划已保存。当前版本支持目标规划与确认，尚未接入代码执行。</p></div>}
     </section>
 
@@ -211,8 +241,8 @@ function GoalDetail({ goal, busy, onPlan, onConfirm }: { goal: NativeGoal; busy:
       {canConfirm && invalidTasks && <p className="text-xs text-destructive">请为每个任务填写名称、说明和至少一项验收标准。</p>}
       {canConfirm && feedback.trim() && <p className="text-xs text-muted-foreground">有新的补充要求，请先重新规划，再确认更新后的计划。</p>}
       <div className="flex flex-wrap justify-end gap-2">
-        <Button variant={canConfirm ? 'secondary' : 'primary'} disabled={busy || (goal.questions.length > 0 && !feedback.trim())} loading={busy && !canConfirm} onClick={() => onPlan(feedback.trim())}>{goal.status === 'draft' ? <Sparkles aria-hidden="true" className="h-4 w-4" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />}{goal.status === 'draft' ? '生成任务计划' : goal.status === 'failed' ? '重试规划' : '重新规划'}</Button>
-        {canConfirm && <Button loading={busy} disabled={busy || invalidTasks || Boolean(feedback.trim())} onClick={() => onConfirm(tasks.map((task) => ({ ...task, title: task.title.trim(), description: task.description.trim(), acceptance: task.acceptance.map((item) => item.trim()).filter(Boolean) })))}><CheckCircle2 aria-hidden="true" className="h-4 w-4" />确认任务计划</Button>}
+        <Button variant={canConfirm ? 'secondary' : 'primary'} disabled={busy || (goal.questions.length > 0 && !feedback.trim())} loading={planning} onClick={() => onPlan(feedback.trim())}>{!planning && (goal.status === 'draft' ? <Sparkles aria-hidden="true" className="h-4 w-4" /> : <RefreshCw aria-hidden="true" className="h-4 w-4" />)}{planning ? '正在生成任务计划…' : goal.status === 'draft' ? '生成任务计划' : goal.status === 'failed' ? '重试规划' : '重新规划'}</Button>
+        {canConfirm && <Button loading={confirming} disabled={busy || invalidTasks || Boolean(feedback.trim())} onClick={() => onConfirm(tasks.map((task) => ({ ...task, title: task.title.trim(), description: task.description.trim(), acceptance: task.acceptance.map((item) => item.trim()).filter(Boolean) })))}>{!confirming && <CheckCircle2 aria-hidden="true" className="h-4 w-4" />}{confirming ? '正在保存计划…' : '确认任务计划'}</Button>}
       </div>
     </section>}
   </div>;
