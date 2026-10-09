@@ -4,6 +4,7 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { Sidebar } from '@/components/sidebar';
 import WorkspacePage from '@/pages/workspace';
 import ProjectPage from '@/pages/project';
+import ProjectConnectPage from '@/pages/project-connect';
 import RequirementPage from '@/pages/requirement';
 import SettingsPage from '@/pages/settings';
 
@@ -16,6 +17,7 @@ export default function App() {
           <div className="min-w-0 flex-1">
             <Routes>
               <Route path="/" element={<WorkspacePage />} />
+              <Route path="/connect" element={<ProjectConnectPage />} />
               <Route path="/project/:id" element={<ProjectPage />} />
               <Route path="/requirement/:id" element={<RequirementPage />} />
               <Route path="/settings" element={<SettingsPage />} />

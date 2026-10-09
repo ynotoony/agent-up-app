@@ -64,6 +64,16 @@ pub fn projects_init(state: State<std::sync::Arc<AppState>>, path: String) -> Ap
 }
 
 #[tauri::command]
+pub fn projects_discover(path: String) -> ApiResult<crate::project_discovery::ProjectDiscovery> {
+    crate::project_discovery::discover(&path)
+}
+
+#[tauri::command]
+pub fn projects_import_confirm(input: crate::project_discovery::ImportProjectInput) -> ApiResult<crate::project_discovery::ProjectImport> {
+    crate::project_discovery::confirm(&input)
+}
+
+#[tauri::command]
 pub fn projects_reinit(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<crate::types::InitReport> {
     let report = crate::project_init::reinit_project(&state, &id)?;
     enqueue_understanding(&state, report.converted_requirement_ids.clone());

@@ -24,6 +24,50 @@ export type ArtifactType = 'code' | 'document' | 'preview' | 'config' | 'markdow
 
 export type UnderstandingSource = 'initial' | 'user_feedback' | 'question_answer' | 'iteration' | 'manual';
 
+/** App 原生接入：发现结果仅供预览，确认时由后端重新验证来源。 */
+export interface GitDiscovery {
+  branch: string | null;
+  head: string | null;
+  dirty: boolean;
+}
+
+export interface ManagementSource {
+  path: string;
+  kind: string;
+  category: 'current' | 'history' | 'context' | 'mixed' | 'unknown';
+  item_count: number;
+  current_count: number;
+  history_count: number;
+  unknown_count: number;
+  fingerprint: string;
+}
+
+export interface ProjectImport {
+  schema_version: number;
+  id: string;
+  name: string;
+  created_at: string;
+  sources: ManagementSource[];
+}
+
+export interface ProjectDiscovery {
+  path: string;
+  name: string;
+  git: GitDiscovery;
+  directories: string[];
+  sources: ManagementSource[];
+  warnings: string[];
+  scanned_at: string;
+  fingerprint: string;
+  native_project: ProjectImport | null;
+}
+
+export interface ImportProjectInput {
+  path: string;
+  fingerprint: string;
+  selected_sources: string[];
+}
+
 export interface Project {
   id: string;
   name: string;

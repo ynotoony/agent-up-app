@@ -8,9 +8,12 @@ import type {
   GovernanceTicketsResult,
   InitProjectResult,
   InitReport,
+  ImportProjectInput,
   OrchestrationSettings,
   PendingAttachment,
   Project,
+  ProjectDiscovery,
+  ProjectImport,
   ProjectDashboard,
   ProjectDoc,
   RequirementDetail,
@@ -49,6 +52,8 @@ export interface ApiClient {
     list(): Promise<Project[]>;
     create(body: { name: string; description?: string | null }): Promise<Project>;
     init(path: string): Promise<InitProjectResult>;
+    discover(path: string): Promise<ProjectDiscovery>;
+    importConfirm(input: ImportProjectInput): Promise<ProjectImport>;
     reinit(id: string): Promise<InitReport>;
     docs(id: string): Promise<ProjectDoc[]>;
     docRead(docId: string): Promise<{ id: string; rel_path: string; kind: string; title: string; content: string }>;
@@ -128,6 +133,8 @@ export const api: ApiClient = {
     list: () => call<Project[]>('projects_list'),
     create: (body) => call<Project>('projects_create', { name: body.name, description: body.description ?? null }),
     init: (path) => call<InitProjectResult>('projects_init', { path }),
+    discover: (path) => call<ProjectDiscovery>('projects_discover', { path }),
+    importConfirm: (input) => call<ProjectImport>('projects_import_confirm', { input }),
     reinit: (id) => call<InitReport>('projects_reinit', { id }),
     docs: (id) => call<ProjectDoc[]>('projects_docs', { id }),
     docRead: (docId) => call('projects_doc_read', { docId }),

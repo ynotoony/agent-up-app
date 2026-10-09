@@ -8,6 +8,7 @@ pub mod attachments;
 pub mod agent_runtime;
 pub mod roles;
 pub mod project_init;
+pub mod project_discovery;
 pub mod orchestrator;
 pub mod ticket_source;
 pub mod commands;
@@ -42,6 +43,8 @@ pub fn run() {
             commands::projects_list,
             commands::projects_create,
             commands::projects_init,
+            commands::projects_discover,
+            commands::projects_import_confirm,
             commands::projects_reinit,
             commands::projects_docs,
             commands::projects_doc_read,

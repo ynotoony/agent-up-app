@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { useLayoutEffect, useEffect, useRef, useState } from 'react';
-import { Bot, Folder, Loader2, LayoutDashboard, Pencil, Plus, Settings, Trash2, X, Check, AlertCircle } from 'lucide-react';
+import { Bot, Folder, FolderInput, Loader2, LayoutDashboard, Pencil, Plus, Settings, Trash2, X, Check, AlertCircle } from 'lucide-react';
 import type { Project } from '../../shared/types';
 import { api, errorMessage } from '@/lib/api';
 import { pickAndCreateProject } from '@/lib/create-project';
@@ -57,6 +57,9 @@ export function Sidebar() {
       <nav className="px-3 mt-2 space-y-0.5">
         <SidebarLink to="/" active={location.pathname === '/'} icon={<LayoutDashboard className="w-4 h-4" />}>
           工作台
+        </SidebarLink>
+        <SidebarLink to="/connect" active={location.pathname === '/connect'} icon={<FolderInput aria-hidden="true" className="w-4 h-4" />}>
+          接入项目
         </SidebarLink>
       </nav>
 
