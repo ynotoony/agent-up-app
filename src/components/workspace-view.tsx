@@ -1,35 +1,65 @@
-import { Link, useNavigate } from 'react-router-dom';
-import { useLayoutEffect, useState } from 'react';
-import { Gavel } from 'lucide-react';
-import type { Decision, WorkspaceData } from '../../shared/types';
+import { Link } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { FolderInput, Gavel, Plus } from 'lucide-react';
+import type { Decision, Project, WorkspaceData } from '../../shared/types';
 import { api, errorMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { RequirementInput } from './requirement-input';
 import { KanbanBoard } from './kanban';
+import { Button } from './ui/button';
 
-// 工作台（首页）主体：一句话需求录入 + 全量需求看板（数据全量来自 SQLite）。
+// 工作台：原生项目进入目标工作区；仅明确没有原生档案的项目可创建旧需求。
 export function WorkspaceView({ onCreated }: { onCreated: (requirementId: string) => void }) {
   const [data, setData] = useState<WorkspaceData | null>(null);
+  const [nativeProjects, setNativeProjects] = useState<Project[]>([]);
+  const [legacyProjects, setLegacyProjects] = useState<Project[]>([]);
+  const [profileErrors, setProfileErrors] = useState<string[]>([]);
   const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
 
-  const refresh = () => {
+  useEffect(() => {
+    let active = true;
+    setError('');
     api.workspace
       .get()
-      .then(setData)
-      .catch((err) => setError(errorMessage(err)));
-  };
+      .then(async (workspace) => {
+        const profiles = await Promise.allSettled(workspace.projects.map((project) => api.projects.nativeProfile(project.id)));
+        if (!active) return;
+        const native: Project[] = [];
+        const legacy: Project[] = [];
+        const errors: string[] = [];
+        profiles.forEach((profile, index) => {
+          const project = workspace.projects[index];
+          if (profile.status === 'rejected') errors.push(`${project.name}：${errorMessage(profile.reason)}`);
+          else if (profile.value === null) legacy.push(project);
+          else native.push(project);
+        });
+        setNativeProjects(native);
+        setLegacyProjects(legacy);
+        setProfileErrors(errors);
+        setData(workspace);
+      })
+      .catch((err) => { if (active) setError(errorMessage(err)); });
+    return () => { active = false; };
+  }, [attempt]);
 
-  useLayoutEffect(refresh, []);
-
-  if (error) return <ErrorPanel message={error} />;
+  if (error) return <div className="space-y-3"><ErrorPanel message={error} /><Button variant="secondary" onClick={() => setAttempt((value) => value + 1)}>重新读取</Button></div>;
   if (!data) return <SkeletonPanel />;
 
   return (
-    <div className="flex flex-col gap-4 h-full min-h-0">
-      <RequirementInput projects={data.projects} onCreated={onCreated} />
-      <div className="flex-1 min-h-0">
+    <div className="flex flex-col gap-4 h-full min-h-0 overflow-y-auto scrollbar-thin">
+      {profileErrors.length > 0 && <div className="shrink-0 space-y-2"><ErrorPanel message={`部分项目档案读取失败，已暂停其新建入口：${profileErrors.join('；')}`} /><Button variant="secondary" size="sm" onClick={() => setAttempt((value) => value + 1)}>重新读取项目档案</Button></div>}
+      <section className="shrink-0 space-y-3">
+        <div className="flex items-center justify-between gap-3"><h2 className="text-sm font-medium">项目目标</h2><Link to="/connect" className="inline-flex items-center gap-1.5 rounded-lg px-2 py-1.5 text-xs text-primary hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/30"><FolderInput aria-hidden="true" className="h-3.5 w-3.5" />接入项目</Link></div>
+        {nativeProjects.length > 0 ? <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{nativeProjects.map((project) => <Link key={project.id} to={`/project/${project.id}?newGoal=1`} className="min-w-0 rounded-xl border border-border bg-card p-4 outline-none transition-colors hover:border-primary/40 hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/30"><h3 className="truncate text-sm font-medium">{project.name}</h3><p className="mt-1 truncate text-xs text-muted-foreground">{project.path}</p><span className="mt-4 inline-flex items-center gap-1.5 text-sm text-primary"><Plus aria-hidden="true" className="h-4 w-4" />新建目标</span></Link>)}</div> : <div className="rounded-xl border border-border bg-card p-5"><p className="text-sm font-medium">先接入一个项目，再创建目标</p><p className="mt-1 text-xs leading-5 text-muted-foreground">选择已有 Git 项目，确认只读扫描结果后，就可以规划任务。</p><Link to="/connect" className="mt-4 inline-flex rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary/30">接入项目</Link></div>}
+      </section>
+      {legacyProjects.length > 0 && <section className="shrink-0 space-y-2"><h2 className="text-xs font-medium text-muted-foreground">旧流程 · 新建需求</h2><RequirementInput projects={legacyProjects} onCreated={onCreated} /></section>}
+      {data.requirements.length > 0 && <section className="flex min-h-72 flex-1 flex-col gap-2">
+        <h2 className="shrink-0 text-xs font-medium text-muted-foreground">旧流程 · 需求记录</h2>
+        <div className="flex-1 min-h-0">
         <KanbanBoard requirements={data.requirements} />
-      </div>
+        </div>
+      </section>}
     </div>
   );
 }

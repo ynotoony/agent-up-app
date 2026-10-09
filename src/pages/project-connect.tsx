@@ -1,7 +1,8 @@
 // Input: 用户选择的 Git 项目、只读发现结果与经确认的来源引用。
-// Output: 项目接入预览、来源选择与 App 原生项目档案回执；不生成任务。
+// Output: 项目接入预览、来源选择与项目工作区导航；不生成任务。
 // Pos: /connect 独立接入页，使用既有设计 tokens；目录登记按 src/ 豁免规则维护。
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { open } from '@tauri-apps/plugin-dialog';
 import { AlertCircle, CheckCircle2, FolderInput, GitBranch, RefreshCw, ScanSearch, ShieldCheck } from 'lucide-react';
 import type { ManagementSource, ProjectDiscovery } from '../../shared/types';
@@ -33,6 +34,7 @@ function sourceSummary(source: ManagementSource): string {
 }
 
 export default function ProjectConnectPage() {
+  const navigate = useNavigate();
   const [path, setPath] = useState('');
   const [discovery, setDiscovery] = useState<ProjectDiscovery | null>(null);
   const [selected, setSelected] = useState<Set<string>>(() => new Set());
@@ -112,20 +114,19 @@ export default function ProjectConnectPage() {
   };
 
   const confirmImport = async () => {
-    if (!discovery || discovery.native_project || phase !== 'idle' || requiresScan || path !== discovery.path) return;
+    if (!discovery || phase !== 'idle' || requiresScan || path !== discovery.path) return;
     const version = ++requestVersion.current;
     setPhase('saving');
     setError('');
     setNotice('');
     try {
-      const profile = await api.projects.importConfirm({
+      const result = await api.projects.importConfirm({
         path: discovery.path,
         fingerprint: discovery.fingerprint,
         selected_sources: discovery.sources.filter((source) => selected.has(source.path)).map((source) => source.path),
       });
       if (version !== requestVersion.current) return;
-      setDiscovery({ ...discovery, native_project: profile });
-      setNotice('项目档案已保存，可以随时重新扫描此目录查看。');
+      navigate(`/project/${result.project.id}`);
     } catch (err) {
       if (version === requestVersion.current) {
         setError(errorMessage(err));
@@ -249,7 +250,12 @@ export default function ProjectConnectPage() {
 
             {profile ? (
               <section aria-labelledby="saved-profile" className="rounded-xl border border-primary/30 bg-card p-5">
-                <h2 id="saved-profile" className="flex items-center gap-2 font-medium"><CheckCircle2 aria-hidden="true" className="h-4 w-4 text-primary" />项目档案已建立</h2>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <h2 id="saved-profile" className="flex items-center gap-2 font-medium"><CheckCircle2 aria-hidden="true" className="h-4 w-4 text-primary" />项目档案已建立</h2>
+                  <Button disabled={phase !== 'idle' || requiresScan || path !== discovery.path} loading={phase === 'saving'} onClick={() => void confirmImport()}>
+                    {phase === 'saving' ? '正在进入…' : '进入项目'}
+                  </Button>
+                </div>
                 <p className="mt-2 text-sm leading-6 text-muted-foreground">已保存项目身份和 {profile.sources.length} 个来源引用。原始资料保持不变；具体任务尚未导入。</p>
                 <dl className="mt-3 grid gap-2 text-xs sm:grid-cols-[auto_1fr]">
                   <dt className="text-muted-foreground">档案位置</dt><dd className="break-all font-mono">{discovery.path}/.agentup-app/project.json</dd>

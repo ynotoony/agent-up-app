@@ -3,7 +3,6 @@ import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { Bot, Folder, FolderInput, Loader2, LayoutDashboard, Pencil, Plus, Settings, Trash2, X, Check, AlertCircle } from 'lucide-react';
 import type { Project } from '../../shared/types';
 import { api, errorMessage } from '@/lib/api';
-import { pickAndCreateProject } from '@/lib/create-project';
 import { cn } from '@/lib/utils';
 import { ThemeToggle } from './theme-toggle';
 import { Button } from './ui/button';
@@ -12,8 +11,8 @@ import { Button } from './ui/button';
 export function Sidebar() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [creating, setCreating] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
 
   const fetchProjects = () => {
     api.projects
@@ -23,7 +22,7 @@ export function Sidebar() {
       .finally(() => setLoading(false));
   };
 
-  useLayoutEffect(fetchProjects, []);
+  useLayoutEffect(fetchProjects, [location.pathname]);
 
   // 队列消化中需求会持续进场（initializing → 可见），5s 轮询保持侧栏计数与项目页一致
   useEffect(() => {
@@ -31,17 +30,6 @@ export function Sidebar() {
     return () => window.clearInterval(timer);
   }, []);
 
-  const addProject = async () => {
-    setCreating(true);
-    const result = await pickAndCreateProject();
-    setCreating(false);
-    if (result) {
-      fetchProjects();
-      navigate(`/project/${result.project.id}`);
-    }
-  };
-
-  const location = useLocation();
   return (
     <aside className="w-60 shrink-0 h-screen flex flex-col bg-sidebar text-sidebar-foreground border-r border-border">
       <div data-tauri-drag-region className="drag-region h-14 pl-[76px] pr-3 flex items-center gap-2 select-none">
@@ -67,12 +55,11 @@ export function Sidebar() {
         <span className="text-xs font-medium text-muted-foreground px-2">项目</span>
         <button
           type="button"
-          aria-label="添加项目（选择文件夹）"
-          onClick={() => void addProject()}
-          disabled={creating}
+          aria-label="接入项目"
+          onClick={() => navigate('/connect')}
           className="w-5 h-5 rounded flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-accent transition-colors disabled:opacity-50"
         >
-          {creating ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+          <Plus className="w-3.5 h-3.5" />
         </button>
       </div>
 

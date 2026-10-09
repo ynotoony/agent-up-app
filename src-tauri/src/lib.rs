@@ -9,6 +9,7 @@ pub mod agent_runtime;
 pub mod roles;
 pub mod project_init;
 pub mod project_discovery;
+pub mod native_goals;
 pub mod orchestrator;
 pub mod ticket_source;
 pub mod commands;
@@ -39,6 +40,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            native_goals::native_projects_profile,
+            native_goals::native_goals_list,
+            native_goals::native_goals_create,
+            native_goals::native_goals_plan,
+            native_goals::native_goals_confirm,
             commands::workspace_get,
             commands::projects_list,
             commands::projects_create,

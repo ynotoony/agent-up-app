@@ -9,6 +9,9 @@ import type {
   InitProjectResult,
   InitReport,
   ImportProjectInput,
+  ImportProjectResult,
+  NativeGoal,
+  NativeTask,
   OrchestrationSettings,
   PendingAttachment,
   Project,
@@ -53,7 +56,8 @@ export interface ApiClient {
     create(body: { name: string; description?: string | null }): Promise<Project>;
     init(path: string): Promise<InitProjectResult>;
     discover(path: string): Promise<ProjectDiscovery>;
-    importConfirm(input: ImportProjectInput): Promise<ProjectImport>;
+    importConfirm(input: ImportProjectInput): Promise<ImportProjectResult>;
+    nativeProfile(projectId: string): Promise<ProjectImport | null>;
     reinit(id: string): Promise<InitReport>;
     docs(id: string): Promise<ProjectDoc[]>;
     docRead(docId: string): Promise<{ id: string; rel_path: string; kind: string; title: string; content: string }>;
@@ -67,6 +71,12 @@ export interface ApiClient {
     get(id: string): Promise<ProjectDashboard>;
     update(id: string, updates: { name?: string; description?: string | null; status?: string }): Promise<Project>;
     remove(id: string): Promise<{ deleted: boolean }>;
+  };
+  goals: {
+    list(projectId: string): Promise<NativeGoal[]>;
+    create(projectId: string, content: string): Promise<NativeGoal>;
+    plan(projectId: string, goalId: string, feedback?: string | null): Promise<NativeGoal>;
+    confirm(projectId: string, goalId: string, revision: number, tasks: NativeTask[]): Promise<NativeGoal>;
   };
   requirements: {
     create(body: { project_id: string; content: string; attachments?: PendingAttachment[]; estimated_minutes?: number }): Promise<CreateRequirementResult>;
@@ -134,7 +144,8 @@ export const api: ApiClient = {
     create: (body) => call<Project>('projects_create', { name: body.name, description: body.description ?? null }),
     init: (path) => call<InitProjectResult>('projects_init', { path }),
     discover: (path) => call<ProjectDiscovery>('projects_discover', { path }),
-    importConfirm: (input) => call<ProjectImport>('projects_import_confirm', { input }),
+    importConfirm: (input) => call<ImportProjectResult>('projects_import_confirm', { input }),
+    nativeProfile: (projectId) => call<ProjectImport | null>('native_projects_profile', { projectId }),
     reinit: (id) => call<InitReport>('projects_reinit', { id }),
     docs: (id) => call<ProjectDoc[]>('projects_docs', { id }),
     docRead: (docId) => call('projects_doc_read', { docId }),
@@ -156,6 +167,12 @@ export const api: ApiClient = {
         },
       }),
     remove: (id) => call('projects_delete', { id }),
+  },
+  goals: {
+    list: (projectId) => call<NativeGoal[]>('native_goals_list', { projectId }),
+    create: (projectId, content) => call<NativeGoal>('native_goals_create', { projectId, content }),
+    plan: (projectId, goalId, feedback) => call<NativeGoal>('native_goals_plan', { projectId, goalId, feedback: feedback ?? null }),
+    confirm: (projectId, goalId, revision, tasks) => call<NativeGoal>('native_goals_confirm', { projectId, goalId, revision, tasks }),
   },
   requirements: {
     create: (body) => call('requirements_create', { input: body }),

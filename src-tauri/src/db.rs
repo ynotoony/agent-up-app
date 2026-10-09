@@ -178,6 +178,41 @@ pub fn create_project_full(conn: &Connection, name: &str, description: Option<&s
     Ok(get_project(conn, &id)?.expect("project just inserted"))
 }
 
+/// Register a project that already owns an App-native project profile.
+///
+/// The profile id is stable across re-scans, so use it as the SQLite id as
+/// well. Registration is idempotent by path: if this directory was already
+/// registered, return the existing row. A profile id may never be silently
+/// rebound to another directory.
+pub fn register_imported_project(conn: &Connection, id: &str, name: &str, path: &str) -> ApiResult<Project> {
+    if id.trim().is_empty() || name.trim().is_empty() || path.trim().is_empty() {
+        return Err(ApiError::bad_request("接入项目登记信息不完整"));
+    }
+    if let Some(existing) = get_project(conn, id)? {
+        if existing.path.as_deref() == Some(path) {
+            return Ok(existing);
+        }
+        return Err(ApiError::conflict("项目档案 ID 已属于其他目录"));
+    }
+    if let Some(existing) = find_project_by_path(conn, path)? {
+        return Ok(existing);
+    }
+    let ts = now_iso();
+    conn.execute(
+        "INSERT INTO projects (id, name, description, path, status, created_at, updated_at) VALUES (?1,?2,NULL,?3,'active',?4,?4)",
+        params![id, name.trim(), path, ts],
+    )
+    .map_err(|error| {
+        if let rusqlite::Error::SqliteFailure(inner, _) = &error {
+            if inner.code == rusqlite::ErrorCode::ConstraintViolation {
+                return ApiError::conflict("项目已登记或项目档案 ID 冲突");
+            }
+        }
+        error.into()
+    })?;
+    get_project(conn, id)?.ok_or_else(|| ApiError::internal("项目登记后无法读取项目"))
+}
+
 pub fn find_project_by_path(conn: &Connection, path: &str) -> ApiResult<Option<Project>> {
     let mut stmt = conn.prepare("SELECT * FROM projects WHERE path = ?1 ORDER BY created_at DESC LIMIT 1")?;
     let mut rows = stmt.query_map(params![path], map_project)?;

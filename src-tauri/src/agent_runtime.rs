@@ -465,7 +465,7 @@ fn invoke_streaming_with_timeout(
 ) -> impl std::future::Future<Output = ApiResult<RuntimeOutcome>> + Send {
     // 阻塞实现跑在独立线程（等价 spawn_blocking），经一次性通道回传结果；
     // 返回 impl Future 保持调用方 async 语义，不占用 tokio worker。
-    let (tx, rx) = std::sync::mpsc::channel::<ApiResult<RuntimeOutcome>>();
+    let (tx, rx) = tokio::sync::oneshot::channel::<ApiResult<RuntimeOutcome>>();
     let prompt = prompt.to_string();
     let workdir = workdir.map(|p| p.to_path_buf());
     let cancel_key = cancel_key.to_string();
@@ -475,7 +475,7 @@ fn invoke_streaming_with_timeout(
     });
     async move {
         // oneshot 语义：线程只会 send 一次（含 panic 时 drop 触发 Disconnected）
-        match rx.recv() {
+        match rx.await {
             Ok(result) => result,
             Err(_) => Err(ApiError::internal("runtime 调用线程异常退出".to_string())),
         }

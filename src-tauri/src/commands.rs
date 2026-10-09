@@ -69,8 +69,11 @@ pub fn projects_discover(path: String) -> ApiResult<crate::project_discovery::Pr
 }
 
 #[tauri::command]
-pub fn projects_import_confirm(input: crate::project_discovery::ImportProjectInput) -> ApiResult<crate::project_discovery::ProjectImport> {
-    crate::project_discovery::confirm(&input)
+pub fn projects_import_confirm(
+    state: State<std::sync::Arc<AppState>>,
+    input: crate::project_discovery::ImportProjectInput,
+) -> ApiResult<crate::project_discovery::ImportProjectResult> {
+    crate::project_discovery::confirm_and_register(&state, &input)
 }
 
 #[tauri::command]
@@ -310,6 +313,21 @@ pub fn projects_delete(state: State<std::sync::Arc<AppState>>, id: String) -> Ap
     Ok(json!({ "deleted": true }))
 }
 
+// Native projects must never enter the legacy auto-execution pipeline, even
+// through stale frontend state or a direct IPC request.
+fn ensure_legacy_requirement_creation(path: Option<&str>) -> ApiResult<()> {
+    let Some(path) = path else { return Ok(()); };
+    match std::fs::symlink_metadata(std::path::Path::new(path).join(".agentup-app")) {
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
+        Err(error) => return Err(error.into()),
+        Ok(_) => {},
+    }
+    if crate::project_discovery::open_native_project(path)?.1.is_some() {
+        return Err(ApiError::conflict("此项目已使用原生目标工作区，请进入项目新建目标并确认任务计划"));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 pub async fn requirements_create(
     app: AppHandle,
@@ -319,6 +337,9 @@ pub async fn requirements_create(
     if input.content.trim().chars().count() < 4 {
         return Err(ApiError::bad_request("需求内容至少 4 个字"));
     }
+    let project = with_conn(&state, |conn| db::get_project(conn, &input.project_id))?
+        .ok_or_else(|| ApiError::not_found("归属项目不存在"))?;
+    ensure_legacy_requirement_creation(project.path.as_deref())?;
     let attachments = db::with_attachments_dir(&state, |dir| crate::attachments::persist_attachments(dir, &input.attachments))?;
     let (requirement, count) = with_conn(&state, |conn| {
         if db::get_project(conn, &input.project_id)?.is_none() {
@@ -728,4 +749,26 @@ pub fn mode_steps(mode: RequirementMode) -> serde_json::Value {
         "requires_user_confirmation": steps.requires_user_confirmation,
         "auto_verify": steps.auto_verify,
     })
+}
+
+#[cfg(test)]
+mod native_requirement_guard_tests {
+    use super::ensure_legacy_requirement_creation;
+
+    #[test]
+    fn native_projects_cannot_enter_legacy_creation() {
+        let temp = tempfile::TempDir::new().unwrap();
+        let path = temp.path().to_str().unwrap();
+        assert!(ensure_legacy_requirement_creation(None).is_ok());
+        assert!(ensure_legacy_requirement_creation(Some(path)).is_ok());
+        assert!(std::process::Command::new("git").args(["init", "-q", path]).status().unwrap().success());
+        let preview = crate::project_discovery::discover(path).unwrap();
+        crate::project_discovery::confirm(&crate::project_discovery::ImportProjectInput {
+            path: path.into(), fingerprint: preview.fingerprint, selected_sources: vec![],
+        }).unwrap();
+        assert_eq!(ensure_legacy_requirement_creation(Some(path)).unwrap_err().code, 409);
+        std::fs::write(temp.path().join(".agentup-app/project.json"), "malformed").unwrap();
+        assert_eq!(ensure_legacy_requirement_creation(Some(path)).unwrap_err().code, 400);
+        assert_eq!(std::fs::read_to_string(temp.path().join(".agentup-app/project.json")).unwrap(), "malformed");
+    }
 }

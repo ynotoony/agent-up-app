@@ -1,5 +1,5 @@
 // Input: 用户选择的 Git 仓库、已识别来源和用户确认的来源路径。
-// Output: 只读发现预览，或 .agentup-app/project.json 的最小 App 原生记录。
+// Output: 只读发现预览，或 .agentup-app/project.json 的最小 App 原生记录与 SQLite 项目索引。
 // Pos: 新项目接入路径；独立于旧 project_init，不导入任务、不调用 Agent；变更同步根 README 与产物登记。
 
 use crate::error::{ApiError, ApiResult};
@@ -90,6 +90,31 @@ pub struct ImportProjectInput {
     pub path: String,
     pub fingerprint: String,
     pub selected_sources: Vec<String>,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ImportProjectResult {
+    pub profile: ProjectImport,
+    pub project: crate::types::Project,
+}
+
+/// Confirmation and local indexing share one entry point; neither imports tasks
+/// nor starts an Agent. Existing paths retain their SQLite id and history.
+pub fn confirm_and_register(
+    state: &crate::db::AppState,
+    input: &ImportProjectInput,
+) -> ApiResult<ImportProjectResult> {
+    let path = git_root(&input.path)?;
+    let path = path.to_str().ok_or_else(|| ApiError::bad_request("项目路径编码不受支持"))?;
+    let canonical_input = ImportProjectInput {
+        path: path.to_owned(),
+        fingerprint: input.fingerprint.clone(),
+        selected_sources: input.selected_sources.clone(),
+    };
+    let profile = confirm(&canonical_input)?;
+    let conn = state.conn.lock().map_err(|_| ApiError::internal("项目索引暂时不可用"))?;
+    let project = crate::db::register_imported_project(&conn, &profile.id, &profile.name, path)?;
+    Ok(ImportProjectResult { profile, project })
 }
 
 fn hash(bytes: &[u8]) -> String {
@@ -306,6 +331,13 @@ fn valid_source(source: &ManagementSource) -> bool {
         && source.fingerprint.len() == 64
         && source.fingerprint.bytes().all(|b| b.is_ascii_hexdigit())
         && counts.is_some_and(|v| v <= source.item_count)
+}
+
+/// Cheap native profile read for task APIs; does not scan source trees.
+pub fn open_native_project(path: &str) -> ApiResult<(PathBuf, Option<ProjectImport>)> {
+    let root = git_root(path)?;
+    let profile = native_project(&root)?;
+    Ok((root, profile))
 }
 
 fn native_project(root: &Path) -> ApiResult<Option<ProjectImport>> {

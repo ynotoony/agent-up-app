@@ -68,6 +68,46 @@ export interface ImportProjectInput {
   selected_sources: string[];
 }
 
+export interface ImportProjectResult {
+  profile: ProjectImport;
+  /** Existing SQLite projects retain their id and history when reconnected. */
+  project: Project;
+}
+
+/** App 原生目标与任务；文件是事实来源，不映射旧需求流水线。 */
+export interface NativeTask {
+  id: string;
+  title: string;
+  description: string;
+  acceptance: string[];
+  depends_on: string[];
+  capabilities: string[];
+}
+
+export interface GoalRun {
+  id: string;
+  runtime_id: string;
+  started_at: string;
+  finished_at: string | null;
+  tokens: number | null;
+}
+
+export interface NativeGoal {
+  schema_version: number;
+  id: string;
+  project_id: string;
+  content: string;
+  status: 'draft' | 'planning' | 'awaiting_confirmation' | 'ready' | 'failed';
+  revision: number;
+  created_at: string;
+  updated_at: string;
+  summary: string;
+  questions: string[];
+  tasks: NativeTask[];
+  run: GoalRun | null;
+  error: string | null;
+}
+
 export interface Project {
   id: string;
   name: string;

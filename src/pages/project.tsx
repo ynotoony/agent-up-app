@@ -1,8 +1,8 @@
-import { useNavigate, useParams } from 'react-router-dom';
-import { useLayoutEffect, useState } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import { useEffect, useLayoutEffect, useState } from 'react';
 import { FolderKanban, FolderOpen, Pencil, X, Check, Loader2, AlertCircle, AlertTriangle, RefreshCw, Sparkles, Download, Shield, FileText, MoreHorizontal, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { GovernanceItem, InitReport, ProjectDashboard } from '../../shared/types';
+import type { GovernanceItem, InitReport, ProjectDashboard, ProjectImport } from '../../shared/types';
 import { api, errorMessage } from '@/lib/api';
 import { RequirementInput } from '@/components/requirement-input';
 import { RequirementList } from '@/components/requirement-list';
@@ -11,11 +11,45 @@ import { PendingDecisionsPanel, ErrorPanel, SkeletonPanel } from '@/components/w
 import { Button } from '@/components/ui/button';
 import { TabPills } from '@/components/ui/tabs';
 import { isTerminal } from '@/components/ui/status';
+import { NativeGoals } from '@/components/native-goals';
 
 type StatusFilter = 'all' | 'active' | 'completed' | 'failed';
 
-// 项目工作区：/project/:id。双栏工作台：上（头部 + 一句话输入）固定，下左需求列表 / 下右治理文档，桌面各自滚动。
+// App 原生档案明确选择新工作区；缺失才使用旧流程，读取失败不能降级。
 export default function ProjectPage() {
+  const { id } = useParams<{ id: string }>();
+  return id ? <ProjectWorkspace key={id} projectId={id} /> : null;
+}
+
+function ProjectWorkspace({ projectId }: { projectId: string }) {
+  const [result, setResult] = useState<{ dashboard: ProjectDashboard; profile: ProjectImport | null } | null>(null);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  useEffect(() => {
+    let active = true;
+    setError('');
+    Promise.all([api.projects.get(projectId), api.projects.nativeProfile(projectId)])
+      .then(([dashboard, profile]) => { if (active) setResult({ dashboard, profile }); })
+      .catch((err) => { if (active) setError(errorMessage(err)); });
+    return () => { active = false; };
+  }, [projectId, attempt]);
+
+  if (error || !result) return <main className="h-screen overflow-y-auto scrollbar-thin"><div className="mx-auto max-w-7xl space-y-4 px-6 py-6">{error ? <><ErrorPanel message={error} /><Button variant="secondary" onClick={() => setAttempt((value) => value + 1)}>重新读取项目</Button></> : <SkeletonPanel />}</div></main>;
+  if (!result.profile) return <LegacyProjectPage />;
+  return <main className="h-screen overflow-y-auto scrollbar-thin">
+    <div data-tauri-drag-region className="drag-region h-2" />
+    <div className="mx-auto max-w-7xl space-y-6 px-6 py-5 pb-12">
+      <header className="flex flex-wrap items-start justify-between gap-4">
+        <div className="min-w-0"><h1 className="text-lg font-semibold tracking-tight">{result.dashboard.project.name}</h1><p className="mt-1 break-all text-xs text-muted-foreground">{result.dashboard.project.path}</p><p className="mt-2 text-sm text-muted-foreground">从一个目标开始，确认计划后再推进工作。</p></div>
+        <Link to="/connect" className="rounded-lg border border-border bg-muted px-3 py-2 text-xs outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-primary/30">接入资料</Link>
+      </header>
+      <NativeGoals projectId={projectId} />
+    </div>
+  </main>;
+}
+
+// 旧项目继续使用原有需求与治理工作区。
+function LegacyProjectPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [data, setData] = useState<ProjectDashboard | null>(null);
