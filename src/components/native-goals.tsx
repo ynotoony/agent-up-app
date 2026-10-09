@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { AlertCircle, CheckCircle2, ChevronRight, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';
 import type { NativeGoal, NativeTask } from '../../shared/types';
 import { api, errorMessage } from '@/lib/api';
+import { filterNativeGoals } from '@/lib/native-goal-search';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +42,7 @@ function PlanningElapsed({ startedAt }: { startedAt: number }) {
 export function NativeGoals({ projectId }: { projectId: string }) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [goals, setGoals] = useState<NativeGoal[]>([]);
+  const [query, setQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [composing, setComposing] = useState(searchParams.get('newGoal') === '1');
   const [content, setContent] = useState('');
@@ -142,6 +144,7 @@ export function NativeGoals({ projectId }: { projectId: string }) {
   };
 
   const selected = goals.find((goal) => goal.id === selectedId);
+  const filteredGoals = filterNativeGoals(goals, query);
   const showComposer = composing || (!loading && goals.length === 0);
 
   return <section className="space-y-4" aria-label="项目目标">
@@ -173,7 +176,13 @@ export function NativeGoals({ projectId }: { projectId: string }) {
 
       {!showComposer && goals.length > 0 && <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-3">
         <nav aria-label="目标列表" className="space-y-2 lg:sticky lg:top-0">
-          {goals.map((goal) => <button key={goal.id} type="button" aria-current={selectedId === goal.id ? 'true' : undefined} onClick={() => { setSelectedId(goal.id); setError(''); }} className={cn('w-full rounded-xl border bg-card p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/30', selectedId === goal.id ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-accent')}>
+          <div className="flex items-center gap-2">
+            <label htmlFor="native-goal-search" className="sr-only">搜索目标或计划概述</label>
+            <input id="native-goal-search" type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="搜索目标或计划概述" className={cn(inputClass, 'min-w-0')} />
+            <Button type="button" size="sm" variant="ghost" className="shrink-0" disabled={!query} onClick={() => setQuery('')} aria-label="清空搜索">清空</Button>
+          </div>
+          {filteredGoals.length === 0 && <p role="status" className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">没有匹配的目标，请尝试其他关键词或清空搜索。</p>}
+          {filteredGoals.map((goal) => <button key={goal.id} type="button" aria-current={selectedId === goal.id ? 'true' : undefined} onClick={() => { setSelectedId(goal.id); setError(''); }} className={cn('w-full rounded-xl border bg-card p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/30', selectedId === goal.id ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-accent')}>
             <div className="mb-2 flex items-center justify-between gap-2"><GoalStatus goal={goal} pending={pendingAction} /><ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0 text-muted-foreground" /></div>
             <p className="line-clamp-3 break-words text-sm font-medium leading-relaxed">{goal.content}</p>
             <p className="mt-2 text-xs text-muted-foreground">{goal.tasks.length > 0 ? `${goal.tasks.length} 个任务 · ` : ''}{new Date(goal.updated_at).toLocaleDateString('zh-CN')}</p>
