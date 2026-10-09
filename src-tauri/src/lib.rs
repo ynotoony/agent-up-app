@@ -10,6 +10,8 @@ pub mod roles;
 pub mod project_init;
 pub mod project_discovery;
 pub mod native_goals;
+pub mod native_delivery;
+pub mod delivery_git;
 pub mod orchestrator;
 pub mod ticket_source;
 pub mod commands;
@@ -40,6 +42,11 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            native_delivery::native_delivery_options,
+            native_delivery::native_deliveries_list,
+            native_delivery::native_task_execute,
+            native_delivery::native_delivery_accept,
+            native_delivery::native_delivery_reject,
             native_goals::native_projects_profile,
             native_goals::native_goals_list,
             native_goals::native_goals_create,

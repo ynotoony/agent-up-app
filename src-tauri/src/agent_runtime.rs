@@ -403,13 +403,24 @@ pub async fn invoke_streaming(
     cancel_key: &str,
     on_event: impl Fn(StreamEvent) + Send + 'static,
 ) -> ApiResult<RuntimeOutcome> {
-    invoke_streaming_with_timeout(spec, prompt, read_only, workdir, spawn_timeout_secs(), cancel_key, on_event).await
+    invoke_streaming_with_timeout(spec, prompt, read_only, false, workdir, spawn_timeout_secs(), cancel_key, on_event).await
+}
+
+/// Native delivery only: enforce an explicit worktree write sandbox, never inherited yolo mode.
+pub async fn invoke_isolated(
+    prompt: &str,
+    workdir: &std::path::Path,
+    cancel_key: &str,
+) -> ApiResult<RuntimeOutcome> {
+    let spec = spec_by_id("codex-cli").ok_or_else(|| ApiError::internal("隔离执行器不可用"))?;
+    invoke_streaming_with_timeout(spec, prompt, false, true, Some(workdir),
+        spawn_timeout_secs(), cancel_key, |_| {}).await
 }
 
 /// 连通性检测：发一个最小 prompt 验证 CLI/API/模型全链路，返回（模型回复, 耗时毫秒）。60s 超时。
 pub async fn check_connectivity(spec: &'static RuntimeSpec) -> ApiResult<(String, u64)> {
     let started = std::time::Instant::now();
-    let outcome = invoke_streaming_with_timeout(spec, "连通性测试：请只回复两个字：正常", true, None, 60, "", |_| {}).await?;
+    let outcome = invoke_streaming_with_timeout(spec, "连通性测试：请只回复两个字：正常", true, false, None, 60, "", |_| {}).await?;
     Ok((outcome.text, started.elapsed().as_millis() as u64))
 }
 
@@ -458,6 +469,7 @@ fn invoke_streaming_with_timeout(
     spec: &'static RuntimeSpec,
     prompt: &str,
     read_only: bool,
+    isolated_write: bool,
     workdir: Option<&std::path::Path>,
     timeout_secs: u64,
     cancel_key: &str,
@@ -470,7 +482,7 @@ fn invoke_streaming_with_timeout(
     let workdir = workdir.map(|p| p.to_path_buf());
     let cancel_key = cancel_key.to_string();
     std::thread::spawn(move || {
-        let result = invoke_blocking_impl(spec, &prompt, read_only, workdir.as_deref(), timeout_secs, &cancel_key, on_event);
+        let result = invoke_blocking_impl(spec, &prompt, read_only, isolated_write, workdir.as_deref(), timeout_secs, &cancel_key, on_event);
         let _ = tx.send(result);
     });
     async move {
@@ -495,6 +507,7 @@ fn invoke_blocking_impl(
     spec: &RuntimeSpec,
     prompt: &str,
     read_only: bool,
+    isolated_write: bool,
     workdir: Option<&std::path::Path>,
     timeout_secs: u64,
     cancel_key: &str,
@@ -515,6 +528,15 @@ fn invoke_blocking_impl(
             cmd.args(["exec", "--json", "--skip-git-repo-check"]);
             if read_only {
                 cmd.arg("--sandbox").arg("read-only");
+            } else if isolated_write {
+                cmd.args(["--sandbox", "workspace-write", "-c", "approval_policy=\"never\"",
+                    "-c", "sandbox_workspace_write.network_access=false",
+                    "-c", "sandbox_workspace_write.writable_roots=[]"]);
+            }
+            #[cfg(unix)]
+            if isolated_write {
+                use std::os::unix::process::CommandExt;
+                cmd.process_group(0);
             }
             cmd.arg("-")
                 .stdin(Stdio::piped())
@@ -569,6 +591,18 @@ fn invoke_blocking_impl(
             cmd.spawn().map_err(|e| ApiError::internal(format!("启动 {} 失败: {e}", spec.name)))?
         }
     };
+
+    // Native implementation owns a process group; no writer survives timeout/cancellation or successful exit.
+    struct IsolatedProcessGroup(Option<u32>);
+    impl Drop for IsolatedProcessGroup {
+        fn drop(&mut self) {
+            #[cfg(unix)]
+            if let Some(pid) = self.0 {
+                let _ = std::process::Command::new("/bin/kill").args(["-KILL", &format!("-{pid}")]).output();
+            }
+        }
+    }
+    let isolated_group = IsolatedProcessGroup(isolated_write.then_some(child.id()));
 
     // stderr 收尾行收集（错误归因用），独立线程防管道写满死锁
     let stderr_handle = child.stderr.take();
@@ -714,6 +748,7 @@ fn invoke_blocking_impl(
         }
     };
 
+    drop(isolated_group);
     let (last_text, tokens, thread_hint) = collector_thread
         .join()
         .map_err(|_| ApiError::internal("runtime 事件流收集线程崩溃".to_string()))?

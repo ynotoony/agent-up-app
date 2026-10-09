@@ -12,6 +12,8 @@ import type {
   ImportProjectResult,
   NativeGoal,
   NativeTask,
+  NativeDelivery,
+  VerificationCommand,
   OrchestrationSettings,
   PendingAttachment,
   Project,
@@ -78,6 +80,13 @@ export interface ApiClient {
     plan(projectId: string, goalId: string, feedback?: string | null): Promise<NativeGoal>;
     confirm(projectId: string, goalId: string, revision: number, tasks: NativeTask[]): Promise<NativeGoal>;
   };
+  deliveries: {
+    options(projectId: string): Promise<{ commands: VerificationCommand[]; runtime_id: string }>;
+    list(projectId: string, goalId: string): Promise<NativeDelivery[]>;
+    execute(projectId: string, goalId: string, taskId: string, revision: number, commands: VerificationCommand[], feedback?: string): Promise<NativeDelivery>;
+    accept(projectId: string, runId: string, fingerprint: string): Promise<NativeDelivery>;
+    reject(projectId: string, runId: string): Promise<NativeDelivery>;
+  };
   requirements: {
     create(body: { project_id: string; content: string; attachments?: PendingAttachment[]; estimated_minutes?: number }): Promise<CreateRequirementResult>;
     get(id: string): Promise<RequirementDetail>;
@@ -136,6 +145,13 @@ export interface RuntimeInfo {
 }
 
 export const api: ApiClient = {
+  deliveries: {
+    options: (projectId) => call('native_delivery_options', { projectId }),
+    list: (projectId, goalId) => call('native_deliveries_list', { projectId, goalId }),
+    execute: (projectId, goalId, taskId, revision, commands, feedback) => call('native_task_execute', { projectId, goalId, taskId, revision, commands, feedback: feedback ?? null }),
+    accept: (projectId, runId, fingerprint) => call('native_delivery_accept', { projectId, runId, fingerprint }),
+    reject: (projectId, runId) => call('native_delivery_reject', { projectId, runId }),
+  },
   workspace: {
     get: () => call<WorkspaceData>('workspace_get'),
   },

@@ -108,6 +108,29 @@ export interface NativeGoal {
   error: string | null;
 }
 
+export interface VerificationCommand { program: string; args: string[] }
+export interface DeliveryCheck extends VerificationCommand { exit_code: number | null; passed: boolean; output: string }
+export interface DeliveryWorktree { root: string; path: string; branch: string; base_head: string; base_branch: string }
+export interface DeliveryDiff { files: string[]; stat: string; patch: string; fingerprint: string }
+export interface NativeDelivery {
+  schema_version: number;
+  id: string;
+  goal_id: string;
+  goal_revision: number;
+  task_id: string;
+  task_title: string;
+  status: 'running' | 'verifying' | 'reviewing' | 'awaiting_acceptance' | 'accepted' | 'failed';
+  started_at: string;
+  updated_at: string;
+  runtime_id: string;
+  worktree: DeliveryWorktree | null;
+  diff: DeliveryDiff | null;
+  checks: DeliveryCheck[];
+  review: { passed: boolean; summary: string; findings: string[] } | null;
+  error: string | null;
+  commit: string | null;
+}
+
 export interface Project {
   id: string;
   name: string;

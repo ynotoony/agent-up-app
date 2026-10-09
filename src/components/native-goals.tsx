@@ -9,6 +9,7 @@ import { api, errorMessage } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { NativeDeliveryPanel } from './native-delivery';
 
 const inputClass = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-60';
 const statusLabels: Record<NativeGoal['status'], string> = {
@@ -178,13 +179,13 @@ export function NativeGoals({ projectId }: { projectId: string }) {
             <p className="mt-2 text-xs text-muted-foreground">{goal.tasks.length > 0 ? `${goal.tasks.length} 个任务 · ` : ''}{new Date(goal.updated_at).toLocaleDateString('zh-CN')}</p>
           </button>)}
         </nav>
-        {selected && <GoalDetail key={selected.id} goal={selected} pending={pendingAction?.goalId === selected.id ? pendingAction : null} busy={pendingAction !== null || selected.status === 'planning'} onPlan={(feedback) => void act(selected, 'plan', () => api.goals.plan(projectId, selected.id, feedback))} onConfirm={(tasks) => void act(selected, 'confirm', () => api.goals.confirm(projectId, selected.id, selected.revision, tasks))} />}
+        {selected && <GoalDetail key={selected.id} projectId={projectId} goal={selected} pending={pendingAction?.goalId === selected.id ? pendingAction : null} busy={pendingAction !== null || selected.status === 'planning'} onPlan={(feedback) => void act(selected, 'plan', () => api.goals.plan(projectId, selected.id, feedback))} onConfirm={(tasks) => void act(selected, 'confirm', () => api.goals.confirm(projectId, selected.id, selected.revision, tasks))} />}
       </div>}
     </>}
   </section>;
 }
 
-function GoalDetail({ goal, pending, busy, onPlan, onConfirm }: { goal: NativeGoal; pending: PendingAction | null; busy: boolean; onPlan: (feedback: string) => void; onConfirm: (tasks: NativeTask[]) => void }) {
+function GoalDetail({ projectId, goal, pending, busy, onPlan, onConfirm }: { projectId: string; goal: NativeGoal; pending: PendingAction | null; busy: boolean; onPlan: (feedback: string) => void; onConfirm: (tasks: NativeTask[]) => void }) {
   const [feedback, setFeedback] = useState('');
   const [tasks, setTasks] = useState<NativeTask[]>(() => goal.tasks.map((task) => ({ ...task })));
   const [planRevision, setPlanRevision] = useState(goal.revision);
@@ -211,7 +212,7 @@ function GoalDetail({ goal, pending, busy, onPlan, onConfirm }: { goal: NativeGo
       {goal.error && <div className="space-y-2"><p role="alert" className="whitespace-pre-wrap break-words text-sm text-destructive">{goal.error}</p><Link to="/settings" className="rounded text-xs text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary/30">检查 Agent 设置</Link></div>}
       {planning && <div className="space-y-1 text-sm text-primary"><p role="status" className="flex items-center gap-2"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />{goal.status === 'planning' ? 'Agent 正在只读分析项目、制定任务计划。' : '正在请求 Agent 规划…'}</p><p className="text-xs text-muted-foreground">{startedAt != null && Number.isFinite(startedAt) && <><PlanningElapsed startedAt={startedAt} /> · </>}规划可能需要几分钟，可以离开此页，结果会自动保存。</p></div>}
       {confirming && <p role="status" className="flex items-center gap-2 text-sm text-primary"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />正在保存确认的任务计划…</p>}
-      {ready && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>任务计划已保存。当前版本支持目标规划与确认，尚未接入代码执行。</p></div>}
+      {ready && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>任务计划已确认。可以在下方按依赖执行任务，验证与审查通过后再验收合入。</p></div>}
     </section>
 
     {goal.questions.length > 0 && <section className="rounded-xl border border-border bg-card p-5">
@@ -233,6 +234,8 @@ function GoalDetail({ goal, pending, busy, onPlan, onConfirm }: { goal: NativeGo
       </div>
       {!ready && <div className="border-t border-border px-5 py-3"><Button variant="ghost" size="sm" disabled={busy} onClick={() => setTasks((items) => [...items, { id: `task-${crypto.randomUUID()}`, title: '', description: '', acceptance: [''], depends_on: [], capabilities: [] }])}><Plus aria-hidden="true" className="h-4 w-4" />增加任务</Button></div>}
     </section>}
+
+    {ready && <NativeDeliveryPanel key={`${projectId}:${goal.id}:${goal.revision}`} projectId={projectId} goal={goal} />}
 
     {!ready && <section className="space-y-3 rounded-xl border border-border bg-card p-5">
       <label htmlFor={`goal-feedback-${goal.id}`} className="block text-sm font-medium">{goal.questions.length > 0 ? '补充答案' : '补充要求（可选）'}</label>

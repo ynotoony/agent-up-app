@@ -432,6 +432,8 @@ impl GoalStore {
         revision: u64,
         tasks: Vec<NativeTask>,
     ) -> ApiResult<NativeGoal> {
+        let _delivery_guard = crate::native_delivery::lock_changes()?;
+        crate::native_delivery::ensure_no_pending(&self.root)?;
         let session = lock_session()?;
         let mut goal = self.recover(self.read(id)?, &session)?;
         if goal.revision != revision {
@@ -455,6 +457,8 @@ impl GoalStore {
         Ok(goal)
     }
     fn begin(&self, id: &str, runtime_id: &str) -> ApiResult<(NativeGoal, ActivePlan)> {
+        let _delivery_guard = crate::native_delivery::lock_changes()?;
+        crate::native_delivery::ensure_no_pending(&self.root)?;
         let mut session = lock_session()?;
         let key = self.key(id);
         if session.active.contains(&key) {
