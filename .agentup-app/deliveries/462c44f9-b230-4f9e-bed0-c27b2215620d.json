@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "id": "462c44f9-b230-4f9e-bed0-c27b2215620d",
+  "project_id": "0fadfd25-8d42-47b2-b09b-25776d9d452b",
+  "goal_id": "6d14336a-278b-4a50-a239-98e133c08226",
+  "goal_revision": 6,
+  "task_id": "task-1",
+  "task_title": "为原生目标列表接入本地关键词搜索",
+  "task_snapshot": {
+    "id": "task-1",
+    "title": "为原生目标列表接入本地关键词搜索",
+    "description": "新建 `src/lib/native-goal-search.ts`，导出纯函数 `filterNativeGoals(goals, query)`；在 `src/components/native-goals.tsx` 增加本地搜索输入、清空操作、过滤列表与无匹配提示。查询需匹配目标的 `content` 或 `summary`，忽略大小写并去除首尾空格；空查询或空白查询显示全部目标。搜索只影响列表显示，不删除记录、不改变已选择目标的详情；保持现有设计规范、选择行为及其他交互。不得修改后端、依赖、治理文件或其他源码。",
+    "acceptance": [
+      "空查询与仅包含空白字符的查询返回并显示全部目标。",
+      "查询忽略大小写，并能匹配目标的 `content` 或 `summary`。",
+      "中文关键词可以正确匹配目标。",
+      "无匹配结果时过滤函数返回空数组，界面显示明确的无匹配提示。",
+      "执行清空操作后恢复显示全部目标。",
+      "搜索过滤不会删除或修改原始目标记录，也不会改变当前已选择目标的详情内容。",
+      "`filterNativeGoals` 保持匹配目标原有顺序并返回原对象引用，不修改输入数组或其中对象。",
+      "TypeScript 检查与项目构建通过。"
+    ],
+    "depends_on": [],
+    "capabilities": [
+      "编码"
+    ]
+  },
+  "goal_content": "自举验收：给 AgentUp 原生目标列表增加本地关键词搜索。只改 src/components/native-goals.tsx 并新建 src/lib/native-goal-search.ts，保持现有设计规范和全部行为。搜索匹配目标 content 或 summary，忽略大小写，去掉查询首尾空格，空查询返回全部；过滤不删除记录、不改变已选择的详情，无匹配显示明确提示，可清空恢复。为了自动验证，辅助模块导出纯函数 filterNativeGoals(goals, query)，返回匹配目标，保持顺序和对象引用，不修改输入。请拆成一个可独立验收任务；不改后端/依赖/治理文件。验收：空与空白查询返回全部；大小写匹配 content/summary；无匹配返回空；中文匹配；不修改输入；TypeScript 与构建通过。",
+  "status": "accepted",
+  "started_at": "2026-10-09T05:33:59.878210+00:00",
+  "updated_at": "2026-10-09T05:47:49.014080+00:00",
+  "runtime_id": "codex-cli",
+  "worktree": {
+    "root": "/Users/bic/Projects/agentup",
+    "path": "/Users/bic/Projects/agentup-agentup-runs/462c44f9-b230-4f9e-bed0-c27b2215620d",
+    "branch": "codex/run-462c44f9-b230-4f9e-bed0-c27b2215620d",
+    "base_head": "1b17bd1fa39cd2f3449abc2d40cc4fe7b0c75560",
+    "base_branch": "main"
+  },
+  "diff": {
+    "files": [
+      "src/components/native-goals.tsx",
+      "src/lib/native-goal-search.ts"
+    ],
+    "stat": "src/components/native-goals.tsx | 11 ++++++++++-\n 1 file changed, 10 insertions(+), 1 deletion(-)\n新增未跟踪文件：1",
+    "patch": "diff --git a/src/components/native-goals.tsx b/src/components/native-goals.tsx\nindex 6f4638e..decc4a9 100644\n--- a/src/components/native-goals.tsx\n+++ b/src/components/native-goals.tsx\n@@ -6,6 +6,7 @@ import { Link, useSearchParams } from 'react-router-dom';\n import { AlertCircle, CheckCircle2, ChevronRight, Loader2, Plus, RefreshCw, Sparkles, Trash2 } from 'lucide-react';\n import type { NativeGoal, NativeTask } from '../../shared/types';\n import { api, errorMessage } from '@/lib/api';\n+import { filterNativeGoals } from '@/lib/native-goal-search';\n import { cn } from '@/lib/utils';\n import { Badge } from '@/components/ui/badge';\n import { Button } from '@/components/ui/button';\n@@ -41,6 +42,7 @@ function PlanningElapsed({ startedAt }: { startedAt: number }) {\n export function NativeGoals({ projectId }: { projectId: string }) {\n   const [searchParams, setSearchParams] = useSearchParams();\n   const [goals, setGoals] = useState<NativeGoal[]>([]);\n+  const [query, setQuery] = useState('');\n   const [selectedId, setSelectedId] = useState<string | null>(null);\n   const [composing, setComposing] = useState(searchParams.get('newGoal') === '1');\n   const [content, setContent] = useState('');\n@@ -142,6 +144,7 @@ export function NativeGoals({ projectId }: { projectId: string }) {\n   };\n \n   const selected = goals.find((goal) => goal.id === selectedId);\n+  const filteredGoals = filterNativeGoals(goals, query);\n   const showComposer = composing || (!loading && goals.length === 0);\n \n   return <section className=\"space-y-4\" aria-label=\"项目目标\">\n@@ -173,7 +176,13 @@ export function NativeGoals({ projectId }: { projectId: string }) {\n \n       {!showComposer && goals.length > 0 && <div className=\"grid grid-cols-1 items-start gap-5 lg:grid-cols-3\">\n         <nav aria-label=\"目标列表\" className=\"space-y-2 lg:sticky lg:top-0\">\n-          {goals.map((goal) => <button key={goal.id} type=\"button\" aria-current={selectedId === goal.id ? 'true' : undefined} onClick={() => { setSelectedId(goal.id); setError(''); }} className={cn('w-full rounded-xl border bg-card p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/30', selectedId === goal.id ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-accent')}>\n+          <div className=\"flex items-center gap-2\">\n+            <label htmlFor=\"native-goal-search\" className=\"sr-only\">搜索目标或计划概述</label>\n+            <input id=\"native-goal-search\" type=\"search\" value={query} onChange={(event) => setQuery(event.target.value)} placeholder=\"搜索目标或计划概述\" className={cn(inputClass, 'min-w-0')} />\n+            <Button type=\"button\" size=\"sm\" variant=\"ghost\" className=\"shrink-0\" disabled={!query} onClick={() => setQuery('')} aria-label=\"清空搜索\">清空</Button>\n+          </div>\n+          {filteredGoals.length === 0 && <p role=\"status\" className=\"rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground\">没有匹配的目标，请尝试其他关键词或清空搜索。</p>}\n+          {filteredGoals.map((goal) => <button key={goal.id} type=\"button\" aria-current={selectedId === goal.id ? 'true' : undefined} onClick={() => { setSelectedId(goal.id); setError(''); }} className={cn('w-full rounded-xl border bg-card p-4 text-left outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary/30', selectedId === goal.id ? 'border-primary/40 bg-primary/5' : 'border-border hover:bg-accent')}>\n             <div className=\"mb-2 flex items-center justify-between gap-2\"><GoalStatus goal={goal} pending={pendingAction} /><ChevronRight aria-hidden=\"true\" className=\"h-4 w-4 shrink-0 text-muted-foreground\" /></div>\n             <p className=\"line-clamp-3 break-words text-sm font-medium leading-relaxed\">{goal.content}</p>\n             <p className=\"mt-2 text-xs text-muted-foreground\">{goal.tasks.length > 0 ? `${goal.tasks.length} 个任务 · ` : ''}{new Date(goal.updated_at).toLocaleDateString('zh-CN')}</p>\ndiff --git a/src/lib/native-goal-search.ts b/src/lib/native-goal-search.ts\nnew file mode 100644\nindex 0000000..cb02bf2\n--- /dev/null\n+++ b/src/lib/native-goal-search.ts\n@@ -0,0 +1,8 @@\n+import type { NativeGoal } from '../../shared/types';\n+\n+export function filterNativeGoals(goals: readonly NativeGoal[], query: string): NativeGoal[] {\n+  const keyword = query.trim().toLowerCase();\n+  return goals.filter((goal) => !keyword\n+    || goal.content.toLowerCase().includes(keyword)\n+    || goal.summary.toLowerCase().includes(keyword));\n+}\n",
+    "fingerprint": "be787aec6757a670ae5a7e66ba50e6cb905a74ff2d76c7f890659feb847eb8b5"
+  },
+  "checks": [
+    {
+      "program": "node",
+      "args": [
+        "-e",
+        "const assert=require('node:assert/strict');const esbuild=require('esbuild');const Module=require('node:module');const result=esbuild.buildSync({entryPoints:['src/lib/native-goal-search.ts'],bundle:true,write:false,platform:'node',format:'cjs'});const m=new Module('test');m._compile(result.outputFiles[0].text,'test.cjs');const filter=m.exports.filterNativeGoals;const a=Object.freeze({id:'a',content:'修复登录 LOGIN',summary:'用户入口'}),b=Object.freeze({id:'b',content:'列表',summary:'Search Notes'});const items=Object.freeze([a,b]);assert.deepEqual(filter(items,''),items);assert.deepEqual(filter(items,'  '),items);assert.deepEqual(filter(items,' login '),[a]);assert.deepEqual(filter(items,'SEARCH'),[b]);assert.deepEqual(filter(items,'用户'),[a]);assert.deepEqual(filter(items,'absent'),[]);assert.equal(filter(items,'login')[0],a);console.log('PASS seven native goal search behaviors');"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "output": "PASS seven native goal search behaviors\n"
+    },
+    {
+      "program": "node",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json",
+        "--noEmit"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "output": ""
+    },
+    {
+      "program": "node",
+      "args": [
+        "node_modules/vite/bin/vite.js",
+        "build"
+      ],
+      "exit_code": 0,
+      "passed": true,
+      "output": "vite v7.3.6 building client environment for production...\ntransforming...\n✓ 2617 modules transformed.\nrendering chunks...\ncomputing gzip size...\ndist/renderer/index.html                   0.41 kB │ gzip:   0.28 kB\ndist/renderer/assets/index-DO3DBBA5.css   57.35 kB │ gzip:   9.71 kB\ndist/renderer/assets/index-jobE8vQI.js   609.71 kB │ gzip: 186.45 kB\n✓ built in 1.74s\n\n(!) Some chunks are larger than 500 kB after minification. Consider:\n- Using dynamic import() to code-split the application\n- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks\n- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.\n"
+    }
+  ],
+  "commands": [
+    {
+      "program": "node",
+      "args": [
+        "-e",
+        "const assert=require('node:assert/strict');const esbuild=require('esbuild');const Module=require('node:module');const result=esbuild.buildSync({entryPoints:['src/lib/native-goal-search.ts'],bundle:true,write:false,platform:'node',format:'cjs'});const m=new Module('test');m._compile(result.outputFiles[0].text,'test.cjs');const filter=m.exports.filterNativeGoals;const a=Object.freeze({id:'a',content:'修复登录 LOGIN',summary:'用户入口'}),b=Object.freeze({id:'b',content:'列表',summary:'Search Notes'});const items=Object.freeze([a,b]);assert.deepEqual(filter(items,''),items);assert.deepEqual(filter(items,'  '),items);assert.deepEqual(filter(items,' login '),[a]);assert.deepEqual(filter(items,'SEARCH'),[b]);assert.deepEqual(filter(items,'用户'),[a]);assert.deepEqual(filter(items,'absent'),[]);assert.equal(filter(items,'login')[0],a);console.log('PASS seven native goal search behaviors');"
+      ]
+    },
+    {
+      "program": "node",
+      "args": [
+        "node_modules/typescript/bin/tsc",
+        "-p",
+        "tsconfig.json",
+        "--noEmit"
+      ]
+    },
+    {
+      "program": "node",
+      "args": [
+        "node_modules/vite/bin/vite.js",
+        "build"
+      ]
+    }
+  ],
+  "review": {
+    "passed": true,
+    "summary": "审查通过。真实工作树仅包含允许的两个文件变更；搜索函数正确实现首尾空白处理、大小写不敏感匹配、中文匹配、顺序与对象引用保持及输入不变。界面过滤、无匹配提示、清空恢复和已选择目标详情保持均符合验收条件。提供的 TypeScript 检查、构建及行为验证均通过，未发现范围外变更或明显正确性、安全问题。",
+    "findings": []
+  },
+  "implementation_summary": "仅改动指定两个文件：\n- `src/lib/native-goal-search.ts:3`：新增纯函数，匹配 `content`/`summary`，忽略大小写、去除查询首尾空白；保留顺序和对象引用，不修改输入。\n- `src/components/native-goals.tsx:178`：复用既有 `inputClass`、按钮和 tokens，增加搜索、清空和无匹配提示；过滤只影响列表，不改变当前详情选择。\n\n自检通过：指定行为断言、补充顺序/引用/不可变性断言、TypeScript 检查、Vite 构建及 `git diff --check`。未运行 pnpm、安装依赖或执行 Git 写操作。\n\n遗留：构建提示产物超过 500 kB，未越界处理；尚未进行真实 App 界面交互验证。最终验证、独立审查及验收仍由 App 和用户完成。",
+  "verified_fingerprint": "be787aec6757a670ae5a7e66ba50e6cb905a74ff2d76c7f890659feb847eb8b5",
+  "error": null,
+  "commit": "997f91177fcd54a3967b61620dc7ed428465082e",
+  "owner_pid": 24158
+}

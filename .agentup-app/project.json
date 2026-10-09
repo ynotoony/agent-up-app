@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "id": "0fadfd25-8d42-47b2-b09b-25776d9d452b",
+  "name": "agentup",
+  "created_at": "2026-10-09T04:23:22.986810+00:00",
+  "sources": [
+    {
+      "path": "AGENTS.md",
+      "kind": "agent_rules",
+      "category": "context",
+      "item_count": 1,
+      "current_count": 0,
+      "history_count": 0,
+      "unknown_count": 0,
+      "fingerprint": "821e5eaedcd505c7e63b489b851d1b0a0d4061b219726bcaad30d4fecabb4bf1"
+    },
+    {
+      "path": "README.md",
+      "kind": "document",
+      "category": "context",
+      "item_count": 1,
+      "current_count": 0,
+      "history_count": 0,
+      "unknown_count": 0,
+      "fingerprint": "c6cad9b3dc2a7da026320bf471a18c3c38662b158558451159ffb26e943e7fe5"
+    },
+    {
+      "path": "facts",
+      "kind": "documents",
+      "category": "context",
+      "item_count": 1,
+      "current_count": 0,
+      "history_count": 0,
+      "unknown_count": 0,
+      "fingerprint": "32a3f5ccad269f849a9bd64e86adf1523b832b0c9592a328a549472b9457c7d2"
+    },
+    {
+      "path": "facts/project/CONTEXT.md",
+      "kind": "document",
+      "category": "context",
+      "item_count": 1,
+      "current_count": 0,
+      "history_count": 0,
+      "unknown_count": 0,
+      "fingerprint": "fb5a2444238685cd83ab57dbc70c0b9ef6529eb96e9b552bd7a944108641d386"
+    },
+    {
+      "path": "facts/requirements/tickets/index.json",
+      "kind": "ticket_index",
+      "category": "mixed",
+      "item_count": 4,
+      "current_count": 2,
+      "history_count": 2,
+      "unknown_count": 0,
+      "fingerprint": "24d3ed529bed9cd518f8d03afc8c3782d057851b41f31cef08d95bf144faac8e"
+    },
+    {
+      "path": "rules",
+      "kind": "rules",
+      "category": "context",
+      "item_count": 1,
+      "current_count": 0,
+      "history_count": 0,
+      "unknown_count": 0,
+      "fingerprint": "2701d2062a9c436ce3b3708f13682b467cff47f54853b65c2d71b065afc941f8"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "id": "6d14336a-278b-4a50-a239-98e133c08226",
+  "project_id": "0fadfd25-8d42-47b2-b09b-25776d9d452b",
+  "content": "自举验收：给 AgentUp 原生目标列表增加本地关键词搜索。只改 src/components/native-goals.tsx 并新建 src/lib/native-goal-search.ts，保持现有设计规范和全部行为。搜索匹配目标 content 或 summary，忽略大小写，去掉查询首尾空格，空查询返回全部；过滤不删除记录、不改变已选择的详情，无匹配显示明确提示，可清空恢复。为了自动验证，辅助模块导出纯函数 filterNativeGoals(goals, query)，返回匹配目标，保持顺序和对象引用，不修改输入。请拆成一个可独立验收任务；不改后端/依赖/治理文件。验收：空与空白查询返回全部；大小写匹配 content/summary；无匹配返回空；中文匹配；不修改输入；TypeScript 与构建通过。",
+  "status": "ready",
+  "revision": 6,
+  "created_at": "2026-10-09T05:26:45.412536+00:00",
+  "updated_at": "2026-10-09T05:33:13.032899+00:00",
+  "summary": "为 AgentUp 原生目标列表增加本地关键词搜索：新增纯函数过滤模块，并在目标面板接入搜索、清空与无匹配提示，保持现有目标选择、详情展示及其他行为不变。仅涉及 `src/components/native-goals.tsx` 与新建的 `src/lib/native-goal-search.ts`，不改后端、依赖或治理文件。",
+  "questions": [],
+  "tasks": [
+    {
+      "id": "task-1",
+      "title": "为原生目标列表接入本地关键词搜索",
+      "description": "新建 `src/lib/native-goal-search.ts`，导出纯函数 `filterNativeGoals(goals, query)`；在 `src/components/native-goals.tsx` 增加本地搜索输入、清空操作、过滤列表与无匹配提示。查询需匹配目标的 `content` 或 `summary`，忽略大小写并去除首尾空格；空查询或空白查询显示全部目标。搜索只影响列表显示，不删除记录、不改变已选择目标的详情；保持现有设计规范、选择行为及其他交互。不得修改后端、依赖、治理文件或其他源码。",
+      "acceptance": [
+        "空查询与仅包含空白字符的查询返回并显示全部目标。",
+        "查询忽略大小写，并能匹配目标的 `content` 或 `summary`。",
+        "中文关键词可以正确匹配目标。",
+        "无匹配结果时过滤函数返回空数组，界面显示明确的无匹配提示。",
+        "执行清空操作后恢复显示全部目标。",
+        "搜索过滤不会删除或修改原始目标记录，也不会改变当前已选择目标的详情内容。",
+        "`filterNativeGoals` 保持匹配目标原有顺序并返回原对象引用，不修改输入数组或其中对象。",
+        "TypeScript 检查与项目构建通过。"
+      ],
+      "depends_on": [],
+      "capabilities": [
+        "编码"
+      ]
+    }
+  ],
+  "run": {
+    "id": "a89a840b-5bc9-4c2f-bade-1b8b25264f2b",
+    "runtime_id": "codex-cli",
+    "started_at": "2026-10-09T05:30:48.936780+00:00",
+    "finished_at": "2026-10-09T05:33:12.983442+00:00",
+    "tokens": 151167,
+    "owner_pid": 9450
+  },
+  "error": null
+}
