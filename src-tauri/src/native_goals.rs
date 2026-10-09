@@ -40,6 +40,8 @@ pub struct GoalRun {
     pub started_at: String,
     pub finished_at: Option<String>,
     pub tokens: Option<i64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_pid: Option<u32>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,6 +83,15 @@ fn lock_session() -> ApiResult<std::sync::MutexGuard<'static, SessionState>> {
     session()
         .lock()
         .map_err(|_| ApiError::internal("目标记录暂时不可用，请重启应用"))
+}
+/// Preserve another live application process's run during list/recovery.
+/// PID reuse conservatively delays recovery; same-process abandoned runs still recover immediately.
+pub(crate) fn owned_by_live_process(owner_pid: Option<u32>) -> bool {
+    let Some(pid) = owner_pid.filter(|pid| *pid > 1 && *pid != std::process::id()) else { return false; };
+    #[cfg(unix)]
+    { std::process::Command::new("/bin/kill").args(["-0", &pid.to_string()]).output().is_ok_and(|out| out.status.success()) }
+    #[cfg(not(unix))]
+    { let _ = pid; true }
 }
 fn now() -> String {
     Utc::now().to_rfc3339()
@@ -357,7 +368,8 @@ impl GoalStore {
         result
     }
     fn recover(&self, mut goal: NativeGoal, session: &SessionState) -> ApiResult<NativeGoal> {
-        if goal.status == "planning" && !session.active.contains(&self.key(&goal.id)) {
+        if goal.status == "planning" && !session.active.contains(&self.key(&goal.id))
+            && !owned_by_live_process(goal.run.as_ref().and_then(|run| run.owner_pid)) {
             goal.status = "failed".into();
             goal.error = Some("上次规划被中断，请重新生成计划。项目文件未由规划器修改。".into());
             goal.updated_at = now();
@@ -465,6 +477,7 @@ impl GoalStore {
             return Err(ApiError::conflict("这个目标正在规划，请等待结果"));
         }
         let mut goal = self.recover(self.read(id)?, &session)?;
+        if goal.status == "planning" { return Err(ApiError::conflict("这个目标正由另一应用进程规划，请等待结果")); }
         goal.status = "planning".into();
         goal.error = None;
         goal.revision += 1;
@@ -475,6 +488,7 @@ impl GoalStore {
             started_at: goal.updated_at.clone(),
             finished_at: None,
             tokens: None,
+            owner_pid: Some(std::process::id()),
         });
         self.write(&goal)?;
         session.active.insert(key.clone());
@@ -720,4 +734,21 @@ mod tests {
         assert!(safe.read_only_analysis);
         assert_ne!(safe.id, "zcode-app");
     }
+    #[cfg(unix)]
+    #[test]
+    fn live_external_owner_is_preserved_and_cannot_be_replanned_until_exit() {
+        let (_temp, store) = store();
+        let goal = store.create("增加目标创建入口").unwrap();
+        let (mut started, active) = store.begin(&goal.id, "codex-cli").unwrap();
+        drop(active);
+        let mut child = std::process::Command::new("/bin/sleep").arg("30").spawn().unwrap();
+        started.run.as_mut().unwrap().owner_pid = Some(child.id());
+        store.write(&started).unwrap();
+        assert_eq!(store.get(&goal.id).unwrap().status, "planning");
+        assert!(store.begin(&goal.id, "codex-cli").is_err());
+        child.kill().unwrap();
+        child.wait().unwrap();
+        assert_eq!(store.get(&goal.id).unwrap().status, "failed");
+    }
+
 }

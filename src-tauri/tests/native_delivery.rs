@@ -46,7 +46,7 @@ fn evidence(tmp: &TempDir, goal: &NativeGoal) -> NativeDelivery {
         status: "awaiting_acceptance".into(), started_at: chrono::Utc::now().to_rfc3339(), updated_at: chrono::Utc::now().to_rfc3339(), runtime_id: "codex-cli".into(),
         worktree: Some(w), verified_fingerprint: Some(diff.fingerprint.clone()), diff: Some(diff),
         checks: vec![CheckResult { program: command.program.clone(), args: command.args.clone(), exit_code: Some(0), passed: true, output: "test fixture".into() }], commands: vec![command],
-        review: Some(ReviewEvidence { passed: true, summary: "Test-only review evidence fixture".into(), findings: vec![] }), implementation_summary: Some("Test fixture".into()), error: None, commit: None }
+        review: Some(ReviewEvidence { passed: true, summary: "Test-only review evidence fixture".into(), findings: vec![] }), implementation_summary: Some("Test fixture".into()), error: None, commit: None, owner_pid: None }
 }
 fn save(tmp: &TempDir, run: &NativeDelivery) {
     let dir = tmp.path().join(".agentup-app/deliveries");
@@ -236,5 +236,22 @@ fn accepted_delivery_retains_dirty_worktree_then_retries_cleanup_without_new_cod
     assert_eq!(retried.commit, run.commit);
     assert!(retried.error.is_none());
     assert!(!std::path::Path::new(&w.path).exists());
+    cleanup(&run);
+}
+#[cfg(unix)]
+#[tokio::test]
+async fn live_external_delivery_owner_survives_polling_and_blocks_second_execution() {
+    let (tmp, goal) = setup();
+    let mut run = evidence(&tmp, &goal);
+    let mut child = Command::new("/bin/sleep").arg("30").spawn().unwrap();
+    run.status = "running".into();
+    run.owner_pid = Some(child.id());
+    save(&tmp, &run);
+    let path = tmp.path().to_str().unwrap();
+    assert_eq!(native_delivery::list(path, &goal.id).unwrap()[0].status, "running");
+    assert!(native_delivery::execute(path, &goal.id, "task-1", goal.revision, run.commands.clone(), None).await.unwrap_err().message.contains("已有"));
+    child.kill().unwrap();
+    child.wait().unwrap();
+    assert_eq!(native_delivery::list(path, &goal.id).unwrap()[0].status, "failed");
     cleanup(&run);
 }

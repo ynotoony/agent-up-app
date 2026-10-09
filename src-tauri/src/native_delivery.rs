@@ -52,6 +52,8 @@ pub struct NativeDelivery {
     pub verified_fingerprint: Option<String>,
     pub error: Option<String>,
     pub commit: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub owner_pid: Option<u32>,
 }
 #[derive(Debug, Serialize)]
 pub struct DeliveryOptions { pub commands: Vec<VerificationCommand>, pub runtime_id: String }
@@ -146,7 +148,7 @@ impl Store {
             let mut run = self.read(id)?;
             let is_active = active().lock().map_err(|_| ApiError::internal("交付锁不可用"))?.contains(&self.key(id));
             let moved = run.worktree.as_ref().is_some_and(|w| Path::new(&w.root) != self.root);
-            if (busy(&run.status) && !is_active) || (pending(&run.status) && moved) {
+            if (busy(&run.status) && !is_active && !crate::native_goals::owned_by_live_process(run.owner_pid)) || (pending(&run.status) && moved) {
                 run.status = "failed".into();
                 run.error = Some("上次执行已中断。隔离目录和已保存证据仍保留，可以重新执行。".into());
                 run.updated_at = now();
@@ -277,7 +279,7 @@ fn prepare(path: &str, goal_id: &str, task_id: &str, revision: u64, commands: Ve
     let run = NativeDelivery { schema_version: 1, id: uuid::Uuid::new_v4().to_string(), project_id: store.project_id.clone(),
         goal_id: goal.id, goal_revision: revision, task_id: task.id.clone(), task_title: task.title.clone(), task_snapshot: task,
         goal_content: goal.content, status: "running".into(), started_at: stamp.clone(), updated_at: stamp, runtime_id: "codex-cli".into(),
-        worktree: None, diff: None, checks: vec![], commands, review: None, implementation_summary: None, verified_fingerprint: None, error: None, commit: None };
+        worktree: None, diff: None, checks: vec![], commands, review: None, implementation_summary: None, verified_fingerprint: None, error: None, commit: None, owner_pid: Some(std::process::id()) };
     store.write(&run)?;
     let key = store.key(&run.id);
     active().lock().map_err(|_| ApiError::internal("交付锁不可用"))?.insert(key.clone());
