@@ -50,14 +50,23 @@ pub fn load_governance_tickets(conn: &Connection, project_id: &str, load_bodies:
     if !root.is_dir() {
         return Err(ApiError::not_found(format!("项目目录不存在: {}", root.display())));
     }
-    let issues_dir = root.join("docs").join("issues");
-    let index_path = issues_dir.join("index.json");
-    if !index_path.is_file() {
+    // 优先新路径 facts/requirements/tickets/index.json（2026-10-08 治理骨架迁移）
+    // 兜底旧路径 docs/issues/index.json（agent-up 前仓语境）
+    let new_issues_dir = root.join("facts").join("requirements").join("tickets");
+    let new_index_path = new_issues_dir.join("index.json");
+    let old_issues_dir = root.join("docs").join("issues");
+    let old_index_path = old_issues_dir.join("index.json");
+
+    let (issues_dir, index_path) = if new_index_path.is_file() {
+        (new_issues_dir, new_index_path)
+    } else if old_index_path.is_file() {
+        (old_issues_dir, old_index_path)
+    } else {
         // fail-visible（沿 agent-up 票 74 AC4）：无治理票索引是用户必须看到的错误，不是空看板。
         return Err(ApiError::not_found(
-            "未找到治理票索引（docs/issues/index.json）——该项目可能尚未治理",
+            "未找到治理票索引（facts/requirements/tickets/index.json 或 docs/issues/index.json）——该项目可能尚未治理",
         ));
-    }
+    };
     let index = read_json_object(&index_path)?;
     let entries = index
         .get("issues")

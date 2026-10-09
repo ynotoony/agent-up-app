@@ -586,6 +586,7 @@ export function GovernanceTicketsPanel({ projectId }: { projectId: string }) {
   const [error, setError] = useState('');
   const [openId, setOpenId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [launching, setLaunching] = useState<string | null>(null);
 
   const fetchTickets = () => {
     setLoading(true);
@@ -599,6 +600,17 @@ export function GovernanceTicketsPanel({ projectId }: { projectId: string }) {
       .finally(() => setLoading(false));
   };
   useLayoutEffect(fetchTickets, [projectId]);
+
+  const handleLaunch = (ticketId: string) => {
+    setLaunching(ticketId);
+    api.projects
+      .ticketLaunch(projectId, ticketId)
+      .then(() => {
+        // 启动成功，无需额外处理
+      })
+      .catch((err) => alert(`启动失败：${errorMessage(err)}`))
+      .finally(() => setLaunching(null));
+  };
 
   if (error && !result) {
     return (
@@ -625,7 +637,7 @@ export function GovernanceTicketsPanel({ projectId }: { projectId: string }) {
     <div className="space-y-3">
       <div className="flex items-center gap-2 px-1">
         <p className="text-[11px] text-muted-foreground flex-1">
-          来自目标项目 <span className="font-mono">docs/issues/index.json</span>（只读，共 {result.total} 张
+          来自目标项目治理票索引（只读，共 {result.total} 张
           {result.skipped > 0 && <>，拒收异常行 {result.skipped}</>}）
         </p>
         <button type="button" aria-label="刷新治理票" onClick={fetchTickets} className="w-6 h-6 rounded-md flex items-center justify-center text-muted-foreground/60 hover:text-foreground hover:bg-accent">
@@ -634,7 +646,7 @@ export function GovernanceTicketsPanel({ projectId }: { projectId: string }) {
       </div>
       {result.total === 0 ? (
         <div className="bg-card border border-border rounded-xl">
-          <EmptyState icon={<ScrollText className="w-8 h-8" />} title="索引为空" description="目标项目的 docs/issues/index.json 里还没有票" />
+          <EmptyState icon={<ScrollText className="w-8 h-8" />} title="索引为空" description="目标项目的治理票索引里还没有票" />
         </div>
       ) : (
         TICKET_LANES.map(({ key, label, badge }) => {
@@ -671,6 +683,26 @@ export function GovernanceTicketsPanel({ projectId }: { projectId: string }) {
                               前置：{t.blocked_by.join('、')}
                             </p>
                           )}
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              onClick={() => handleLaunch(t.id)}
+                              disabled={launching === t.id}
+                              className="h-7 text-xs"
+                            >
+                              {launching === t.id ? (
+                                <>
+                                  <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                                  启动中...
+                                </>
+                              ) : (
+                                <>
+                                  <Sparkles className="w-3 h-3 mr-1.5" />
+                                  跳转 Agent 执行
+                                </>
+                              )}
+                            </Button>
+                          </div>
                         </div>
                       )}
                     </div>

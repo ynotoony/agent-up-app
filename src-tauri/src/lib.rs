@@ -63,6 +63,7 @@ pub fn run() {
             commands::projects_doc_read,
             commands::projects_doc_to_requirement,
             commands::projects_tickets,
+            commands::projects_ticket_launch,
             commands::projects_governance,
             commands::projects_initializing,
             commands::projects_governance_answer,

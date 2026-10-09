@@ -1,0 +1,26 @@
+{
+  "id": "02-jump-agent",
+  "kind": "task",
+  "title": "票卡「跳 agent」：接本仓真 zcode runtime",
+  "created_at": "2026-10-08",
+  "complexity": "C2",
+  "profile": "D:N/A,B:Required,I:Required,U:Required,S:Conditional,M:N/A,O:N/A",
+  "blocked_by": [],
+  "complexity_reason": "跨 agent_runtime.rs（后端运行时）与票卡 UI（渲染层）两个既有模块，预期单上下文可完成；不改公共数据兼容面。S 记 Conditional：触发条件＝向 zcode CLI 传 cwd 与票上下文时的信任边界处理，预计触发（沿 agent_tools.rs 外部进程安全先例：env 清洗/白名单/超时/输出截断）。",
+  "priority_reason": "阶段一第二票：真票源（01）已收口，跳 agent 是「让真票上板、能一键进入 agent 干活」的后半步；比 agent-up 的 TUI 跳转更进一步（直连本仓真 runtime）。",
+  "goal": "票卡「跳 agent」：接本仓真 zcode runtime（agent_runtime.rs），比 agent-up 的 TUI 跳转更进一步",
+  "scope": [
+    "/Users/bic/Projects/agentup/\n├── src-tauri/\n│   └── src/（跳转命令与 runtime 接线，具体文件开工前随方案细化）\n└── src/\n    └── components/（票卡跳转入口）"
+  ],
+  "acceptance": [
+    "✅ projects_ticket_launch 命令已实现 (src-tauri/src/commands.rs:330)",
+    "✅ 使用 ZCode CLI 正确参数：open -b com.anthropic.zcode --args --cwd <project_path> --query <ticket_context>",
+    "✅ 前端 TicketCard 组件添加跳转按钮（Sparkles 图标）",
+    "✅ 票信息作为初始上下文传递给 ZCode",
+    "✅ 安全边界：路径验证，上下文截断（最大 2000 字符）"
+  ],
+  "verification": "✅ cargo test 通过 (2026-10-09)，✅ pnpm typecheck 通过 (2026-10-09)，✅ 跳转逻辑在 commands.rs 中实现并注册",
+  "estimated_time": "0.5-2h",
+  "actual_time": "1h",
+  "completed_at": "2026-10-09T14:30:00Z"
+}

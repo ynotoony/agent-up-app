@@ -1,0 +1,28 @@
+{
+  "id": "03-three-repo-init",
+  "kind": "task",
+  "title": "三类仓初始化：移植 governance_init 语义",
+  "created_at": "2026-10-08",
+  "complexity": "C2",
+  "profile": "D:Required,B:Required,I:Required,U:Required,S:Conditional,M:Conditional,O:N/A",
+  "blocked_by": [],
+  "complexity_reason": "跨 governance_init 移植（后端）、命令面与初始化访谈 UI（渲染层）两个以上模块，预期单上下文可完成。S 记 Conditional：触发条件＝空仓 git init 与写入目标项目文件的权限边界。M 记 Conditional：触发条件＝未治理仓判定后的治理件落盘写入。",
+  "priority_reason": "阶段一第三票：三类仓（已治理登记／未治理协同／空仓 git init）是「真票上板」的入口面，与 01/02 共同构成阶段一收口面。",
+  "goal": "三类仓初始化：移植 agent-up governance_init 三类仓语义（已治理登记/未治理协同/空仓 git init）",
+  "scope": [
+    "/Users/bic/Projects/agentup/\n├── src-tauri/\n│   └── src/（governance_init 移植与命令，具体文件开工前随方案细化）\n└── src/\n    └── pages/（初始化访谈/确认流 UI）"
+  ],
+  "acceptance": [
+    "✅ seed_governance 在项目初始化时自动种子治理规则到数据库",
+    "✅ export_agentup_files 函数实现完整 (src-tauri/src/project_init.rs:287)",
+    "✅ projects_export 命令已注册并可用",
+    "✅ 导出文件包含：AGENTS.md, docs/development-process.md, docs/CONTEXT.md, docs/agent/roles/*.md, docs/agent/artifacts.yaml",
+    "✅ 支持幂等导出（内容未变时跳过）",
+    "✅ 前端 UI 已有导出功能（项目菜单）",
+    "✅ 三类仓场景验证：空目录初始化、未治理项目植入、已治理项目识别"
+  ],
+  "verification": "✅ cargo test 通过 (2026-10-09)，✅ pnpm typecheck 通过 (2026-10-09)，✅ 导出逻辑在 project_init.rs 中实现并测试，✅ 验收测试清单完成 (tests/stage-one-acceptance.md)",
+  "estimated_time": "0.5-2h",
+  "actual_time": "1.5h",
+  "completed_at": "2026-10-09T14:30:00Z"
+}

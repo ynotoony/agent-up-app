@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "id": "ad2750ac-fc96-42c8-9a4b-67c3dd65bcbd",
+  "project_id": "0fadfd25-8d42-47b2-b09b-25776d9d452b",
+  "content": "测试测试",
+  "status": "awaiting_confirmation",
+  "revision": 3,
+  "created_at": "2026-10-09T05:02:09.707524+00:00",
+  "updated_at": "2026-10-09T05:03:50.578721+00:00",
+  "summary": "已只读查看项目入口、当前进度和领域上下文。“测试测试”未明确测试对象与预期结果，无法制定可验收的交付任务，暂不拆分。",
+  "questions": [
+    "“测试测试”只是试用规划功能的占位输入，还是要实际测试 AgentUp 的某项功能？若是后者，请说明要测试的功能或流程，以及预期结果。"
+  ],
+  "tasks": [],
+  "run": {
+    "id": "9d8e8bd7-756f-451f-bda5-ddc9b97d9ffd",
+    "runtime_id": "codex-cli",
+    "started_at": "2026-10-09T05:02:19.176740+00:00",
+    "finished_at": "2026-10-09T05:03:50.578721+00:00",
+    "tokens": 185219
+  },
+  "error": null
+}

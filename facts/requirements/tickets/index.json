@@ -1,0 +1,9 @@
+{
+  "issues": [
+    {"id": "01-real-ticket-source", "status": "done", "complexity": "C1", "blocked_by": [], "updated_at": "2026-10-08T13:17"},
+    {"id": "02-jump-agent", "status": "done", "complexity": "C2", "blocked_by": [], "updated_at": "2026-10-09T14:30"},
+    {"id": "03-three-repo-init", "status": "done", "complexity": "C2", "blocked_by": [], "updated_at": "2026-10-09T14:30"},
+    {"id": "04-project-discovery-import-preview", "status": "done", "complexity": "C2", "blocked_by": [], "updated_at": "2026-10-09T11:59"},
+    {"id": "05-register-imported-project", "status": "done", "complexity": "C1", "blocked_by": [], "updated_at": "2026-10-09T12:59"}
+  ]
+}

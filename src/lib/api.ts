@@ -70,6 +70,7 @@ export interface ApiClient {
     governanceComplete(id: string): Promise<Requirement>;
     export(id: string, kind: 'agentup-files' | 'json-snapshot', target?: string): Promise<ExportOutcome>;
     tickets(id: string, loadBodies?: boolean): Promise<GovernanceTicketsResult>;
+    ticketLaunch(projectId: string, ticketId: string): Promise<unknown>;
     get(id: string): Promise<ProjectDashboard>;
     update(id: string, updates: { name?: string; description?: string | null; status?: string }): Promise<Project>;
     remove(id: string): Promise<{ deleted: boolean }>;
@@ -172,6 +173,7 @@ export const api: ApiClient = {
     governanceComplete: (id) => call<Requirement>('projects_governance_complete', { id }),
     export: (id, kind, target) => call<ExportOutcome>('projects_export', { id, kind, target: target ?? null }),
     tickets: (id, loadBodies) => call<GovernanceTicketsResult>('projects_tickets', { id, loadBodies: loadBodies ?? false }),
+    ticketLaunch: (projectId, ticketId) => call('projects_ticket_launch', { projectId, ticketId }),
     get: (id) => call<ProjectDashboard>('projects_get', { id }),
     update: (id, updates) =>
       call<Project>('projects_update', {

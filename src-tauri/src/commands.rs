@@ -105,6 +105,111 @@ pub fn projects_tickets(state: State<std::sync::Arc<AppState>>, id: String, load
     })
 }
 
+/// 跳转执行治理票（票 #2）：在外部 agent（zcode/codex/opencode）中启动票的执行会话。
+/// 不阻塞等待结果，只负责启动外部进程并打开对应 App。
+#[tauri::command]
+pub fn projects_ticket_launch(state: State<std::sync::Arc<AppState>>, project_id: String, ticket_id: String) -> ApiResult<serde_json::Value> {
+    let (project_path, ticket_body) = with_conn(&state, |conn| {
+        let _project = db::get_project(conn, &project_id)?.ok_or_else(|| ApiError::not_found("项目不存在"))?;
+        let path = db::get_project_path(conn, &project_id)?.ok_or_else(|| ApiError::bad_request("项目未绑定目录"))?;
+
+        // 读取票详情
+        let tickets = crate::ticket_source::load_governance_tickets(conn, &project_id, true)?;
+        let cards = tickets.get("cards").and_then(|v| v.as_array()).ok_or_else(|| ApiError::internal("票据格式错误"))?;
+        let ticket = cards.iter().find(|c| c.get("id").and_then(|v| v.as_str()) == Some(&ticket_id))
+            .ok_or_else(|| ApiError::not_found(format!("票 {} 不存在", ticket_id)))?;
+
+        Ok::<_, ApiError>((path, ticket.clone()))
+    })?;
+
+    // 构造启动提示词
+    let title = ticket_body.get("title").and_then(|v| v.as_str()).unwrap_or(&ticket_id);
+    let goal = ticket_body.get("body").and_then(|b| b.get("goal")).and_then(|v| v.as_str()).unwrap_or("未定义");
+    let scope = ticket_body.get("body").and_then(|b| b.get("scope")).and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join("\n"))
+        .unwrap_or_default();
+    let acceptance = ticket_body.get("body").and_then(|b| b.get("acceptance")).and_then(|v| v.as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join("\n"))
+        .unwrap_or_default();
+
+    let prompt = format!(
+        "请执行治理票 {}（{}）\n\n目标：{}\n\n范围：\n{}\n\n验收标准：\n{}",
+        ticket_id, title, goal, scope, acceptance
+    );
+
+    // 获取默认 runtime
+    let runtime_id = with_conn(&state, |conn| {
+        let settings = db::get_orchestration_settings(conn);
+        Ok::<_, ApiError>(settings.default_runtime.unwrap_or_else(|| crate::agent_runtime::DEFAULT_RUNTIME_ID.to_string()))
+    })?;
+
+    let spec = crate::agent_runtime::spec_by_id(&runtime_id)
+        .ok_or_else(|| ApiError::bad_request(format!("Runtime {} 不存在", runtime_id)))?;
+
+    // 启动外部 agent
+    match spec.kind {
+        crate::agent_runtime::RuntimeKind::Zcode => {
+            // 解析 zcode 二进制
+            let zcode_bin = crate::agent_runtime::resolve_binary(crate::agent_runtime::RuntimeKind::Zcode)
+                .ok_or_else(|| ApiError::bad_request("ZCode CLI 未安装"))?;
+
+            // 判断是否需要 node 运行（内嵌 .cjs 文件）
+            let is_embedded = zcode_bin.extension().and_then(|e| e.to_str()) == Some("cjs");
+
+            if is_embedded {
+                // 内嵌 CLI 需要 node 执行
+                let node_bin = std::env::var("AGENTUP_NODE").ok()
+                    .or_else(|| std::env::var("PATH").ok().and_then(|path| {
+                        std::env::split_paths(&path).find_map(|dir| {
+                            let candidate = dir.join("node");
+                            if candidate.is_file() { Some(candidate.to_string_lossy().to_string()) } else { None }
+                        })
+                    }))
+                    .ok_or_else(|| ApiError::internal("找不到 node 可执行文件"))?;
+
+                std::process::Command::new(node_bin)
+                    .arg(zcode_bin)
+                    .arg("--prompt")
+                    .arg(&prompt)
+                    .arg("--cwd")
+                    .arg(&project_path)
+                    .arg("--surface")
+                    .arg("desktop")
+                    .spawn()
+                    .map_err(|e| ApiError::internal(format!("启动 ZCode 失败: {}", e)))?;
+            } else {
+                // 标准 CLI
+                std::process::Command::new(zcode_bin)
+                    .arg("--prompt")
+                    .arg(&prompt)
+                    .arg("--cwd")
+                    .arg(&project_path)
+                    .arg("--surface")
+                    .arg("desktop")
+                    .spawn()
+                    .map_err(|e| ApiError::internal(format!("启动 ZCode 失败: {}", e)))?;
+            }
+
+            // 同时打开 ZCode App
+            std::process::Command::new("open")
+                .arg("-a")
+                .arg("ZCode")
+                .spawn()
+                .map_err(|e| ApiError::internal(format!("打开 ZCode App 失败: {}", e)))?;
+
+            Ok(json!({
+                "launched": true,
+                "runtime": "zcode-app",
+                "ticket_id": ticket_id,
+                "app": "ZCode"
+            }))
+        }
+        _ => {
+            Err(ApiError::bad_request(format!("Runtime {} 暂不支持外部启动", spec.name)))
+        }
+    }
+}
+
 /// 读文档全文：文本类取库中缓存；文件已消失时仍可读（数据在库）。
 #[tauri::command]
 pub fn projects_doc_read(state: State<std::sync::Arc<AppState>>, doc_id: String) -> ApiResult<serde_json::Value> {
