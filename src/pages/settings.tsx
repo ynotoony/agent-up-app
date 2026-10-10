@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectChevron } from '@/components/ui/select';
+import { AutoTextarea } from '@/components/ui/auto-textarea';
 import { PanelHeader } from '@/components/understanding-panel';
 import { toast } from 'sonner';
 
@@ -331,12 +332,13 @@ function StageRow({
 
       {editing && role && (
         <div className="mt-3 space-y-2">
-          <textarea
+          <AutoTextarea
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             rows={10}
+            maxAutoHeight={520}
             spellCheck={false}
-            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono leading-relaxed focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 resize-y"
+            className="w-full bg-background border border-border rounded-lg px-3 py-2 text-xs font-mono leading-relaxed focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20"
           />
           <p className="text-[11px] text-muted-foreground/50 leading-relaxed">
             角色只管「怎么想」；输出 JSON 契约由引擎强制追加，删掉也会自动补回。

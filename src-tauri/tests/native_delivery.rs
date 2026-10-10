@@ -241,6 +241,22 @@ fn imported_goal_can_be_rejected_then_a_separate_run_accepted_and_archived() {
         .unwrap();
     assert_eq!(completed.status, "completed");
     assert_eq!(completed.revision, goal.revision + 1);
+    let mut stale = completed.clone();
+    stale.status = "ready".into();
+    stale.revision -= 1;
+    fs::write(
+        tmp.path()
+            .join(format!(".agentup-app/goals/{}.json", stale.id)),
+        serde_json::to_vec_pretty(&stale).unwrap(),
+    )
+    .unwrap();
+    native_delivery::reconcile_goal_completion(tmp.path().to_str().unwrap()).unwrap();
+    let reconciled = GoalStore::open(tmp.path().to_str().unwrap())
+        .unwrap()
+        .get(&goal.id)
+        .unwrap();
+    assert_eq!(reconciled.status, "completed");
+    assert_eq!(reconciled.revision, completed.revision);
     assert_eq!(
         fs::read_to_string(tmp.path().join("README.md")).unwrap(),
         "after\n"

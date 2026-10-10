@@ -11,7 +11,7 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 // 主 CTA：bg-primary，禁用态用透明度（DESIGN 3.2，禁 disabled:text-muted-foreground）。
 export function Button({ variant = 'primary', size = 'md', loading, className, disabled, children, ...props }: ButtonProps) {
   const base =
-    'inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:pointer-events-none';
+    'inline-flex items-center justify-center gap-2 rounded-lg text-sm font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:pointer-events-none';
   const variants = {
     primary: 'bg-primary text-primary-foreground hover:bg-primary/90 disabled:bg-primary/30 disabled:text-primary/30',
     secondary: 'bg-muted text-foreground border border-border hover:bg-accent disabled:opacity-50',

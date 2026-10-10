@@ -26,7 +26,7 @@ export function TabPills<T extends string>({
           type="button"
           onClick={() => onChange(opt.value)}
           className={cn(
-            'px-3 h-7 rounded-md text-xs font-medium transition-all outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+            'px-3 h-7 rounded-md text-xs font-medium transition-colors outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
             value === opt.value ? 'bg-primary/10 text-primary' : 'text-muted-foreground hover:text-foreground hover:bg-accent'
           )}
         >

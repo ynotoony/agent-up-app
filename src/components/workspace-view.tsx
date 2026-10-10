@@ -80,7 +80,7 @@ export function PendingDecisionsPanel({
             to={`/requirement/${decision.requirement_id}`}
             className={cn(
               'block bg-card border border-amber-600/30 dark:border-amber-400/20 rounded-xl p-4',
-              'transition-all hover:bg-accent/40'
+              'transition-colors hover:bg-accent/40'
             )}
           >
             <div className="flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">

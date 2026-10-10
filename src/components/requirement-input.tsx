@@ -6,6 +6,7 @@ import { arrayBufferToBase64, cn } from '@/lib/utils';
 import { AttachmentField, AttachmentList, clipsToImageItems, revokeAttachmentUrls, type AttachmentDraft } from './attachment-field';
 import { Button } from './ui/button';
 import { Select, SelectChevron } from './ui/select';
+import { AutoTextarea } from './ui/auto-textarea';
 
 // 一句话需求录入：textarea + 附件采集（加号/粘贴截图）+ 归属项目 + 主 CTA「开始理解」。
 export function RequirementInput({
@@ -108,20 +109,16 @@ export function RequirementInput({
           </div>
         )}
         <div className="relative flex-1 min-w-0">
-          <textarea
+          <AutoTextarea
             ref={textareaRef}
             value={content}
-            onChange={(e) => {
-              setContent(e.target.value);
-              const el = e.target;
-              el.style.height = 'auto';
-              el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-            }}
+            onChange={(e) => setContent(e.target.value)}
             onPaste={handlePaste}
             onKeyDown={handleKeyDown}
             rows={1}
+            maxAutoHeight={120}
             placeholder="一句话需求：描述你想做成的事…（Enter 提交 · Shift+Enter 换行 · Ctrl+V 粘贴截图）"
-            className="w-full resize-none bg-background border border-border rounded-lg pl-3 pr-10 py-2 text-sm leading-relaxed placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-all"
+            className="w-full bg-background border border-border rounded-lg pl-3 pr-10 py-2 text-sm leading-relaxed placeholder:text-muted-foreground/50 focus:outline-none focus:border-primary/50 focus:ring-1 focus:ring-primary/20 transition-[border-color,box-shadow]"
           />
           <AttachmentField variant="inline" onAdd={addAttachments} />
         </div>

@@ -12,7 +12,7 @@ use crate::{
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     fs::{self, File, OpenOptions},
     io::{Read, Write},
     path::{Path, PathBuf},
@@ -442,6 +442,36 @@ fn maybe_mark_goal_completed(store: &Store, run: &NativeDelivery) -> ApiResult<(
         .collect();
     let path = store.root.to_str().ok_or_else(|| ApiError::bad_request("项目路径编码无效"))?;
     let _ = GoalStore::open(path)?.mark_completed(&run.goal_id, run.goal_revision, &accepted_tasks)?;
+    Ok(())
+}
+
+pub fn reconcile_goal_completion(path: &str) -> ApiResult<()> {
+    let _guard = lock_changes()?;
+    let store = Store::open(path)?;
+    let accepted: HashMap<(String, u64), HashSet<String>> = store
+        .list()?
+        .into_iter()
+        .filter(|run| run.status == "accepted" && accepted_commit_present(&store.root, run))
+        .fold(HashMap::new(), |mut groups, run| {
+            groups
+                .entry((run.goal_id, run.goal_revision))
+                .or_default()
+                .insert(run.task_id);
+            groups
+        });
+    let goals = GoalStore::open(path)?.list()?;
+    let goal_store = GoalStore::open(path)?;
+    for goal in goals {
+        if goal.status != "ready" {
+            continue;
+        }
+        let Some(accepted_tasks) = accepted.get(&(goal.id.clone(), goal.revision)) else {
+            continue;
+        };
+        if goal.tasks.iter().all(|task| accepted_tasks.contains(&task.id)) {
+            goal_store.mark_completed(&goal.id, goal.revision, accepted_tasks)?;
+        }
+    }
     Ok(())
 }
 

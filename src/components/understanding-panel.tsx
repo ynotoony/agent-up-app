@@ -323,7 +323,7 @@ export function QuestionCards({
                         onChange(question.id, selected ? { option: null, text: '' } : { option, text: '' });
                       }}
                       className={cn(
-                        'px-2.5 py-1 rounded-full text-xs border transition-all',
+                        'px-2.5 py-1 rounded-full text-xs border transition-colors',
                         selected
                           ? 'bg-primary/10 text-primary border-primary/40'
                           : 'bg-muted border-border text-foreground/80 hover:bg-accent hover:border-primary/20'
@@ -339,7 +339,7 @@ export function QuestionCards({
               value={draft.text}
               onChange={(e) => onChange(question.id, { option: null, text: e.target.value })}
               placeholder="输入你的回答…"
-              className="mt-2.5 w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-all"
+              className="mt-2.5 w-full bg-background border border-border rounded-lg px-3 py-1.5 text-xs placeholder:text-muted-foreground/50 focus:outline-none focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/20 transition-[border-color,box-shadow]"
             />
           </div>
         );

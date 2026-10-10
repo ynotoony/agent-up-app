@@ -53,7 +53,7 @@ export function DecisionPanel({ decisions, onResolved }: { decisions: Decision[]
                       disabled={resolvingId !== null}
                       onClick={() => setChosen((prev) => ({ ...prev, [decision.id]: option.value }))}
                       className={cn(
-                        'w-full text-left rounded-lg border px-3 py-2 transition-all disabled:opacity-60',
+                        'w-full text-left rounded-lg border px-3 py-2 transition-colors disabled:opacity-60',
                         active
                           ? 'border-primary/40 bg-primary/10'
                           : 'border-border bg-muted hover:bg-accent'

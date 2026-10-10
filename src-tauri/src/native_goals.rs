@@ -627,7 +627,9 @@ pub fn native_goals_list(
     state: State<Arc<db::AppState>>,
     project_id: String,
 ) -> ApiResult<Vec<NativeGoal>> {
-    GoalStore::open(&project_path(&state, &project_id)?)?.list()
+    let path = project_path(&state, &project_id)?;
+    crate::native_delivery::reconcile_goal_completion(&path)?;
+    GoalStore::open(&path)?.list()
 }
 #[tauri::command]
 pub fn native_goals_create(
