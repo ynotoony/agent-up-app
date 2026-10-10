@@ -1,4 +1,4 @@
-import { useLayoutEffect, useEffect, useState } from 'react';
+import { useLayoutEffect, useEffect, useRef, useState } from 'react';
 import { BookOpen, Check, CheckCircle2, ChevronDown, ChevronRight, Clock, FileText, Loader2, RefreshCw, RotateCcw, ScrollText, Shield, Sparkles, X, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
@@ -457,29 +457,38 @@ export function ProjectDocsPanel({ projectId, onConverted }: { projectId: string
   const [content, setContent] = useState<string>('');
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [converting, setConverting] = useState<string | null>(null);
+  const docReadGeneration = useRef(0);
 
   useLayoutEffect(() => {
+    let active = true;
     api.projects
       .docs(projectId)
-      .then(setDocs)
-      .catch((err) => setError(errorMessage(err)));
+      .then((result) => { if (active) setDocs(result); })
+      .catch((err) => { if (active) setError(errorMessage(err)); });
+    return () => {
+      active = false;
+      docReadGeneration.current += 1;
+    };
   }, [projectId]);
 
   const toggle = async (doc: ProjectDoc) => {
     if (openId === doc.id) {
+      docReadGeneration.current += 1;
       setOpenId(null);
       return;
     }
+    const generation = ++docReadGeneration.current;
     setOpenId(doc.id);
     setContent('');
     setLoadingId(doc.id);
     try {
       const result = await api.projects.docRead(doc.id);
+      if (generation !== docReadGeneration.current) return;
       setContent(result.content);
     } catch (err) {
-      setContent(errorMessage(err));
+      if (generation === docReadGeneration.current) setContent(errorMessage(err));
     } finally {
-      setLoadingId(null);
+      if (generation === docReadGeneration.current) setLoadingId(null);
     }
   };
 

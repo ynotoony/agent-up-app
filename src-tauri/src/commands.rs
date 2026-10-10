@@ -9,7 +9,10 @@ use tauri::{AppHandle, Manager, State};
 /// Tauri commands —— 与 PRD《03-后端API契约》路由一一映射；
 /// 错误以 ApiError{code,message} 序列化给前端（400/404/409 语义一致）。
 
-fn with_conn<T>(state: &State<std::sync::Arc<AppState>>, f: impl FnOnce(&rusqlite::Connection) -> ApiResult<T>) -> ApiResult<T> {
+fn with_conn<T>(
+    state: &State<std::sync::Arc<AppState>>,
+    f: impl FnOnce(&rusqlite::Connection) -> ApiResult<T>,
+) -> ApiResult<T> {
     let conn = state.conn.lock().unwrap();
     f(&conn)
 }
@@ -17,6 +20,14 @@ fn with_conn<T>(state: &State<std::sync::Arc<AppState>>, f: impl FnOnce(&rusqlit
 /// 唤醒理解泵（入队后调用；泵已在跑则空转返回）。
 fn wake_pump(state: &State<std::sync::Arc<AppState>>) {
     crate::understanding_queue::spawn_pump_state(state.inner().clone());
+}
+
+fn cleanup_stored_attachments(
+    state: &State<std::sync::Arc<AppState>>,
+    items: &[crate::types::AttachmentItem],
+) {
+    let keys: Vec<String> = items.iter().map(|item| item.key.clone()).collect();
+    crate::attachments::delete_attachment_files(&state.attachments_dir, &keys);
 }
 
 #[tauri::command]
@@ -30,11 +41,24 @@ pub fn projects_list(state: State<std::sync::Arc<AppState>>) -> ApiResult<Vec<Pr
 }
 
 #[tauri::command]
-pub fn projects_create(state: State<std::sync::Arc<AppState>>, name: String, description: Option<String>) -> ApiResult<Project> {
+pub fn projects_create(
+    state: State<std::sync::Arc<AppState>>,
+    name: String,
+    description: Option<String>,
+) -> ApiResult<Project> {
     if name.trim().is_empty() {
         return Err(ApiError::bad_request("项目名不能为空"));
     }
-    with_conn(&state, |conn| db::create_project(conn, name.trim(), description.as_deref().map(str::trim).filter(|s| !s.is_empty())))
+    with_conn(&state, |conn| {
+        db::create_project(
+            conn,
+            name.trim(),
+            description
+                .as_deref()
+                .map(str::trim)
+                .filter(|s| !s.is_empty()),
+        )
+    })
 }
 
 /// 批量入队一批需求的初始理解：全部进 understanding_queue，由单例泵串行消化。
@@ -55,7 +79,11 @@ fn enqueue_understanding(state: &State<std::sync::Arc<AppState>>, ids: Vec<Strin
 
 /// 初始化目录为项目：选文件夹 → 建目录/git init → 扫描文档入库 → 治理种子 → 登记 → 需求类文档自动转需求。
 #[tauri::command]
-pub fn projects_init(state: State<std::sync::Arc<AppState>>, path: String) -> ApiResult<crate::types::InitProjectOutcome> {
+pub fn projects_init(
+    state: State<std::sync::Arc<AppState>>,
+    path: String,
+) -> ApiResult<crate::types::InitProjectOutcome> {
+    ensure_legacy_requirement_creation(Some(&path))?;
     let outcome = crate::project_init::init_project(&state, &path)?;
     if !outcome.already_registered {
         enqueue_understanding(&state, outcome.report.converted_requirement_ids.clone());
@@ -77,14 +105,22 @@ pub fn projects_import_confirm(
 }
 
 #[tauri::command]
-pub fn projects_reinit(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<crate::types::InitReport> {
+pub fn projects_reinit(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<crate::types::InitReport> {
+    let path = with_conn(&state, |conn| db::get_project_path(conn, &id))?.ok_or_else(|| ApiError::not_found("项目未绑定目录"))?;
+    ensure_legacy_requirement_creation(Some(&path))?;
     let report = crate::project_init::reinit_project(&state, &id)?;
     enqueue_understanding(&state, report.converted_requirement_ids.clone());
     Ok(report)
 }
 
 #[tauri::command]
-pub fn projects_docs(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Vec<crate::types::ProjectDoc>> {
+pub fn projects_docs(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Vec<crate::types::ProjectDoc>> {
     with_conn(&state, |conn| {
         if db::get_project(conn, &id)?.is_none() {
             return Err(ApiError::not_found("项目不存在"));
@@ -96,7 +132,11 @@ pub fn projects_docs(state: State<std::sync::Arc<AppState>>, id: String) -> ApiR
 /// 治理票只读源（票 #1）：读目标项目 docs/issues/index.json 映射为可上板展示的卡。
 /// load_bodies 控制是否逐票读票体（首屏 false，展开详情 true）。
 #[tauri::command]
-pub fn projects_tickets(state: State<std::sync::Arc<AppState>>, id: String, load_bodies: Option<bool>) -> ApiResult<serde_json::Value> {
+pub fn projects_tickets(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+    load_bodies: Option<bool>,
+) -> ApiResult<serde_json::Value> {
     with_conn(&state, |conn| {
         if db::get_project(conn, &id)?.is_none() {
             return Err(ApiError::not_found("项目不存在"));
@@ -108,28 +148,62 @@ pub fn projects_tickets(state: State<std::sync::Arc<AppState>>, id: String, load
 /// 跳转执行治理票（票 #2）：在外部 agent（zcode/codex/opencode）中启动票的执行会话。
 /// 不阻塞等待结果，只负责启动外部进程并打开对应 App。
 #[tauri::command]
-pub fn projects_ticket_launch(state: State<std::sync::Arc<AppState>>, project_id: String, ticket_id: String) -> ApiResult<serde_json::Value> {
+pub fn projects_ticket_launch(
+    state: State<std::sync::Arc<AppState>>,
+    project_id: String,
+    ticket_id: String,
+) -> ApiResult<serde_json::Value> {
     let (project_path, ticket_body) = with_conn(&state, |conn| {
-        let _project = db::get_project(conn, &project_id)?.ok_or_else(|| ApiError::not_found("项目不存在"))?;
-        let path = db::get_project_path(conn, &project_id)?.ok_or_else(|| ApiError::bad_request("项目未绑定目录"))?;
+        let _project =
+            db::get_project(conn, &project_id)?.ok_or_else(|| ApiError::not_found("项目不存在"))?;
+        let path = db::get_project_path(conn, &project_id)?
+            .ok_or_else(|| ApiError::bad_request("项目未绑定目录"))?;
 
         // 读取票详情
         let tickets = crate::ticket_source::load_governance_tickets(conn, &project_id, true)?;
-        let cards = tickets.get("cards").and_then(|v| v.as_array()).ok_or_else(|| ApiError::internal("票据格式错误"))?;
-        let ticket = cards.iter().find(|c| c.get("id").and_then(|v| v.as_str()) == Some(&ticket_id))
+        let cards = tickets
+            .get("cards")
+            .and_then(|v| v.as_array())
+            .ok_or_else(|| ApiError::internal("票据格式错误"))?;
+        let ticket = cards
+            .iter()
+            .find(|c| c.get("id").and_then(|v| v.as_str()) == Some(&ticket_id))
             .ok_or_else(|| ApiError::not_found(format!("票 {} 不存在", ticket_id)))?;
 
         Ok::<_, ApiError>((path, ticket.clone()))
     })?;
 
     // 构造启动提示词
-    let title = ticket_body.get("title").and_then(|v| v.as_str()).unwrap_or(&ticket_id);
-    let goal = ticket_body.get("body").and_then(|b| b.get("goal")).and_then(|v| v.as_str()).unwrap_or("未定义");
-    let scope = ticket_body.get("body").and_then(|b| b.get("scope")).and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join("\n"))
+    let title = ticket_body
+        .get("title")
+        .and_then(|v| v.as_str())
+        .unwrap_or(&ticket_id);
+    let goal = ticket_body
+        .get("body")
+        .and_then(|b| b.get("goal"))
+        .and_then(|v| v.as_str())
+        .unwrap_or("未定义");
+    let scope = ticket_body
+        .get("body")
+        .and_then(|b| b.get("scope"))
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
         .unwrap_or_default();
-    let acceptance = ticket_body.get("body").and_then(|b| b.get("acceptance")).and_then(|v| v.as_array())
-        .map(|arr| arr.iter().filter_map(|v| v.as_str()).collect::<Vec<_>>().join("\n"))
+    let acceptance = ticket_body
+        .get("body")
+        .and_then(|b| b.get("acceptance"))
+        .and_then(|v| v.as_array())
+        .map(|arr| {
+            arr.iter()
+                .filter_map(|v| v.as_str())
+                .collect::<Vec<_>>()
+                .join("\n")
+        })
         .unwrap_or_default();
 
     let prompt = format!(
@@ -140,7 +214,11 @@ pub fn projects_ticket_launch(state: State<std::sync::Arc<AppState>>, project_id
     // 获取默认 runtime
     let runtime_id = with_conn(&state, |conn| {
         let settings = db::get_orchestration_settings(conn);
-        Ok::<_, ApiError>(settings.default_runtime.unwrap_or_else(|| crate::agent_runtime::DEFAULT_RUNTIME_ID.to_string()))
+        Ok::<_, ApiError>(
+            settings
+                .default_runtime
+                .unwrap_or_else(|| crate::agent_runtime::DEFAULT_RUNTIME_ID.to_string()),
+        )
     })?;
 
     let spec = crate::agent_runtime::spec_by_id(&runtime_id)
@@ -150,21 +228,29 @@ pub fn projects_ticket_launch(state: State<std::sync::Arc<AppState>>, project_id
     match spec.kind {
         crate::agent_runtime::RuntimeKind::Zcode => {
             // 解析 zcode 二进制
-            let zcode_bin = crate::agent_runtime::resolve_binary(crate::agent_runtime::RuntimeKind::Zcode)
-                .ok_or_else(|| ApiError::bad_request("ZCode CLI 未安装"))?;
+            let zcode_bin =
+                crate::agent_runtime::resolve_binary(crate::agent_runtime::RuntimeKind::Zcode)
+                    .ok_or_else(|| ApiError::bad_request("ZCode CLI 未安装"))?;
 
             // 判断是否需要 node 运行（内嵌 .cjs 文件）
             let is_embedded = zcode_bin.extension().and_then(|e| e.to_str()) == Some("cjs");
 
             if is_embedded {
                 // 内嵌 CLI 需要 node 执行
-                let node_bin = std::env::var("AGENTUP_NODE").ok()
-                    .or_else(|| std::env::var("PATH").ok().and_then(|path| {
-                        std::env::split_paths(&path).find_map(|dir| {
-                            let candidate = dir.join("node");
-                            if candidate.is_file() { Some(candidate.to_string_lossy().to_string()) } else { None }
+                let node_bin = std::env::var("AGENTUP_NODE")
+                    .ok()
+                    .or_else(|| {
+                        std::env::var("PATH").ok().and_then(|path| {
+                            std::env::split_paths(&path).find_map(|dir| {
+                                let candidate = dir.join("node");
+                                if candidate.is_file() {
+                                    Some(candidate.to_string_lossy().to_string())
+                                } else {
+                                    None
+                                }
+                            })
                         })
-                    }))
+                    })
                     .ok_or_else(|| ApiError::internal("找不到 node 可执行文件"))?;
 
                 std::process::Command::new(node_bin)
@@ -204,33 +290,46 @@ pub fn projects_ticket_launch(state: State<std::sync::Arc<AppState>>, project_id
                 "app": "ZCode"
             }))
         }
-        _ => {
-            Err(ApiError::bad_request(format!("Runtime {} 暂不支持外部启动", spec.name)))
-        }
+        _ => Err(ApiError::bad_request(format!(
+            "Runtime {} 暂不支持外部启动",
+            spec.name
+        ))),
     }
 }
 
 /// 读文档全文：文本类取库中缓存；文件已消失时仍可读（数据在库）。
 #[tauri::command]
-pub fn projects_doc_read(state: State<std::sync::Arc<AppState>>, doc_id: String) -> ApiResult<serde_json::Value> {
+pub fn projects_doc_read(
+    state: State<std::sync::Arc<AppState>>,
+    doc_id: String,
+) -> ApiResult<serde_json::Value> {
     with_conn(&state, |conn| {
-        let doc = db::get_project_doc(conn, &doc_id)?.ok_or_else(|| ApiError::not_found("文档不存在"))?;
+        let doc =
+            db::get_project_doc(conn, &doc_id)?.ok_or_else(|| ApiError::not_found("文档不存在"))?;
         if !doc.has_content {
-            return Err(ApiError::bad_request("二进制文档（pdf/docx）仅登记未存全文，请在原目录查看"));
+            return Err(ApiError::bad_request(
+                "二进制文档（pdf/docx）仅登记未存全文，请在原目录查看",
+            ));
         }
         let content = db::get_project_doc_content(conn, &doc_id)?.unwrap_or_default();
-        Ok(json!({ "id": doc.id, "rel_path": doc.rel_path, "kind": doc.kind, "title": doc.title, "content": content }))
+        Ok(
+            json!({ "id": doc.id, "rel_path": doc.rel_path, "kind": doc.kind, "title": doc.title, "content": content }),
+        )
     })
 }
 
 /// 需求类文档 → 需求草稿：全文（截 8000 字符）落成一条标准需求，进入正常流水线。
 #[tauri::command]
-pub fn projects_doc_to_requirement(state: State<std::sync::Arc<AppState>>, project_id: String, doc_id: String) -> ApiResult<Requirement> {
+pub fn projects_doc_to_requirement(
+    state: State<std::sync::Arc<AppState>>,
+    project_id: String,
+    doc_id: String,
+) -> ApiResult<Requirement> {
+    let project = with_conn(&state, |conn| db::get_project(conn, &project_id)?.ok_or_else(|| ApiError::not_found("项目不存在")))?;
+    ensure_legacy_requirement_creation(project.path.as_deref())?;
     let content = with_conn(&state, |conn| {
-        if db::get_project(conn, &project_id)?.is_none() {
-            return Err(ApiError::not_found("项目不存在"));
-        }
-        let doc = db::get_project_doc(conn, &doc_id)?.ok_or_else(|| ApiError::not_found("文档不存在"))?;
+        let doc =
+            db::get_project_doc(conn, &doc_id)?.ok_or_else(|| ApiError::not_found("文档不存在"))?;
         if doc.project_id != project_id {
             return Err(ApiError::bad_request("文档不属于该项目"));
         }
@@ -242,10 +341,21 @@ pub fn projects_doc_to_requirement(state: State<std::sync::Arc<AppState>>, proje
         if full.chars().count() > 8000 {
             text.push_str("\n\n【已截断：全文见项目文档】");
         }
-        Ok((format!("来自存量文档「{}」：\n\n{}", doc.rel_path, text), doc.rel_path))
+        Ok((
+            format!("来自存量文档「{}」：\n\n{}", doc.rel_path, text),
+            doc.rel_path,
+        ))
     })?;
     let requirement = with_conn(&state, |conn| {
-        let requirement = db::create_requirement_with_source(conn, &project_id, &content.0, Some(&content.1), None, RequirementMode::Standard, None)?;
+        let requirement = db::create_requirement_with_source(
+            conn,
+            &project_id,
+            &content.0,
+            Some(&content.1),
+            None,
+            RequirementMode::Standard,
+            None,
+        )?;
         // 记录转换链接：手动转换同样防止后续自动重复转换
         db::link_doc_requirement(conn, &doc_id, &requirement.id)?;
         Ok::<_, ApiError>(requirement)
@@ -257,7 +367,10 @@ pub fn projects_doc_to_requirement(state: State<std::sync::Arc<AppState>>, proje
 
 /// 初始化进度入口：取 initializing 队列（主列表不可见，此命令供进度面板）。
 #[tauri::command]
-pub fn projects_initializing(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Vec<Requirement>> {
+pub fn projects_initializing(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Vec<Requirement>> {
     with_conn(&state, |conn| {
         if db::get_project(conn, &id)?.is_none() {
             return Err(ApiError::not_found("项目不存在"));
@@ -268,14 +381,27 @@ pub fn projects_initializing(state: State<std::sync::Arc<AppState>>, id: String)
 
 /// 初始化队列重试：initializing 的需求（理解失败）重新入理解队列，保持隐藏语义。
 #[tauri::command]
-pub fn requirements_retry_initializing(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Requirement> {
+pub fn requirements_retry_initializing(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Requirement> {
+    let _ = ensure_legacy_requirement(&state, &id)?;
     {
         let conn = state.conn.lock().unwrap();
-        let requirement = db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+        let requirement =
+            db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
         if requirement.status != RequirementStatus::Initializing {
             return Err(ApiError::conflict("仅初始化队列中的需求可以重试"));
         }
-        db::create_log(&conn, &id, None, "retry", "info", "初始化队列重试：重新理解", None)?;
+        db::create_log(
+            &conn,
+            &id,
+            None,
+            "retry",
+            "info",
+            "初始化队列重试：重新理解",
+            None,
+        )?;
         crate::understanding_queue::enqueue(&conn, &id)?;
     }
     wake_pump(&state);
@@ -286,7 +412,10 @@ pub fn requirements_retry_initializing(state: State<std::sync::Arc<AppState>>, i
 /// 初始化队列批量重试：全部校验为 initializing 后入**串行**理解队列（泵逐条执行，不并发打爆 runtime）。
 /// 立即返回排队条数；前端以 updated_at 是否刷新区分「排队中/理解中」。
 #[tauri::command]
-pub fn requirements_retry_initializing_batch(state: State<std::sync::Arc<AppState>>, ids: Vec<String>) -> ApiResult<serde_json::Value> {
+pub fn requirements_retry_initializing_batch(
+    state: State<std::sync::Arc<AppState>>,
+    ids: Vec<String>,
+) -> ApiResult<serde_json::Value> {
     if ids.is_empty() {
         return Err(ApiError::bad_request("没有要重试的需求"));
     }
@@ -296,11 +425,24 @@ pub fn requirements_retry_initializing_batch(state: State<std::sync::Arc<AppStat
             let requirement = db::get_requirement(&conn, id)?
                 .ok_or_else(|| ApiError::not_found(format!("需求不存在: {id}")))?;
             if requirement.status != RequirementStatus::Initializing {
-                return Err(ApiError::conflict(format!("需求 {id} 已不在初始化队列（状态 {}）", requirement.status.as_str())));
+                return Err(ApiError::conflict(format!(
+                    "需求 {id} 已不在初始化队列（状态 {}）",
+                    requirement.status.as_str()
+                )));
             }
+            let project = db::get_project(&conn, &requirement.project_id)?.ok_or_else(|| ApiError::not_found("归属项目不存在"))?;
+            ensure_legacy_requirement_creation(project.path.as_deref())?;
         }
         for id in &ids {
-            db::create_log(&conn, id, None, "retry", "info", "初始化队列批量重试：进入串行理解队列", None)?;
+            db::create_log(
+                &conn,
+                id,
+                None,
+                "retry",
+                "info",
+                "初始化队列批量重试：进入串行理解队列",
+                None,
+            )?;
             crate::understanding_queue::enqueue(&conn, id)?;
         }
     }
@@ -309,7 +451,11 @@ pub fn requirements_retry_initializing_batch(state: State<std::sync::Arc<AppStat
 }
 
 #[tauri::command]
-pub fn projects_governance(state: State<std::sync::Arc<AppState>>, id: String, kind: Option<String>) -> ApiResult<Vec<crate::types::GovernanceItem>> {
+pub fn projects_governance(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+    kind: Option<String>,
+) -> ApiResult<Vec<crate::types::GovernanceItem>> {
     with_conn(&state, |conn| {
         if db::get_project(conn, &id)?.is_none() {
             return Err(ApiError::not_found("项目不存在"));
@@ -320,7 +466,11 @@ pub fn projects_governance(state: State<std::sync::Arc<AppState>>, id: String, k
 
 /// 待定项人工作答：pending → resolved，答案写回 body。
 #[tauri::command]
-pub fn projects_governance_answer(state: State<std::sync::Arc<AppState>>, item_id: String, answer: String) -> ApiResult<crate::types::GovernanceItem> {
+pub fn projects_governance_answer(
+    state: State<std::sync::Arc<AppState>>,
+    item_id: String,
+    answer: String,
+) -> ApiResult<crate::types::GovernanceItem> {
     if answer.trim().is_empty() {
         return Err(ApiError::bad_request("回答内容不能为空"));
     }
@@ -332,7 +482,10 @@ pub fn projects_governance_answer(state: State<std::sync::Arc<AppState>>, item_i
 
 /// 治理补全：自动发一条补全需求，走现有流水线（codex 查证自答，查不到走 question 问用户），结果写回治理条目。
 #[tauri::command]
-pub fn projects_governance_complete(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Requirement> {
+pub fn projects_governance_complete(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Requirement> {
     let pending = with_conn(&state, |conn| {
         Ok::<_, ApiError>(
             db::list_governance_items(conn, &id, Some("pending"))?
@@ -347,7 +500,11 @@ pub fn projects_governance_complete(state: State<std::sync::Arc<AppState>>, id: 
     let list: Vec<String> = pending
         .iter()
         .map(|i| {
-            let question = i.body.get("question").and_then(|v| v.as_str()).unwrap_or(&i.title);
+            let question = i
+                .body
+                .get("question")
+                .and_then(|v| v.as_str())
+                .unwrap_or(&i.title);
             let hint = i.body.get("hint").and_then(|v| v.as_str()).unwrap_or("");
             format!("- [{}] {}（提示：{hint}）", i.key, question)
         })
@@ -359,8 +516,23 @@ pub fn projects_governance_complete(state: State<std::sync::Arc<AppState>>, id: 
         list.join("\n")
     );
     let requirement = with_conn(&state, |conn| {
-        let requirement = db::create_requirement(conn, &id, &content, None, RequirementMode::Standard, Some(10))?;
-        db::create_log(conn, &requirement.id, None, "init", "info", "治理补全需求已创建，开始理解", None)?;
+        let requirement = db::create_requirement(
+            conn,
+            &id,
+            &content,
+            None,
+            RequirementMode::Standard,
+            Some(10),
+        )?;
+        db::create_log(
+            conn,
+            &requirement.id,
+            None,
+            "init",
+            "info",
+            "治理补全需求已创建，开始理解",
+            None,
+        )?;
         Ok::<_, ApiError>(requirement)
     })?;
     enqueue_understanding(&state, vec![requirement.id.clone()]);
@@ -369,14 +541,21 @@ pub fn projects_governance_complete(state: State<std::sync::Arc<AppState>>, id: 
 
 /// 导出：agentup-files（技能兼容文件集投影到项目目录）或 json-snapshot（全量 JSON 到指定路径）。
 #[tauri::command]
-pub fn projects_export(state: State<std::sync::Arc<AppState>>, id: String, kind: String, target: Option<String>) -> ApiResult<serde_json::Value> {
+pub fn projects_export(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+    kind: String,
+    target: Option<String>,
+) -> ApiResult<serde_json::Value> {
     match kind.as_str() {
         "agentup-files" => {
             let outcome = crate::project_init::export_agentup_files(&state, &id)?;
             Ok(json!(outcome))
         }
         "json-snapshot" => {
-            let target = target.filter(|t| !t.trim().is_empty()).ok_or_else(|| ApiError::bad_request("JSON 快照需要指定目标路径 target"))?;
+            let target = target
+                .filter(|t| !t.trim().is_empty())
+                .ok_or_else(|| ApiError::bad_request("JSON 快照需要指定目标路径 target"))?;
             let outcome = crate::project_init::export_json_snapshot(&state, &id, &target)?;
             Ok(json!(outcome))
         }
@@ -385,21 +564,31 @@ pub fn projects_export(state: State<std::sync::Arc<AppState>>, id: String, kind:
 }
 
 #[tauri::command]
-pub fn projects_get(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<ProjectDashboard> {
+pub fn projects_get(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<ProjectDashboard> {
     with_conn(&state, |conn| {
         db::get_project_dashboard(conn, &id)?.ok_or_else(|| ApiError::not_found("项目不存在"))
     })
 }
 
 #[tauri::command]
-pub fn projects_update(state: State<std::sync::Arc<AppState>>, id: String, updates: UpdateProjectInput) -> ApiResult<Project> {
+pub fn projects_update(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+    updates: UpdateProjectInput,
+) -> ApiResult<Project> {
     with_conn(&state, |conn| {
         db::update_project(conn, &id, &updates)?.ok_or_else(|| ApiError::not_found("项目不存在"))
     })
 }
 
 #[tauri::command]
-pub fn projects_delete(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<serde_json::Value> {
+pub fn projects_delete(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<serde_json::Value> {
     {
         let conn = state.conn.lock().unwrap();
         let conn = &*conn;
@@ -421,16 +610,37 @@ pub fn projects_delete(state: State<std::sync::Arc<AppState>>, id: String) -> Ap
 // Native projects must never enter the legacy auto-execution pipeline, even
 // through stale frontend state or a direct IPC request.
 fn ensure_legacy_requirement_creation(path: Option<&str>) -> ApiResult<()> {
-    let Some(path) = path else { return Ok(()); };
+    let Some(path) = path else {
+        return Ok(());
+    };
     match std::fs::symlink_metadata(std::path::Path::new(path).join(".agentup-app")) {
         Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(()),
         Err(error) => return Err(error.into()),
-        Ok(_) => {},
+        Ok(_) => {}
     }
-    if crate::project_discovery::open_native_project(path)?.1.is_some() {
-        return Err(ApiError::conflict("此项目已使用原生目标工作区，请进入项目新建目标并确认任务计划"));
+    if crate::project_discovery::open_native_project(path)?
+        .1
+        .is_some()
+    {
+        return Err(ApiError::conflict(
+            "此项目已使用原生目标工作区，请进入项目新建目标并确认任务计划",
+        ));
     }
     Ok(())
+}
+
+fn ensure_legacy_requirement(
+    state: &State<std::sync::Arc<AppState>>,
+    id: &str,
+) -> ApiResult<Requirement> {
+    let requirement = with_conn(state, |conn| {
+        db::get_requirement(conn, id)?.ok_or_else(|| ApiError::not_found("需求不存在"))
+    })?;
+    let project = with_conn(state, |conn| {
+        db::get_project(conn, &requirement.project_id)?.ok_or_else(|| ApiError::not_found("归属项目不存在"))
+    })?;
+    ensure_legacy_requirement_creation(project.path.as_deref())?;
+    Ok(requirement)
 }
 
 #[tauri::command]
@@ -445,12 +655,18 @@ pub async fn requirements_create(
     let project = with_conn(&state, |conn| db::get_project(conn, &input.project_id))?
         .ok_or_else(|| ApiError::not_found("归属项目不存在"))?;
     ensure_legacy_requirement_creation(project.path.as_deref())?;
-    let attachments = db::with_attachments_dir(&state, |dir| crate::attachments::persist_attachments(dir, &input.attachments))?;
-    let (requirement, count) = with_conn(&state, |conn| {
+    let attachments = db::with_attachments_dir(&state, |dir| {
+        crate::attachments::persist_attachments(dir, &input.attachments)
+    })?;
+    let db_result = with_conn(&state, |conn| {
         if db::get_project(conn, &input.project_id)?.is_none() {
             return Err(ApiError::not_found("归属项目不存在"));
         }
-        let attachments_opt = if attachments.is_empty() { None } else { Some(attachments.clone()) };
+        let attachments_opt = if attachments.is_empty() {
+            None
+        } else {
+            Some(attachments.clone())
+        };
         let requirement = db::create_requirement(
             conn,
             &input.project_id,
@@ -459,14 +675,30 @@ pub async fn requirements_create(
             RequirementMode::Standard,
             input.estimated_minutes,
         )?;
-        db::create_log(conn, &requirement.id, None, "init", "info", "需求已创建，开始理解", None)?;
+        db::create_log(
+            conn,
+            &requirement.id,
+            None,
+            "init",
+            "info",
+            "需求已创建，开始理解",
+            None,
+        )?;
         Ok::<_, ApiError>((requirement, attachments.len()))
-    })?;
+    });
+    let (requirement, count) = match db_result {
+        Ok(value) => value,
+        Err(error) => {
+            cleanup_stored_attachments(&state, &attachments);
+            return Err(error);
+        }
+    };
 
     // 入理解队列：需求立刻返回，泵串行消化，前端 5s 轮询刷新
     enqueue_understanding(&state, vec![requirement.id.clone()]);
 
-    let fresh = with_conn(&state, |conn| db::get_requirement(conn, &requirement.id))?.unwrap_or(requirement);
+    let fresh = with_conn(&state, |conn| db::get_requirement(conn, &requirement.id))?
+        .unwrap_or(requirement);
     Ok(json!({
         "requirement": fresh,
         "version": { "version": 1 },
@@ -475,24 +707,38 @@ pub async fn requirements_create(
 }
 
 #[tauri::command]
-pub fn requirements_get(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<RequirementDetail> {
+pub fn requirements_get(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<RequirementDetail> {
     with_conn(&state, |conn| {
         db::get_requirement_detail(conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))
     })
 }
 
 #[tauri::command]
-pub fn requirements_list_tasks(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Vec<Task>> {
+pub fn requirements_list_tasks(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Vec<Task>> {
     with_conn(&state, |conn| db::list_tasks_by_requirement(conn, &id))
 }
 
 #[tauri::command]
-pub fn requirements_list_decisions(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<Vec<Decision>> {
+pub fn requirements_list_decisions(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<Vec<Decision>> {
     with_conn(&state, |conn| db::list_decisions_by_requirement(conn, &id))
 }
 
 #[tauri::command]
-pub async fn requirements_retry(app: AppHandle, state: State<'_, std::sync::Arc<AppState>>, id: String) -> ApiResult<serde_json::Value> {
+pub async fn requirements_retry(
+    app: AppHandle,
+    state: State<'_, std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<serde_json::Value> {
+    let _ = ensure_legacy_requirement(&state, &id)?;
     let (requirement, route) = orchestrator::retry_failed(&state, &id)?;
     match route {
         orchestrator::RetryRoute::Pipeline => {
@@ -506,19 +752,33 @@ pub async fn requirements_retry(app: AppHandle, state: State<'_, std::sync::Arc<
             wake_pump(&state);
         }
     }
-    Ok(serde_json::json!({ "requirement": requirement, "route": match route {
+    Ok(
+        serde_json::json!({ "requirement": requirement, "route": match route {
         orchestrator::RetryRoute::Pipeline => "pipeline",
         orchestrator::RetryRoute::Understanding => "understanding",
-    } }))
+    } }),
+    )
 }
 
 #[tauri::command]
-pub fn requirements_confirm(app: AppHandle, state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<serde_json::Value> {
+pub fn requirements_confirm(
+    app: AppHandle,
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<serde_json::Value> {
+    let _ = ensure_legacy_requirement(&state, &id)?;
     {
         let conn = state.conn.lock().unwrap();
-        let requirement = db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
-        if !matches!(requirement.status, RequirementStatus::Understanding | RequirementStatus::AwaitingConfirmation) {
-            return Err(ApiError::conflict(format!("当前状态({})不允许确认需求", requirement.status.as_str())));
+        let requirement =
+            db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+        if !matches!(
+            requirement.status,
+            RequirementStatus::Understanding | RequirementStatus::AwaitingConfirmation
+        ) {
+            return Err(ApiError::conflict(format!(
+                "当前状态({})不允许确认需求",
+                requirement.status.as_str()
+            )));
         }
     }
     let Some((plan_task, pending_tasks)) = orchestrator::start_planning_sync(&state, &id)? else {
@@ -534,8 +794,13 @@ pub fn requirements_confirm(app: AppHandle, state: State<std::sync::Arc<AppState
 }
 
 #[tauri::command]
-pub async fn requirements_reunderstand(app: AppHandle, id: String, input: ReunderstandInput) -> ApiResult<serde_json::Value> {
+pub async fn requirements_reunderstand(
+    app: AppHandle,
+    id: String,
+    input: ReunderstandInput,
+) -> ApiResult<serde_json::Value> {
     let state: State<std::sync::Arc<AppState>> = app.state();
+    let _ = ensure_legacy_requirement(&state, &id)?;
     {
         let conn = state.conn.lock().unwrap();
         if db::get_requirement(&conn, &id)?.is_none() {
@@ -548,15 +813,37 @@ pub async fn requirements_reunderstand(app: AppHandle, id: String, input: Reunde
     if orchestrator::has_in_flight_understanding(&state, &id)? {
         return Err(ApiError::conflict("上一次理解/迭代仍在处理中，请稍候再试"));
     }
-    let stored = db::with_attachments_dir(&state, |dir| crate::attachments::persist_attachments(dir, &input.attachments))?;
+    let stored = db::with_attachments_dir(&state, |dir| {
+        crate::attachments::persist_attachments(dir, &input.attachments)
+    })?;
     let mut ctx_input = input.clone();
     if !stored.is_empty() {
         // 将新附件合并进 requirements.attachments
         let conn = state.conn.lock().unwrap();
-        let current = db::get_requirement(&conn, &id)?.map(|r| r.attachments.unwrap_or_default()).unwrap_or_default();
+        let current = match db::get_requirement(&conn, &id) {
+            Ok(value) => value
+                .map(|r| r.attachments.unwrap_or_default())
+                .unwrap_or_default(),
+            Err(error) => {
+                drop(conn);
+                cleanup_stored_attachments(&state, &stored);
+                return Err(error);
+            }
+        };
         let mut merged = current;
-        merged.extend(stored);
-        db::update_requirement(&conn, &id, &db::RequirementUpdates { attachments: Some(merged), ..Default::default() })?;
+        merged.extend(stored.clone());
+        if let Err(error) = db::update_requirement(
+            &conn,
+            &id,
+            &db::RequirementUpdates {
+                attachments: Some(merged),
+                ..Default::default()
+            },
+        ) {
+            drop(conn);
+            cleanup_stored_attachments(&state, &stored);
+            return Err(error);
+        }
         ctx_input.attachments.clear();
     }
     let state_inner = state.inner().clone();
@@ -564,7 +851,8 @@ pub async fn requirements_reunderstand(app: AppHandle, id: String, input: Reunde
     orchestrator::start_reunderstand(&state_inner, &id_inner, &ctx_input).await?;
 
     let conn = state.conn.lock().unwrap();
-    let updated = db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+    let updated =
+        db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
     let versions = db::list_requirement_versions(&conn, &id)?;
     let latest = versions.last();
     Ok(json!({
@@ -583,8 +871,13 @@ pub async fn requirements_reunderstand(app: AppHandle, id: String, input: Reunde
 }
 
 #[tauri::command]
-pub async fn requirements_iterate(app: AppHandle, id: String, input: IterateInput) -> ApiResult<serde_json::Value> {
+pub async fn requirements_iterate(
+    app: AppHandle,
+    id: String,
+    input: IterateInput,
+) -> ApiResult<serde_json::Value> {
     let state: State<std::sync::Arc<AppState>> = app.state();
+    let _ = ensure_legacy_requirement(&state, &id)?;
     {
         let conn = state.conn.lock().unwrap();
         if db::get_requirement(&conn, &id)?.is_none() {
@@ -597,20 +890,43 @@ pub async fn requirements_iterate(app: AppHandle, id: String, input: IterateInpu
     if orchestrator::has_in_flight_understanding(&state, &id)? {
         return Err(ApiError::conflict("上一次理解/迭代仍在处理中，请稍候再试"));
     }
-    let stored = db::with_attachments_dir(&state, |dir| crate::attachments::persist_attachments(dir, &input.attachments))?;
+    let stored = db::with_attachments_dir(&state, |dir| {
+        crate::attachments::persist_attachments(dir, &input.attachments)
+    })?;
     if !stored.is_empty() {
         let conn = state.conn.lock().unwrap();
-        let current = db::get_requirement(&conn, &id)?.map(|r| r.attachments.unwrap_or_default()).unwrap_or_default();
+        let current = match db::get_requirement(&conn, &id) {
+            Ok(value) => value
+                .map(|r| r.attachments.unwrap_or_default())
+                .unwrap_or_default(),
+            Err(error) => {
+                drop(conn);
+                cleanup_stored_attachments(&state, &stored);
+                return Err(error);
+            }
+        };
         let mut merged = current;
         merged.extend(stored.clone());
-        db::update_requirement(&conn, &id, &db::RequirementUpdates { attachments: Some(merged), ..Default::default() })?;
+        if let Err(error) = db::update_requirement(
+            &conn,
+            &id,
+            &db::RequirementUpdates {
+                attachments: Some(merged),
+                ..Default::default()
+            },
+        ) {
+            drop(conn);
+            cleanup_stored_attachments(&state, &stored);
+            return Err(error);
+        }
     }
     let state_inner = state.inner().clone();
     let id_inner = id.clone();
     orchestrator::start_iterate(&state_inner, &id_inner, &input, stored).await?;
 
     let conn = state.conn.lock().unwrap();
-    let updated = db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+    let updated =
+        db::get_requirement(&conn, &id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
     let versions = db::list_requirement_versions(&conn, &id)?;
     let latest = versions.last();
     Ok(json!({
@@ -628,27 +944,48 @@ pub async fn requirements_iterate(app: AppHandle, id: String, input: IterateInpu
 }
 
 #[tauri::command]
-pub fn requirements_create_decision(state: State<std::sync::Arc<AppState>>, input: CreateDecisionInput) -> ApiResult<Decision> {
+pub fn requirements_create_decision(
+    state: State<std::sync::Arc<AppState>>,
+    input: CreateDecisionInput,
+) -> ApiResult<Decision> {
     if input.question.trim().is_empty() || input.options.is_empty() {
-        return Err(ApiError::bad_request("缺少必要字段（requirement_id/question/options）"));
+        return Err(ApiError::bad_request(
+            "缺少必要字段（requirement_id/question/options）",
+        ));
     }
+    let project = with_conn(&state, |conn| {
+        let requirement = db::get_requirement(conn, &input.requirement_id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+        db::get_project(conn, &requirement.project_id)?.ok_or_else(|| ApiError::not_found("归属项目不存在"))
+    })?;
+    ensure_legacy_requirement_creation(project.path.as_deref())?;
     with_conn(&state, |conn| db::create_decision(conn, &input, None))
 }
 
 #[tauri::command]
 pub async fn decisions_resolve(app: AppHandle, input: ResolveDecisionInput) -> ApiResult<Decision> {
     let state: State<std::sync::Arc<AppState>> = app.state();
+    let decision_for_guard = {
+        let conn = state.conn.lock().unwrap();
+        db::get_decision(&conn, &input.id)?.ok_or_else(|| ApiError::not_found("决策不存在"))?
+    };
+    let _ = ensure_legacy_requirement(&state, &decision_for_guard.requirement_id)?;
     let (decision, _choice) = {
         let conn = state.conn.lock().unwrap();
-        let decision = db::get_decision(&conn, &input.id)?.ok_or_else(|| ApiError::not_found("决策不存在"))?;
+        let decision =
+            db::get_decision(&conn, &input.id)?.ok_or_else(|| ApiError::not_found("决策不存在"))?;
         if decision.status != DecisionStatus::Pending {
             return Err(ApiError::conflict("该决策已处理"));
         }
         (decision, input.choice.clone())
     };
     let resolved = with_conn(&state, |conn| {
-        let resolved = db::resolve_decision(conn, &input.id, DecisionStatus::Resolved, Some(&input.choice))?
-            .ok_or_else(|| ApiError::not_found("决策不存在"))?;
+        let resolved = db::resolve_decision(
+            conn,
+            &input.id,
+            DecisionStatus::Resolved,
+            Some(&input.choice),
+        )?
+        .ok_or_else(|| ApiError::not_found("决策不存在"))?;
         db::create_log(
             conn,
             &decision.requirement_id,
@@ -669,12 +1006,17 @@ pub async fn decisions_resolve(app: AppHandle, input: ResolveDecisionInput) -> A
 // ---------------------------------------------------------------- Orchestration & Roles
 
 #[tauri::command]
-pub fn settings_get_orchestration(state: State<std::sync::Arc<AppState>>) -> ApiResult<OrchestrationSettings> {
+pub fn settings_get_orchestration(
+    state: State<std::sync::Arc<AppState>>,
+) -> ApiResult<OrchestrationSettings> {
     with_conn(&state, |conn| Ok(db::get_orchestration_settings(conn)))
 }
 
 #[tauri::command]
-pub fn settings_save_orchestration(state: State<std::sync::Arc<AppState>>, input: SaveOrchestrationInput) -> ApiResult<OrchestrationSettings> {
+pub fn settings_save_orchestration(
+    state: State<std::sync::Arc<AppState>>,
+    input: SaveOrchestrationInput,
+) -> ApiResult<OrchestrationSettings> {
     with_conn(&state, |conn| {
         let mut current = db::get_orchestration_settings(conn);
         if let Some(default_runtime) = input.default_runtime {
@@ -695,8 +1037,9 @@ pub fn settings_save_orchestration(state: State<std::sync::Arc<AppState>>, input
                         if crate::roles::RoleStage::parse(&stage).is_none() {
                             return Err(ApiError::bad_request(format!("未知的阶段: {stage}")));
                         }
-                        crate::agent_runtime::spec_by_id(&id)
-                            .ok_or_else(|| ApiError::bad_request(format!("未知的 runtime: {id}")))?;
+                        crate::agent_runtime::spec_by_id(&id).ok_or_else(|| {
+                            ApiError::bad_request(format!("未知的 runtime: {id}"))
+                        })?;
                         current.stage_runtimes.insert(stage, id);
                     }
                     _ => {
@@ -710,25 +1053,40 @@ pub fn settings_save_orchestration(state: State<std::sync::Arc<AppState>>, input
 }
 
 #[tauri::command]
-pub fn roles_list(state: State<std::sync::Arc<AppState>>) -> ApiResult<Vec<crate::roles::RoleInfo>> {
+pub fn roles_list(
+    state: State<std::sync::Arc<AppState>>,
+) -> ApiResult<Vec<crate::roles::RoleInfo>> {
     crate::roles::list_roles(&state)
 }
 
 #[tauri::command]
-pub fn roles_get(state: State<std::sync::Arc<AppState>>, stage: String) -> ApiResult<crate::roles::RoleInfo> {
-    let stage = crate::roles::RoleStage::parse(&stage).ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
+pub fn roles_get(
+    state: State<std::sync::Arc<AppState>>,
+    stage: String,
+) -> ApiResult<crate::roles::RoleInfo> {
+    let stage = crate::roles::RoleStage::parse(&stage)
+        .ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
     crate::roles::get_role(&state, stage)
 }
 
 #[tauri::command]
-pub fn roles_save(state: State<std::sync::Arc<AppState>>, stage: String, content: String) -> ApiResult<crate::roles::RoleInfo> {
-    let stage = crate::roles::RoleStage::parse(&stage).ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
+pub fn roles_save(
+    state: State<std::sync::Arc<AppState>>,
+    stage: String,
+    content: String,
+) -> ApiResult<crate::roles::RoleInfo> {
+    let stage = crate::roles::RoleStage::parse(&stage)
+        .ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
     crate::roles::save_role(&state, stage, &content)
 }
 
 #[tauri::command]
-pub fn roles_reset(state: State<std::sync::Arc<AppState>>, stage: String) -> ApiResult<crate::roles::RoleInfo> {
-    let stage = crate::roles::RoleStage::parse(&stage).ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
+pub fn roles_reset(
+    state: State<std::sync::Arc<AppState>>,
+    stage: String,
+) -> ApiResult<crate::roles::RoleInfo> {
+    let stage = crate::roles::RoleStage::parse(&stage)
+        .ok_or_else(|| ApiError::bad_request(format!("未知的阶段: {stage}")))?;
     crate::roles::reset_role(&state, stage)
 }
 
@@ -741,7 +1099,11 @@ pub fn runtimes_list() -> Vec<crate::agent_runtime::RuntimeInfo> {
 /// orchestrator 以「用户取消」落 failed 任务（理解阶段回 awaiting_confirmation）。
 /// 无运行中调用（已完成/未开始/mock 路径）返回 409。
 #[tauri::command]
-pub fn requirements_cancel(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<serde_json::Value> {
+pub fn requirements_cancel(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<serde_json::Value> {
+    let _ = ensure_legacy_requirement(&state, &id)?;
     // 找到该需求当前 running 的任务，按「requirement:task」粒度取消（理解阶段才有 task 级；
     // 流水线阶段 cancel key 用 requirement:stage，逐个尝试）
     let running_tasks: Vec<(String, String)> = with_conn(&state, |conn| {
@@ -752,7 +1114,10 @@ pub fn requirements_cancel(state: State<std::sync::Arc<AppState>>, id: String) -
             .collect())
     })?;
     let mut cancelled = false;
-    if running_tasks.iter().any(|(_, step)| step == "understand" || step == "iterate") {
+    if running_tasks
+        .iter()
+        .any(|(_, step)| step == "understand" || step == "iterate")
+    {
         for (task_id, _) in &running_tasks {
             if crate::agent_runtime::cancel(&id, task_id) {
                 cancelled = true;
@@ -807,7 +1172,11 @@ pub async fn runtimes_check(app: tauri::AppHandle, id: String) -> ApiResult<serd
 pub fn runtimes_open_app(id: String) -> ApiResult<serde_json::Value> {
     let app_name = match id.as_str() {
         "zcode-app" => "ZCode",
-        other => return Err(ApiError::bad_request(format!("该运行时无宿主 App 可打开: {other}"))),
+        other => {
+            return Err(ApiError::bad_request(format!(
+                "该运行时无宿主 App 可打开: {other}"
+            )))
+        }
     };
     let status = std::process::Command::new("open")
         .arg("-a")
@@ -829,13 +1198,19 @@ pub fn settings_get_runtime(state: State<std::sync::Arc<AppState>>) -> ApiResult
 }
 
 #[tauri::command]
-pub fn settings_set_runtime(state: State<std::sync::Arc<AppState>>, id: String) -> ApiResult<String> {
+pub fn settings_set_runtime(
+    state: State<std::sync::Arc<AppState>>,
+    id: String,
+) -> ApiResult<String> {
     // 只接受注册表里的 id（票 44 的边界：不做自由路径输入）
     let spec = crate::agent_runtime::spec_by_id(&id)
         .ok_or_else(|| ApiError::bad_request(format!("未知的 runtime: {id}")))?;
     let info = crate::agent_runtime::probe_runtime(spec);
     if !info.available {
-        return Err(ApiError::bad_request(format!("{} 在本机不可用，无法选择", spec.name)));
+        return Err(ApiError::bad_request(format!(
+            "{} 在本机不可用，无法选择",
+            spec.name
+        )));
     }
     with_conn(&state, |conn| {
         let mut current = db::get_orchestration_settings(conn);
@@ -866,14 +1241,34 @@ mod native_requirement_guard_tests {
         let path = temp.path().to_str().unwrap();
         assert!(ensure_legacy_requirement_creation(None).is_ok());
         assert!(ensure_legacy_requirement_creation(Some(path)).is_ok());
-        assert!(std::process::Command::new("git").args(["init", "-q", path]).status().unwrap().success());
+        assert!(std::process::Command::new("git")
+            .args(["init", "-q", path])
+            .status()
+            .unwrap()
+            .success());
         let preview = crate::project_discovery::discover(path).unwrap();
         crate::project_discovery::confirm(&crate::project_discovery::ImportProjectInput {
-            path: path.into(), fingerprint: preview.fingerprint, selected_sources: vec![],
-        }).unwrap();
-        assert_eq!(ensure_legacy_requirement_creation(Some(path)).unwrap_err().code, 409);
+            path: path.into(),
+            fingerprint: preview.fingerprint,
+            selected_sources: vec![],
+        })
+        .unwrap();
+        assert_eq!(
+            ensure_legacy_requirement_creation(Some(path))
+                .unwrap_err()
+                .code,
+            409
+        );
         std::fs::write(temp.path().join(".agentup-app/project.json"), "malformed").unwrap();
-        assert_eq!(ensure_legacy_requirement_creation(Some(path)).unwrap_err().code, 400);
-        assert_eq!(std::fs::read_to_string(temp.path().join(".agentup-app/project.json")).unwrap(), "malformed");
+        assert_eq!(
+            ensure_legacy_requirement_creation(Some(path))
+                .unwrap_err()
+                .code,
+            400
+        );
+        assert_eq!(
+            std::fs::read_to_string(temp.path().join(".agentup-app/project.json")).unwrap(),
+            "malformed"
+        );
     }
 }

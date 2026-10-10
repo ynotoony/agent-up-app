@@ -10,22 +10,7 @@ use tauri::Manager;
 /// 执行编排器：理解/方案/实施/验证/审查异步推进，状态落 SQLite，前端 5s 轮询消费。
 /// 对应 PRD《04》§4 + 《03》confirm/reunderstand/iterate/resolve 的服务端语义。
 
-fn mock_delay() -> std::time::Duration {
-    if std::env::var("AGENTUP_TEST_FAST").as_deref() == Ok("1") {
-        std::time::Duration::from_millis(10)
-    } else {
-        std::time::Duration::from_millis(MOCK_STAGE_DELAY_MS)
-    }
-}
-
-const MOCK_STAGE_DELAY_MS: u64 = 1400;
-
-fn log(
-    conn: &rusqlite::Connection,
-    requirement_id: &str,
-    step: &str,
-    message: &str,
-) {
+fn log(conn: &rusqlite::Connection, requirement_id: &str, step: &str, message: &str) {
     let _ = db::create_log(conn, requirement_id, None, step, "info", message, None);
 }
 
@@ -37,13 +22,24 @@ fn log_task(
     level: &str,
     message: &str,
 ) {
-    let _ = db::create_log(conn, requirement_id, Some(task_id), step, level, message, None);
+    let _ = db::create_log(
+        conn,
+        requirement_id,
+        Some(task_id),
+        step,
+        level,
+        message,
+        None,
+    );
 }
 
 // ---------------------------------------------------------------- 运行时与角色
 
 /// 按阶段解析运行时：stage_runtimes[stage] 优先，review 跟随 verify，最后落 default_runtime（再落注册表默认）。
-fn resolve_stage_runtime(settings: &OrchestrationSettings, stage: RoleStage) -> &'static agent_runtime::RuntimeSpec {
+fn resolve_stage_runtime(
+    settings: &OrchestrationSettings,
+    stage: RoleStage,
+) -> &'static agent_runtime::RuntimeSpec {
     let configured = |key: &str| -> Option<&'static agent_runtime::RuntimeSpec> {
         settings
             .stage_runtimes
@@ -67,7 +63,13 @@ fn resolve_stage_runtime(settings: &OrchestrationSettings, stage: RoleStage) -> 
 
 /// 组装一次调用的完整 prompt：读取阶梯上下文（治理规则→文档→目录）+ 角色 agentmd + 引擎载荷（数据 + JSON 契约）。
 /// 契约由代码追加在末尾，用户编辑角色文件不会破坏输出解析。
-fn stage_prompt(state: &AppState, stage: RoleStage, payload: String, json_contract: &str, context_block: &str) -> String {
+fn stage_prompt(
+    state: &AppState,
+    stage: RoleStage,
+    payload: String,
+    json_contract: &str,
+    context_block: &str,
+) -> String {
     let role_md = crate::roles::get_role(state, stage)
         .map(|r| r.content)
         .unwrap_or_default();
@@ -79,14 +81,25 @@ fn stage_prompt(state: &AppState, stage: RoleStage, payload: String, json_contra
         role_md.to_string()
     };
     let context = context_block.trim();
-    let context_section = if context.is_empty() { String::new() } else { format!("{context}\n\n---\n\n") };
+    let context_section = if context.is_empty() {
+        String::new()
+    } else {
+        format!("{context}\n\n---\n\n")
+    };
     format!("{context_section}{role_block}\n\n---\n\n{payload}\n\n输出 JSON 契约（强制）：{json_contract}\n只输出 JSON，不要输出任何其它文字、解释或 markdown 代码块。")
 }
 
 /// 项目工作目录（workdir）+ 读取阶梯上下文块；未绑定目录的项目两者皆空。
-fn project_context(state: &AppState, project_id: &str, stage_key: &str) -> (Option<std::path::PathBuf>, String) {
+fn project_context(
+    state: &AppState,
+    project_id: &str,
+    stage_key: &str,
+) -> (Option<std::path::PathBuf>, String) {
     let conn = state.conn.lock().unwrap();
-    let workdir = db::get_project_path(&conn, project_id).ok().flatten().map(std::path::PathBuf::from);
+    let workdir = db::get_project_path(&conn, project_id)
+        .ok()
+        .flatten()
+        .map(std::path::PathBuf::from);
     let block = crate::project_init::build_context_block(&conn, project_id, stage_key);
     (workdir, block)
 }
@@ -106,14 +119,24 @@ fn log_stage_execution(
     spec: &agent_runtime::RuntimeSpec,
     role_mtime: Option<&str>,
 ) {
-    let mtime_note = role_mtime.map(|t| format!("，角色版本 {t}")).unwrap_or_default();
+    let mtime_note = role_mtime
+        .map(|t| format!("，角色版本 {t}"))
+        .unwrap_or_default();
     let details = serde_json::json!({
         "executor": spec.name,
         "runtime_kind": spec.kind,
         "runtime_id": spec.id,
         "role_mtime": role_mtime,
     });
-    let _ = db::create_log(conn, requirement_id, task_id, step, "info", &format!("执行者：{}{mtime_note}", spec.name), Some(&details));
+    let _ = db::create_log(
+        conn,
+        requirement_id,
+        task_id,
+        step,
+        "info",
+        &format!("执行者：{}{mtime_note}", spec.name),
+        Some(&details),
+    );
 }
 
 // ---------------------------------------------------------------- 理解
@@ -147,8 +170,14 @@ async fn run_understanding(
         let Some(requirement) = db::get_requirement(&conn, requirement_id)? else {
             return Ok(None);
         };
-        if requirement.status == RequirementStatus::Initializing && matches!(source, UnderstandingSource::Initial) {
-            (RequirementStatus::Initializing, final_status, RequirementStatus::Initializing)
+        if requirement.status == RequirementStatus::Initializing
+            && matches!(source, UnderstandingSource::Initial)
+        {
+            (
+                RequirementStatus::Initializing,
+                final_status,
+                RequirementStatus::Initializing,
+            )
         } else {
             (processing_status, final_status, failure_status)
         }
@@ -159,7 +188,13 @@ async fn run_understanding(
         let Some(_requirement) = db::get_requirement(&conn, requirement_id)? else {
             return Ok(None);
         };
-        db::create_task(&conn, requirement_id, StepType::Understand, "理解需求", TaskStatus::Running)?
+        db::create_task(
+            &conn,
+            requirement_id,
+            StepType::Understand,
+            "理解需求",
+            TaskStatus::Running,
+        )?
     };
 
     {
@@ -167,7 +202,11 @@ async fn run_understanding(
         db::update_requirement(
             &conn,
             requirement_id,
-            &db::RequirementUpdates { status: Some(processing_status), current_step: Some("understand".into()), ..Default::default() },
+            &db::RequirementUpdates {
+                status: Some(processing_status),
+                current_step: Some("understand".into()),
+                ..Default::default()
+            },
         )?;
         let message = if matches!(source, UnderstandingSource::Initial) {
             "开始理解需求".to_string()
@@ -352,30 +391,63 @@ already_done_reason 用一句话给出判定依据（指向目录或内容证据
                     let _ = db::update_task(
                         &conn,
                         &task.id,
-                        &db::TaskUpdates { status: Some(TaskStatus::Failed), error_message: Some(message.clone()), ..Default::default() },
+                        &db::TaskUpdates {
+                            status: Some(TaskStatus::Failed),
+                            error_message: Some(message.clone()),
+                            ..Default::default()
+                        },
                     );
                     let _ = db::update_requirement(
                         &conn,
                         requirement_id,
-                        &db::RequirementUpdates { status: Some(RequirementStatus::AwaitingConfirmation), ..Default::default() },
+                        &db::RequirementUpdates {
+                            status: Some(RequirementStatus::AwaitingConfirmation),
+                            ..Default::default()
+                        },
                     );
-                    log_task(&conn, requirement_id, &task.id, "understand", "warn", "理解已被用户取消，可重新发起理解或重试");
+                    log_task(
+                        &conn,
+                        requirement_id,
+                        &task.id,
+                        "understand",
+                        "warn",
+                        "理解已被用户取消，可重新发起理解或重试",
+                    );
                     return Err(err);
                 }
                 let analysis = task_engine::analyze_requirement_mode(
-                    &db::get_requirement(&conn, requirement_id).ok().and_then(|r| r).and_then(|r| r.content).unwrap_or_default(),
+                    &db::get_requirement(&conn, requirement_id)
+                        .ok()
+                        .and_then(|r| r)
+                        .and_then(|r| r.content)
+                        .unwrap_or_default(),
                 );
                 let _ = db::update_task(
                     &conn,
                     &task.id,
-                    &db::TaskUpdates { status: Some(TaskStatus::Failed), error_message: Some(message.clone()), ..Default::default() },
+                    &db::TaskUpdates {
+                        status: Some(TaskStatus::Failed),
+                        error_message: Some(message.clone()),
+                        ..Default::default()
+                    },
                 );
                 let _ = db::update_requirement(
                     &conn,
                     requirement_id,
-                    &db::RequirementUpdates { status: Some(failure_status), mode: Some(analysis.mode), ..Default::default() },
+                    &db::RequirementUpdates {
+                        status: Some(failure_status),
+                        mode: Some(analysis.mode),
+                        ..Default::default()
+                    },
                 );
-                log_task(&conn, requirement_id, &task.id, "understand", "error", &format!("需求理解失败：{message}，已回退到本地模式分析"));
+                log_task(
+                    &conn,
+                    requirement_id,
+                    &task.id,
+                    "understand",
+                    "error",
+                    &format!("需求理解失败：{message}，已回退到本地模式分析"),
+                );
             }
             Err(err)
         }
@@ -403,92 +475,6 @@ struct PlanOutcome {
     decision: Option<CreateDecisionInput>,
 }
 
-/// AI 降级用的本地模拟产物（与 runtime 不可用分支同构）。
-fn mock_plan(requirement: &Requirement) -> PlanOutcome {
-    mock_plan_from(&current_understanding(requirement))
-}
-
-fn mock_plan_from(understanding: &UnderstandingResult) -> PlanOutcome {
-    let criteria: Vec<String> = understanding.success_criteria.iter().map(|c| c.criteria.clone()).collect();
-    let steps: Vec<String> = std::iter::once("明确交付物结构与涉及范围".to_string())
-        .chain(criteria.iter().take(3).map(|c| format!("落实：{c}")))
-        .chain(std::iter::once("自检并整理交付说明".to_string()))
-        .collect();
-    let mut considerations: Vec<String> = understanding
-        .risks
-        .iter()
-        .map(|r| {
-            let level = match r.level.as_str() { "high" => "高", "low" => "低", _ => "中" };
-            format!("风险应对（{level}）：{}", r.risk)
-        })
-        .collect();
-    considerations.extend(
-        understanding.ambiguities.iter().map(|a| format!("歧义处理：{} → {}", a.item, a.clarification)),
-    );
-    let decision = if understanding.mode == RequirementMode::Standard || understanding.mode == RequirementMode::HighRisk {
-        Some(CreateDecisionInput {
-            requirement_id: String::new(),
-            question: "实施顺序上希望优先保障哪部分？".into(),
-            context: Some("不同优先级会影响实施阶段的推进顺序与验证侧重。".into()),
-            options: vec![
-                DecisionOption { label: "核心链路优先".into(), value: "core-first".into(), description: Some("先打通主流程，周边能力后补".into()), risk: Some("低".into()) },
-                DecisionOption { label: "完整度优先".into(), value: "completeness-first".into(), description: Some("一次性交付全部范围".into()), risk: Some("中".into()) },
-                DecisionOption { label: "速度优先".into(), value: "speed-first".into(), description: Some("最小可用版本先行".into()), risk: Some("中".into()) },
-            ],
-            recommended: Some("core-first".into()),
-        })
-    } else {
-        None
-    };
-    PlanOutcome {
-        plan: serde_json::json!({
-            "approach": format!("针对「{}」采用分步交付：先搭骨架、再补关键路径、最后按成功标准逐条核对。", understanding.goal_summary),
-            "steps": steps,
-            "considerations": considerations,
-        }),
-        decision,
-    }
-}
-
-fn mock_deliverable(understanding: &UnderstandingResult, plan: &serde_json::Value) -> serde_json::Value {
-    let approach = plan.get("approach").and_then(|v| v.as_str()).unwrap_or_default();
-    let steps: Vec<String> = plan
-        .get("steps")
-        .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|s| s.as_str()).map(String::from).collect())
-        .unwrap_or_default();
-    let changes: Vec<String> = steps.iter().enumerate().map(|(i, s)| format!("第 {} 步完成 — {}", i + 1, s)).collect();
-    serde_json::json!({
-        "summary": format!("已按方案完成实施：{approach}"),
-        "changes": changes,
-        "files": [
-            { "path": "deliverable/README.md", "description": "交付说明与使用方式" },
-            { "path": "deliverable/implementation.md", "description": "实施内容与变更清单" }
-        ],
-        "test_plan": format!("按成功标准逐条验证：{}", understanding.success_criteria.iter().map(|c| c.criteria.as_str()).collect::<Vec<_>>().join("；"))
-    })
-}
-
-fn mock_verify(understanding: &UnderstandingResult) -> serde_json::Value {
-    let results: Vec<serde_json::Value> = understanding
-        .success_criteria
-        .iter()
-        .map(|c| serde_json::json!({ "criteria": c.criteria, "passed": true, "note": "已按交付说明核对通过" }))
-        .collect();
-    serde_json::json!({
-        "passed": true,
-        "results": results,
-        "conclusion": "全部成功标准核对通过，允许交付。"
-    })
-}
-
-fn mock_review() -> serde_json::Value {
-    serde_json::json!({
-        "findings": ["回滚预案已确认", "敏感操作清单已复核", "变更影响面已评估"],
-        "conclusion": "高风险变更审查通过。"
-    })
-}
-
 /// 全量原文读取：pipeline 各阶段直接从详情查询拿到的 Requirement 上取 content。
 fn requirement_content(requirement: &Requirement) -> &str {
     requirement.content.as_deref().unwrap_or_default()
@@ -511,49 +497,18 @@ fn current_understanding(requirement: &Requirement) -> UnderstandingResult {
     }
 }
 
-async fn produce_plan(state: &AppState, requirement: &Requirement, understanding: &UnderstandingResult) -> ApiResult<(PlanOutcome, i64)> {
+async fn produce_plan(
+    state: &AppState,
+    requirement: &Requirement,
+    understanding: &UnderstandingResult,
+) -> ApiResult<(PlanOutcome, i64)> {
     let settings = db::get_orchestration_settings(&state.conn.lock().unwrap());
     let runtime_spec = resolve_stage_runtime(&settings, RoleStage::Plan);
     let runtime_ok = agent_runtime::resolve_binary(runtime_spec.kind).is_some();
     if !runtime_ok {
-        tokio::time::sleep(mock_delay()).await;
-        let criteria: Vec<String> = understanding.success_criteria.iter().map(|c| c.criteria.clone()).collect();
-        let steps: Vec<String> = std::iter::once("明确交付物结构与涉及范围".to_string())
-            .chain(criteria.iter().take(3).map(|c| format!("落实：{c}")))
-            .chain(std::iter::once("自检并整理交付说明".to_string()))
-            .collect();
-        let mut considerations: Vec<String> = understanding
-            .risks
-            .iter()
-            .map(|r| {
-                let level = match r.level.as_str() { "high" => "高", "low" => "低", _ => "中" };
-                format!("风险应对（{level}）：{}", r.risk)
-            })
-            .collect();
-        considerations.extend(
-            understanding.ambiguities.iter().map(|a| format!("歧义处理：{} → {}", a.item, a.clarification)),
-        );
-        let decision = if understanding.mode == RequirementMode::Standard || understanding.mode == RequirementMode::HighRisk {
-            Some(CreateDecisionInput {
-                requirement_id: requirement.id.clone(),
-                question: "实施顺序上希望优先保障哪部分？".into(),
-                context: Some("不同优先级会影响实施阶段的推进顺序与验证侧重。".to_string()),
-                options: vec![
-                    DecisionOption { label: "核心链路优先".into(), value: "core-first".into(), description: Some("先打通主流程，周边能力后补".into()), risk: Some("低".into()) },
-                    DecisionOption { label: "完整度优先".into(), value: "completeness-first".into(), description: Some("一次性交付全部范围".into()), risk: Some("中".into()) },
-                    DecisionOption { label: "速度优先".into(), value: "speed-first".into(), description: Some("最小可用版本先行".into()), risk: Some("中".into()) },
-                ],
-                recommended: Some("core-first".into()),
-            })
-        } else {
-            None
-        };
-        let plan = json!({
-            "approach": format!("针对「{}」采用分步交付：先搭骨架、再补关键路径、最后按成功标准逐条核对。", understanding.goal_summary),
-            "steps": steps,
-            "considerations": considerations,
-        });
-        return Ok((PlanOutcome { plan, decision }, estimate_tokens(requirement_content(&requirement).len(), 600)));
+        return Err(ApiError::bad_request(
+            "方案 runtime 不可用，不能生成模拟方案",
+        ));
     }
 
     let (workdir, context_block) = project_context(state, &requirement.project_id, "plan");
@@ -592,13 +547,25 @@ async fn produce_plan(state: &AppState, requirement: &Requirement, understanding
                 .enumerate()
                 .filter_map(|(i, o)| {
                     if o.is_string() {
-                        Some(DecisionOption { label: o.as_str().unwrap().to_string(), value: format!("option-{}", i + 1), description: None, risk: None })
+                        Some(DecisionOption {
+                            label: o.as_str().unwrap().to_string(),
+                            value: format!("option-{}", i + 1),
+                            description: None,
+                            risk: None,
+                        })
                     } else {
                         let label = o.get("label").and_then(|v| v.as_str())?;
                         Some(DecisionOption {
                             label: label.to_string(),
-                            value: o.get("value").and_then(|v| v.as_str()).map(String::from).unwrap_or_else(|| format!("option-{}", i + 1)),
-                            description: o.get("description").and_then(|v| v.as_str()).map(String::from),
+                            value: o
+                                .get("value")
+                                .and_then(|v| v.as_str())
+                                .map(String::from)
+                                .unwrap_or_else(|| format!("option-{}", i + 1)),
+                            description: o
+                                .get("description")
+                                .and_then(|v| v.as_str())
+                                .map(String::from),
                             risk: o.get("risk").and_then(|v| v.as_str()).map(String::from),
                         })
                     }
@@ -609,11 +576,18 @@ async fn produce_plan(state: &AppState, requirement: &Requirement, understanding
     let decision = if options.len() >= 2 {
         parsed.get("decision").map(|d| CreateDecisionInput {
             requirement_id: requirement.id.clone(),
-            question: d.get("question").and_then(|v| v.as_str()).unwrap_or("需要你的决定").to_string(),
+            question: d
+                .get("question")
+                .and_then(|v| v.as_str())
+                .unwrap_or("需要你的决定")
+                .to_string(),
             context: d.get("context").and_then(|v| v.as_str()).map(String::from),
             options: options.clone(),
             recommended: Some(
-                d.get("recommended").and_then(|v| v.as_str()).unwrap_or_else(|| options[0].value.as_str()).to_string(),
+                d.get("recommended")
+                    .and_then(|v| v.as_str())
+                    .unwrap_or_else(|| options[0].value.as_str())
+                    .to_string(),
             ),
         })
     } else {
@@ -628,32 +602,25 @@ async fn produce_plan(state: &AppState, requirement: &Requirement, understanding
             }),
             decision,
         },
-        outcome.tokens.unwrap_or_else(|| estimate_tokens(prompt.len(), 1200)),
+        outcome
+            .tokens
+            .unwrap_or_else(|| estimate_tokens(prompt.len(), 1200)),
     ))
 }
 
-async fn produce_deliverable(state: &AppState, requirement: &Requirement, understanding: &UnderstandingResult, plan: &serde_json::Value) -> ApiResult<(serde_json::Value, i64)> {
+async fn produce_deliverable(
+    state: &AppState,
+    requirement: &Requirement,
+    understanding: &UnderstandingResult,
+    plan: &serde_json::Value,
+) -> ApiResult<(serde_json::Value, i64)> {
     let settings = db::get_orchestration_settings(&state.conn.lock().unwrap());
     let runtime_spec = resolve_stage_runtime(&settings, RoleStage::Implement);
     let runtime_ok = agent_runtime::resolve_binary(runtime_spec.kind).is_some();
     if !runtime_ok {
-        tokio::time::sleep(mock_delay()).await;
-        let approach = plan.get("approach").and_then(|v| v.as_str()).unwrap_or_default();
-        let steps: Vec<String> = plan
-            .get("steps")
-            .and_then(|v| v.as_array())
-            .map(|a| a.iter().filter_map(|s| s.as_str()).map(String::from).collect())
-            .unwrap_or_default();
-        let changes: Vec<String> = steps.iter().enumerate().map(|(i, s)| format!("第 {} 步完成 — {}", i + 1, s)).collect();
-        return Ok((json!({
-            "summary": format!("已按方案完成实施：{approach}"),
-            "changes": changes,
-            "files": [
-                { "path": "deliverable/README.md", "description": "交付说明与使用方式" },
-                { "path": "deliverable/implementation.md", "description": "实施内容与变更清单" }
-            ],
-            "test_plan": format!("按成功标准逐条验证：{}", understanding.success_criteria.iter().map(|c| c.criteria.as_str()).collect::<Vec<_>>().join("；"))
-        }), estimate_tokens(requirement_content(&requirement).len(), 900)));
+        return Err(ApiError::bad_request(
+            "实施 runtime 不可用，不能生成模拟完成结果",
+        ));
     }
     let (workdir, context_block) = project_context(state, &requirement.project_id, "implement");
     let payload = format!(
@@ -682,26 +649,25 @@ async fn produce_deliverable(state: &AppState, requirement: &Requirement, unders
     .await?;
     Ok((
         extract_json(&outcome.text)?,
-        outcome.tokens.unwrap_or_else(|| estimate_tokens(prompt.len(), 2000)),
+        outcome
+            .tokens
+            .unwrap_or_else(|| estimate_tokens(prompt.len(), 2000)),
     ))
 }
 
-async fn produce_verify(state: &AppState, requirement: &Requirement, understanding: &UnderstandingResult, deliverable: &serde_json::Value) -> ApiResult<(serde_json::Value, i64)> {
+async fn produce_verify(
+    state: &AppState,
+    requirement: &Requirement,
+    understanding: &UnderstandingResult,
+    deliverable: &serde_json::Value,
+) -> ApiResult<(serde_json::Value, i64)> {
     let settings = db::get_orchestration_settings(&state.conn.lock().unwrap());
     let runtime_spec = resolve_stage_runtime(&settings, RoleStage::Verify);
     let runtime_ok = agent_runtime::resolve_binary(runtime_spec.kind).is_some();
     if !runtime_ok {
-        tokio::time::sleep(mock_delay()).await;
-        let results: Vec<serde_json::Value> = understanding
-            .success_criteria
-            .iter()
-            .map(|c| json!({ "criteria": c.criteria, "passed": true, "note": "已按交付说明核对通过" }))
-            .collect();
-        return Ok((json!({
-            "passed": true,
-            "results": results,
-            "conclusion": "全部成功标准核对通过，允许交付。"
-        }), estimate_tokens(requirement_content(&requirement).len(), 500)));
+        return Err(ApiError::bad_request(
+            "验证 runtime 不可用，不能生成模拟通过结果",
+        ));
     }
     let (workdir, context_block) = project_context(state, &requirement.project_id, "verify");
     let payload = format!(
@@ -730,20 +696,24 @@ async fn produce_verify(state: &AppState, requirement: &Requirement, understandi
     .await?;
     Ok((
         extract_json(&outcome.text)?,
-        outcome.tokens.unwrap_or_else(|| estimate_tokens(prompt.len(), 700)),
+        outcome
+            .tokens
+            .unwrap_or_else(|| estimate_tokens(prompt.len(), 700)),
     ))
 }
 
-async fn produce_review(state: &AppState, requirement: &Requirement, deliverable: &serde_json::Value) -> ApiResult<(serde_json::Value, i64)> {
+async fn produce_review(
+    state: &AppState,
+    requirement: &Requirement,
+    deliverable: &serde_json::Value,
+) -> ApiResult<(serde_json::Value, i64)> {
     let settings = db::get_orchestration_settings(&state.conn.lock().unwrap());
     let runtime_spec = resolve_stage_runtime(&settings, RoleStage::Review);
     let runtime_ok = agent_runtime::resolve_binary(runtime_spec.kind).is_some();
     if !runtime_ok {
-        tokio::time::sleep(mock_delay()).await;
-        return Ok((json!({
-            "findings": ["回滚预案已确认", "敏感操作清单已复核", "变更影响面已评估"],
-            "conclusion": "高风险变更审查通过。"
-        }), estimate_tokens(requirement_content(&requirement).len(), 400)));
+        return Err(ApiError::bad_request(
+            "审查 runtime 不可用，不能生成模拟通过结果",
+        ));
     }
     let (workdir, context_block) = project_context(state, &requirement.project_id, "review");
     let payload = format!(
@@ -771,13 +741,20 @@ async fn produce_review(state: &AppState, requirement: &Requirement, deliverable
     .await?;
     Ok((
         extract_json(&outcome.text)?,
-        outcome.tokens.unwrap_or_else(|| estimate_tokens(prompt.len(), 600)),
+        outcome
+            .tokens
+            .unwrap_or_else(|| estimate_tokens(prompt.len(), 600)),
     ))
 }
 
 fn extract_json(raw: &str) -> ApiResult<serde_json::Value> {
-    let start = raw.find('{').ok_or_else(|| ApiError::internal("模型输出缺少 JSON"))?;
-    let end = raw.rfind('}').map(|i| i + 1).ok_or_else(|| ApiError::internal("模型输出缺少 JSON"))?;
+    let start = raw
+        .find('{')
+        .ok_or_else(|| ApiError::internal("模型输出缺少 JSON"))?;
+    let end = raw
+        .rfind('}')
+        .map(|i| i + 1)
+        .ok_or_else(|| ApiError::internal("模型输出缺少 JSON"))?;
     Ok(serde_json::from_str(&raw[start..end])?)
 }
 
@@ -801,35 +778,116 @@ pub async fn pipeline_inner(state: &AppState, requirement_id: &str) -> ApiResult
                     .into_iter()
                     .find(|t| t.step_type == StepType::Plan && t.status == TaskStatus::Running)
             };
-            let Some(plan_task) = plan_task else { return Ok(()) };
-            let (outcome, plan_tokens) = match produce_plan(state, &requirement, &current_understanding(&requirement)).await {
-                Ok((o, tokens)) => (o, tokens),
-                Err(e) => {
-                    log_task(&state.conn.lock().unwrap(), requirement_id, &plan_task.id, "plan", "warn",
-                        &format!("AI 服务调用失败（{}），已自动降级到本地模拟引擎", e.message));
-                    tokio::time::sleep(mock_delay()).await;
-                    (mock_plan(&requirement), estimate_tokens(requirement_content(&requirement).len(), 600))
-                }
+            let Some(plan_task) = plan_task else {
+                return Ok(());
             };
+            let (outcome, plan_tokens) =
+                match produce_plan(state, &requirement, &current_understanding(&requirement)).await
+                {
+                    Ok((o, tokens)) => (o, tokens),
+                    Err(e) => {
+                        let conn = state.conn.lock().unwrap();
+                        db::update_task(
+                            &conn,
+                            &plan_task.id,
+                            &db::TaskUpdates {
+                                status: Some(TaskStatus::Failed),
+                                error_message: Some(e.message.clone()),
+                                ..Default::default()
+                            },
+                        )?;
+                        db::update_requirement(
+                            &conn,
+                            requirement_id,
+                            &db::RequirementUpdates {
+                                status: Some(RequirementStatus::Failed),
+                                current_step: Some("plan".into()),
+                                ..Default::default()
+                            },
+                        )?;
+                        return Ok(());
+                    }
+                };
             {
                 let conn = state.conn.lock().unwrap();
-                db::update_task(&conn, &plan_task.id, &db::TaskUpdates { status: Some(TaskStatus::Completed), result: Some(outcome.plan.clone()), tokens: Some(plan_tokens), ..Default::default() })?;
-                db::create_artifact(&conn, requirement_id, Some(&plan_task.id), ArtifactType::Document, "plan", "实施方案", &render_plan_markdown(&outcome.plan))?;
-                log_task(&conn, requirement_id, &plan_task.id, "plan", "info", "方案制定完成，进入实施");
+                db::update_task(
+                    &conn,
+                    &plan_task.id,
+                    &db::TaskUpdates {
+                        status: Some(TaskStatus::Completed),
+                        result: Some(outcome.plan.clone()),
+                        tokens: Some(plan_tokens),
+                        ..Default::default()
+                    },
+                )?;
+                db::create_artifact(
+                    &conn,
+                    requirement_id,
+                    Some(&plan_task.id),
+                    ArtifactType::Document,
+                    "plan",
+                    "实施方案",
+                    &render_plan_markdown(&outcome.plan),
+                )?;
+                log_task(
+                    &conn,
+                    requirement_id,
+                    &plan_task.id,
+                    "plan",
+                    "info",
+                    "方案制定完成，进入实施",
+                );
 
                 let implement_task = ensure_task(&conn, requirement_id, StepType::Implement)?;
                 match outcome.decision {
                     Some(mut decision_input) => {
                         decision_input.requirement_id = requirement_id.to_string();
                         db::create_decision(&conn, &decision_input, Some(&implement_task.id))?;
-                        db::update_task(&conn, &implement_task.id, &db::TaskUpdates { status: Some(TaskStatus::WaitingDecision), ..Default::default() })?;
-                        db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::WaitingDecision), current_step: Some("implement".into()), ..Default::default() })?;
-                        log_task(&conn, requirement_id, &implement_task.id, "implement", "info", &format!("挂起决策点等待用户定夺：{}", decision_input.question));
+                        db::update_task(
+                            &conn,
+                            &implement_task.id,
+                            &db::TaskUpdates {
+                                status: Some(TaskStatus::WaitingDecision),
+                                ..Default::default()
+                            },
+                        )?;
+                        db::update_requirement(
+                            &conn,
+                            requirement_id,
+                            &db::RequirementUpdates {
+                                status: Some(RequirementStatus::WaitingDecision),
+                                current_step: Some("implement".into()),
+                                ..Default::default()
+                            },
+                        )?;
+                        log_task(
+                            &conn,
+                            requirement_id,
+                            &implement_task.id,
+                            "implement",
+                            "info",
+                            &format!("挂起决策点等待用户定夺：{}", decision_input.question),
+                        );
                         return Ok(()); // 决策解决后由 resume_pipeline 继续
                     }
                     None => {
-                        db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Implementing), current_step: Some("implement".into()), ..Default::default() })?;
-                        db::update_task(&conn, &implement_task.id, &db::TaskUpdates { status: Some(TaskStatus::Running), ..Default::default() })?;
+                        db::update_requirement(
+                            &conn,
+                            requirement_id,
+                            &db::RequirementUpdates {
+                                status: Some(RequirementStatus::Implementing),
+                                current_step: Some("implement".into()),
+                                ..Default::default()
+                            },
+                        )?;
+                        db::update_task(
+                            &conn,
+                            &implement_task.id,
+                            &db::TaskUpdates {
+                                status: Some(TaskStatus::Running),
+                                ..Default::default()
+                            },
+                        )?;
                     }
                 }
             }
@@ -851,24 +909,80 @@ pub async fn pipeline_inner(state: &AppState, requirement_id: &str) -> ApiResult
                     .unwrap_or(json!({ "approach": "", "steps": [], "considerations": [] }));
                 (plan, current_understanding(&requirement))
             };
-            let (deliverable, implement_tokens) = match produce_deliverable(state, &requirement, &understanding, &plan).await {
-                Ok((d, tokens)) => (d, tokens),
-                Err(e) => {
-                    log_task(&state.conn.lock().unwrap(), requirement_id, &implement_task.id, "implement", "warn",
-                        &format!("AI 服务调用失败（{}），已自动降级到本地模拟引擎", e.message));
-                    tokio::time::sleep(mock_delay()).await;
-                    (mock_deliverable(&understanding, &plan), estimate_tokens(requirement_content(&requirement).len(), 900))
-                }
-            };
+            let (deliverable, implement_tokens) =
+                match produce_deliverable(state, &requirement, &understanding, &plan).await {
+                    Ok((d, tokens)) => (d, tokens),
+                    Err(e) => {
+                        let conn = state.conn.lock().unwrap();
+                        db::update_task(
+                            &conn,
+                            &implement_task.id,
+                            &db::TaskUpdates {
+                                status: Some(TaskStatus::Failed),
+                                error_message: Some(e.message.clone()),
+                                ..Default::default()
+                            },
+                        )?;
+                        db::update_requirement(
+                            &conn,
+                            requirement_id,
+                            &db::RequirementUpdates {
+                                status: Some(RequirementStatus::Failed),
+                                current_step: Some("implement".into()),
+                                ..Default::default()
+                            },
+                        )?;
+                        return Ok(());
+                    }
+                };
             {
                 let conn = state.conn.lock().unwrap();
-                db::update_task(&conn, &implement_task.id, &db::TaskUpdates { status: Some(TaskStatus::Completed), result: Some(deliverable.clone()), tokens: Some(implement_tokens), ..Default::default() })?;
-                db::create_artifact(&conn, requirement_id, Some(&implement_task.id), ArtifactType::Code, "implement", "交付产物", &render_deliverable_markdown(&deliverable))?;
-                log_task(&conn, requirement_id, &implement_task.id, "implement", "info", "实施完成，进入验证");
+                db::update_task(
+                    &conn,
+                    &implement_task.id,
+                    &db::TaskUpdates {
+                        status: Some(TaskStatus::Completed),
+                        result: Some(deliverable.clone()),
+                        tokens: Some(implement_tokens),
+                        ..Default::default()
+                    },
+                )?;
+                db::create_artifact(
+                    &conn,
+                    requirement_id,
+                    Some(&implement_task.id),
+                    ArtifactType::Code,
+                    "implement",
+                    "交付产物",
+                    &render_deliverable_markdown(&deliverable),
+                )?;
+                log_task(
+                    &conn,
+                    requirement_id,
+                    &implement_task.id,
+                    "implement",
+                    "info",
+                    "实施完成，进入验证",
+                );
 
                 let verify_task = ensure_task(&conn, requirement_id, StepType::Verify)?;
-                db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Verifying), current_step: Some("verify".into()), ..Default::default() })?;
-                db::update_task(&conn, &verify_task.id, &db::TaskUpdates { status: Some(TaskStatus::Running), ..Default::default() })?;
+                db::update_requirement(
+                    &conn,
+                    requirement_id,
+                    &db::RequirementUpdates {
+                        status: Some(RequirementStatus::Verifying),
+                        current_step: Some("verify".into()),
+                        ..Default::default()
+                    },
+                )?;
+                db::update_task(
+                    &conn,
+                    &verify_task.id,
+                    &db::TaskUpdates {
+                        status: Some(TaskStatus::Running),
+                        ..Default::default()
+                    },
+                )?;
             }
             continue;
         }
@@ -883,45 +997,143 @@ pub async fn pipeline_inner(state: &AppState, requirement_id: &str) -> ApiResult
                 let conn = state.conn.lock().unwrap();
                 let deliverable = db::list_tasks_by_requirement(&conn, requirement_id)?
                     .into_iter()
-                    .filter(|t| t.step_type == StepType::Implement && t.status == TaskStatus::Completed)
+                    .filter(|t| {
+                        t.step_type == StepType::Implement && t.status == TaskStatus::Completed
+                    })
                     .last()
                     .and_then(|t| t.result)
-                    .unwrap_or(json!({ "summary": "", "changes": [], "files": [], "test_plan": "" }));
+                    .unwrap_or(
+                        json!({ "summary": "", "changes": [], "files": [], "test_plan": "" }),
+                    );
                 (deliverable, current_understanding(&requirement))
             };
-            let (verify, verify_tokens) = match produce_verify(state, &requirement, &understanding, &deliverable).await {
-                Ok((v, tokens)) => (v, tokens),
-                Err(e) => {
-                    log_task(&state.conn.lock().unwrap(), requirement_id, &verify_task.id, "verify", "warn",
-                        &format!("AI 服务调用失败（{}），已自动降级到本地模拟引擎", e.message));
-                    tokio::time::sleep(mock_delay()).await;
-                    (mock_verify(&understanding), estimate_tokens(requirement_content(&requirement).len(), 500))
-                }
-            };
-            let passed = verify.get("passed").and_then(|v| v.as_bool()).unwrap_or(false);
-            let review_after = get_mode_steps(requirement.mode).steps.contains(&StepType::Review);
+            let (verify, verify_tokens) =
+                match produce_verify(state, &requirement, &understanding, &deliverable).await {
+                    Ok((v, tokens)) => (v, tokens),
+                    Err(e) => {
+                        let conn = state.conn.lock().unwrap();
+                        db::update_task(
+                            &conn,
+                            &verify_task.id,
+                            &db::TaskUpdates {
+                                status: Some(TaskStatus::Failed),
+                                error_message: Some(e.message.clone()),
+                                ..Default::default()
+                            },
+                        )?;
+                        db::update_requirement(
+                            &conn,
+                            requirement_id,
+                            &db::RequirementUpdates {
+                                status: Some(RequirementStatus::Failed),
+                                current_step: Some("verify".into()),
+                                ..Default::default()
+                            },
+                        )?;
+                        return Ok(());
+                    }
+                };
+            let passed = verify
+                .get("passed")
+                .and_then(|v| v.as_bool())
+                .unwrap_or(false);
+            let review_after = get_mode_steps(requirement.mode)
+                .steps
+                .contains(&StepType::Review);
             {
                 let conn = state.conn.lock().unwrap();
                 db::update_task(
                     &conn,
                     &verify_task.id,
-                    &db::TaskUpdates { status: Some(if passed { TaskStatus::Completed } else { TaskStatus::Failed }), result: Some(verify.clone()), tokens: Some(verify_tokens), ..Default::default() },
+                    &db::TaskUpdates {
+                        status: Some(if passed {
+                            TaskStatus::Completed
+                        } else {
+                            TaskStatus::Failed
+                        }),
+                        result: Some(verify.clone()),
+                        tokens: Some(verify_tokens),
+                        ..Default::default()
+                    },
                 )?;
-                db::create_artifact(&conn, requirement_id, Some(&verify_task.id), ArtifactType::Markdown, "verify", "验证报告", &render_verify_markdown(&verify))?;
+                db::create_artifact(
+                    &conn,
+                    requirement_id,
+                    Some(&verify_task.id),
+                    ArtifactType::Markdown,
+                    "verify",
+                    "验证报告",
+                    &render_verify_markdown(&verify),
+                )?;
                 if passed && review_after {
                     let review_task = ensure_task(&conn, requirement_id, StepType::Review)?;
-                    db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Verifying), current_step: Some("review".into()), ..Default::default() })?;
-                    db::update_task(&conn, &review_task.id, &db::TaskUpdates { status: Some(TaskStatus::Running), ..Default::default() })?;
-                    log_task(&conn, requirement_id, &verify_task.id, "verify", "info", "验证通过，高风险模式进入审查");
+                    db::update_requirement(
+                        &conn,
+                        requirement_id,
+                        &db::RequirementUpdates {
+                            status: Some(RequirementStatus::Verifying),
+                            current_step: Some("review".into()),
+                            ..Default::default()
+                        },
+                    )?;
+                    db::update_task(
+                        &conn,
+                        &review_task.id,
+                        &db::TaskUpdates {
+                            status: Some(TaskStatus::Running),
+                            ..Default::default()
+                        },
+                    )?;
+                    log_task(
+                        &conn,
+                        requirement_id,
+                        &verify_task.id,
+                        "verify",
+                        "info",
+                        "验证通过，高风险模式进入审查",
+                    );
                 } else if passed {
-                    db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Completed), current_step: None, ..Default::default() })?;
+                    db::update_requirement(
+                        &conn,
+                        requirement_id,
+                        &db::RequirementUpdates {
+                            status: Some(RequirementStatus::Completed),
+                            current_step: None,
+                            ..Default::default()
+                        },
+                    )?;
                     db::refresh_requirement_metrics(&conn, requirement_id)?;
-                    log_task(&conn, requirement_id, &verify_task.id, "verify", "info", "验证通过，需求交付完成 ✓");
+                    log_task(
+                        &conn,
+                        requirement_id,
+                        &verify_task.id,
+                        "verify",
+                        "info",
+                        "验证通过，需求交付完成 ✓",
+                    );
                 } else {
-                    let conclusion = verify.get("conclusion").and_then(|v| v.as_str()).unwrap_or("验证未通过");
-                    db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Failed), current_step: Some("verify".into()), ..Default::default() })?;
+                    let conclusion = verify
+                        .get("conclusion")
+                        .and_then(|v| v.as_str())
+                        .unwrap_or("验证未通过");
+                    db::update_requirement(
+                        &conn,
+                        requirement_id,
+                        &db::RequirementUpdates {
+                            status: Some(RequirementStatus::Failed),
+                            current_step: Some("verify".into()),
+                            ..Default::default()
+                        },
+                    )?;
                     db::refresh_requirement_metrics(&conn, requirement_id)?;
-                    log_task(&conn, requirement_id, &verify_task.id, "verify", "error", &format!("验证未通过：{conclusion}"));
+                    log_task(
+                        &conn,
+                        requirement_id,
+                        &verify_task.id,
+                        "verify",
+                        "error",
+                        &format!("验证未通过：{conclusion}"),
+                    );
                 }
             }
             if passed && review_after {
@@ -941,10 +1153,13 @@ async fn run_review(state: &AppState, requirement_id: &str) -> ApiResult<()> {
             .into_iter()
             .find(|t| t.step_type == StepType::Review && t.status == TaskStatus::Running)
     };
-    let Some(review_task) = review_task else { return Ok(()) };
+    let Some(review_task) = review_task else {
+        return Ok(());
+    };
     let (requirement, deliverable) = {
         let conn = state.conn.lock().unwrap();
-        let requirement = db::get_requirement(&conn, requirement_id)?.ok_or_else(|| ApiError::not_found("需求不存在"))?;
+        let requirement = db::get_requirement(&conn, requirement_id)?
+            .ok_or_else(|| ApiError::not_found("需求不存在"))?;
         let deliverable = db::list_tasks_by_requirement(&conn, requirement_id)?
             .into_iter()
             .filter(|t| t.step_type == StepType::Implement && t.status == TaskStatus::Completed)
@@ -956,41 +1171,149 @@ async fn run_review(state: &AppState, requirement_id: &str) -> ApiResult<()> {
     let (review, review_tokens) = match produce_review(state, &requirement, &deliverable).await {
         Ok((r, tokens)) => (r, tokens),
         Err(e) => {
-            log_task(&state.conn.lock().unwrap(), requirement_id, &review_task.id, "review", "warn",
-                &format!("AI 服务调用失败（{}），已自动降级到本地模拟引擎", e.message));
-            tokio::time::sleep(mock_delay()).await;
-            (mock_review(), estimate_tokens(requirement_content(&requirement).len(), 400))
+            let conn = state.conn.lock().unwrap();
+            db::update_task(
+                &conn,
+                &review_task.id,
+                &db::TaskUpdates {
+                    status: Some(TaskStatus::Failed),
+                    error_message: Some(e.message.clone()),
+                    ..Default::default()
+                },
+            )?;
+            db::update_requirement(
+                &conn,
+                requirement_id,
+                &db::RequirementUpdates {
+                    status: Some(RequirementStatus::Failed),
+                    current_step: Some("review".into()),
+                    ..Default::default()
+                },
+            )?;
+            return Ok(());
         }
     };
+    if review
+        .get("findings")
+        .and_then(|v| v.as_array())
+        .is_some_and(|f| !f.is_empty())
+    {
+        let conn = state.conn.lock().unwrap();
+        db::update_task(
+            &conn,
+            &review_task.id,
+            &db::TaskUpdates {
+                status: Some(TaskStatus::Failed),
+                result: Some(review.clone()),
+                tokens: Some(review_tokens),
+                ..Default::default()
+            },
+        )?;
+        db::update_requirement(
+            &conn,
+            requirement_id,
+            &db::RequirementUpdates {
+                status: Some(RequirementStatus::Failed),
+                current_step: Some("review".into()),
+                ..Default::default()
+            },
+        )?;
+        return Ok(());
+    }
     let conn = state.conn.lock().unwrap();
-    db::update_task(&conn, &review_task.id, &db::TaskUpdates { status: Some(TaskStatus::Completed), result: Some(review.clone()), tokens: Some(review_tokens), ..Default::default() })?;
-    db::create_artifact(&conn, requirement_id, Some(&review_task.id), ArtifactType::Markdown, "review", "审查报告", &render_review_markdown(&review))?;
-    db::update_requirement(&conn, requirement_id, &db::RequirementUpdates { status: Some(RequirementStatus::Completed), current_step: None, ..Default::default() })?;
+    db::update_task(
+        &conn,
+        &review_task.id,
+        &db::TaskUpdates {
+            status: Some(TaskStatus::Completed),
+            result: Some(review.clone()),
+            tokens: Some(review_tokens),
+            ..Default::default()
+        },
+    )?;
+    db::create_artifact(
+        &conn,
+        requirement_id,
+        Some(&review_task.id),
+        ArtifactType::Markdown,
+        "review",
+        "审查报告",
+        &render_review_markdown(&review),
+    )?;
+    db::update_requirement(
+        &conn,
+        requirement_id,
+        &db::RequirementUpdates {
+            status: Some(RequirementStatus::Completed),
+            current_step: None,
+            ..Default::default()
+        },
+    )?;
     db::refresh_requirement_metrics(&conn, requirement_id)?;
-    log_task(&conn, requirement_id, &review_task.id, "review", "info", "审查通过，需求交付完成 ✓");
+    log_task(
+        &conn,
+        requirement_id,
+        &review_task.id,
+        "review",
+        "info",
+        "审查通过，需求交付完成 ✓",
+    );
     Ok(())
 }
 
-fn ensure_task(conn: &rusqlite::Connection, requirement_id: &str, step: StepType) -> ApiResult<Task> {
+fn ensure_task(
+    conn: &rusqlite::Connection,
+    requirement_id: &str,
+    step: StepType,
+) -> ApiResult<Task> {
     if let Some(pending) = db::list_tasks_by_requirement(conn, requirement_id)?
         .into_iter()
         .find(|t| t.step_type == step && t.status == TaskStatus::Pending)
     {
         return Ok(pending);
     }
-    db::create_task(conn, requirement_id, step, task_engine::step_label(step), TaskStatus::Pending)
+    db::create_task(
+        conn,
+        requirement_id,
+        step,
+        task_engine::step_label(step),
+        TaskStatus::Pending,
+    )
 }
 
-fn ensure_running(conn: &rusqlite::Connection, requirement_id: &str, step: StepType) -> ApiResult<Task> {
+fn ensure_running(
+    conn: &rusqlite::Connection,
+    requirement_id: &str,
+    step: StepType,
+) -> ApiResult<Task> {
     let tasks = db::list_tasks_by_requirement(conn, requirement_id)?;
-    if let Some(running) = tasks.iter().find(|t| t.step_type == step && t.status == TaskStatus::Running) {
+    if let Some(running) = tasks
+        .iter()
+        .find(|t| t.step_type == step && t.status == TaskStatus::Running)
+    {
         return Ok(running.clone());
     }
-    if let Some(pending) = tasks.iter().find(|t| t.step_type == step && t.status == TaskStatus::Pending) {
-        db::update_task(conn, &pending.id, &db::TaskUpdates { status: Some(TaskStatus::Running), ..Default::default() })?;
+    if let Some(pending) = tasks
+        .iter()
+        .find(|t| t.step_type == step && t.status == TaskStatus::Pending)
+    {
+        db::update_task(
+            conn,
+            &pending.id,
+            &db::TaskUpdates {
+                status: Some(TaskStatus::Running),
+                ..Default::default()
+            },
+        )?;
         return Ok(db::get_task(conn, &pending.id)?.expect("task exists"));
     }
-    db::create_task(conn, requirement_id, step, task_engine::step_label(step), TaskStatus::Running)
+    db::create_task(
+        conn,
+        requirement_id,
+        step,
+        task_engine::step_label(step),
+        TaskStatus::Running,
+    )
 }
 
 // ---------------------------------------------------------------- 重试
@@ -1005,7 +1328,10 @@ pub enum RetryRoute {
 }
 
 /// 同步部分：校验 + 复位状态 + 记日志，返回恢复路由。流水线由调用方 spawn。
-pub fn retry_failed(state: &AppState, requirement_id: &str) -> ApiResult<(Requirement, RetryRoute)> {
+pub fn retry_failed(
+    state: &AppState,
+    requirement_id: &str,
+) -> ApiResult<(Requirement, RetryRoute)> {
     let conn = state.conn.lock().unwrap();
     let requirement = db::get_requirement(&conn, requirement_id)?
         .ok_or_else(|| ApiError::not_found("需求不存在"))?;
@@ -1022,7 +1348,13 @@ pub fn retry_failed(state: &AppState, requirement_id: &str) -> ApiResult<(Requir
 
     let route = match failed_stage {
         Some(StepType::Plan) => {
-            db::create_task(&conn, requirement_id, StepType::Plan, task_engine::step_label(StepType::Plan), TaskStatus::Running)?;
+            db::create_task(
+                &conn,
+                requirement_id,
+                StepType::Plan,
+                task_engine::step_label(StepType::Plan),
+                TaskStatus::Running,
+            )?;
             db::update_requirement(
                 &conn,
                 requirement_id,
@@ -1073,15 +1405,28 @@ pub fn retry_failed(state: &AppState, requirement_id: &str) -> ApiResult<(Requir
         }
     };
 
-    let stage_label = failed_stage.map(|s| task_engine::step_label(s)).unwrap_or("理解需求");
-    db::create_log(&conn, requirement_id, None, "retry", "info", &format!("手动重试：从「{stage_label}」阶段恢复执行"), None)?;
+    let stage_label = failed_stage
+        .map(|s| task_engine::step_label(s))
+        .unwrap_or("理解需求");
+    db::create_log(
+        &conn,
+        requirement_id,
+        None,
+        "retry",
+        "info",
+        &format!("手动重试：从「{stage_label}」阶段恢复执行"),
+        None,
+    )?;
     let updated = db::get_requirement(&conn, requirement_id)?.expect("requirement exists");
     Ok((updated, route))
 }
 
 // ---------------------------------------------------------------- confirm / reunderstand / iterate
 
-pub fn start_planning_sync(state: &AppState, requirement_id: &str) -> ApiResult<Option<(Task, Vec<Task>)>> {
+pub fn start_planning_sync(
+    state: &AppState,
+    requirement_id: &str,
+) -> ApiResult<Option<(Task, Vec<Task>)>> {
     let conn = state.conn.lock().unwrap();
     let Some(requirement) = db::get_requirement(&conn, requirement_id)? else {
         return Ok(None);
@@ -1096,13 +1441,26 @@ pub fn start_planning_sync(state: &AppState, requirement_id: &str) -> ApiResult<
             ..Default::default()
         },
     )?;
-    let plan_task = db::create_task(&conn, requirement_id, StepType::Plan, task_engine::step_label(StepType::Plan), TaskStatus::Running)?;
+    let plan_task = db::create_task(
+        &conn,
+        requirement_id,
+        StepType::Plan,
+        task_engine::step_label(StepType::Plan),
+        TaskStatus::Running,
+    )?;
     let pending_tasks: Vec<Task> = get_mode_steps(requirement.mode)
         .steps
         .into_iter()
         .filter(|s| matches!(s, StepType::Implement | StepType::Verify | StepType::Review))
         .map(|step| {
-            db::create_task(&conn, requirement_id, step, task_engine::step_label(step), TaskStatus::Pending).expect("task insert")
+            db::create_task(
+                &conn,
+                requirement_id,
+                step,
+                task_engine::step_label(step),
+                TaskStatus::Pending,
+            )
+            .expect("task insert")
         })
         .collect();
     log(&conn, requirement_id, "plan", "需求已确认，开始制定方案");
@@ -1126,18 +1484,29 @@ pub async fn resume_pipeline(state: &AppState, requirement_id: &str) {
         db::list_tasks_by_requirement(&conn, requirement_id)
             .ok()
             .and_then(|tasks| {
-                tasks
-                    .into_iter()
-                    .find(|t| t.step_type == StepType::Implement && t.status == TaskStatus::WaitingDecision)
+                tasks.into_iter().find(|t| {
+                    t.step_type == StepType::Implement && t.status == TaskStatus::WaitingDecision
+                })
             })
     };
     if let Some(task) = wait_task {
         let conn = state.conn.lock().unwrap();
-        let _ = db::update_task(&conn, &task.id, &db::TaskUpdates { status: Some(TaskStatus::Running), ..Default::default() });
+        let _ = db::update_task(
+            &conn,
+            &task.id,
+            &db::TaskUpdates {
+                status: Some(TaskStatus::Running),
+                ..Default::default()
+            },
+        );
         let _ = db::update_requirement(
             &conn,
             requirement_id,
-            &db::RequirementUpdates { status: Some(RequirementStatus::Implementing), current_step: Some("implement".into()), ..Default::default() },
+            &db::RequirementUpdates {
+                status: Some(RequirementStatus::Implementing),
+                current_step: Some("implement".into()),
+                ..Default::default()
+            },
         );
         log(&conn, requirement_id, "implement", "决策已解决，继续实施");
     }
@@ -1158,7 +1527,11 @@ pub async fn start_reunderstand(
     } else {
         UnderstandingSource::UserFeedback
     };
-    let processing = if input.answering.unwrap_or(false) { RequirementStatus::Questioning } else { RequirementStatus::Understanding };
+    let processing = if input.answering.unwrap_or(false) {
+        RequirementStatus::Questioning
+    } else {
+        RequirementStatus::Understanding
+    };
     run_understanding(
         state,
         requirement_id,
@@ -1179,7 +1552,12 @@ pub async fn start_reunderstand(
     Ok(())
 }
 
-pub async fn start_iterate(state: &AppState, requirement_id: &str, input: &IterateInput, attachments: Vec<AttachmentItem>) -> ApiResult<()> {
+pub async fn start_iterate(
+    state: &AppState,
+    requirement_id: &str,
+    input: &IterateInput,
+    attachments: Vec<AttachmentItem>,
+) -> ApiResult<()> {
     {
         let conn = state.conn.lock().unwrap();
         db::create_log(
@@ -1194,7 +1572,9 @@ pub async fn start_iterate(state: &AppState, requirement_id: &str, input: &Itera
     }
     let failure_status = {
         let conn = state.conn.lock().unwrap();
-        db::get_requirement(&conn, requirement_id)?.map(|r| r.status).unwrap_or(RequirementStatus::Failed)
+        db::get_requirement(&conn, requirement_id)?
+            .map(|r| r.status)
+            .unwrap_or(RequirementStatus::Failed)
     };
     let result = run_understanding(
         state,
@@ -1217,7 +1597,12 @@ pub async fn start_iterate(state: &AppState, requirement_id: &str, input: &Itera
         if outcome.requirement.status == RequirementStatus::Implementing {
             {
                 let conn = state.conn.lock().unwrap();
-                log(&conn, requirement_id, "iterate", &format!("迭代理解完成（v{}），重新进入实施", outcome.version));
+                log(
+                    &conn,
+                    requirement_id,
+                    "iterate",
+                    &format!("迭代理解完成（v{}），重新进入实施", outcome.version),
+                );
             }
             pipeline_inner(state, requirement_id).await?;
         }
@@ -1227,7 +1612,11 @@ pub async fn start_iterate(state: &AppState, requirement_id: &str, input: &Itera
 
 pub fn has_in_flight_understanding(state: &AppState, requirement_id: &str) -> ApiResult<bool> {
     let conn = state.conn.lock().unwrap();
-    db::has_running_task(&conn, requirement_id, &[StepType::Understand, StepType::Iterate])
+    db::has_running_task(
+        &conn,
+        requirement_id,
+        &[StepType::Understand, StepType::Iterate],
+    )
 }
 
 // ---------------------------------------------------------------- Markdown 渲染
@@ -1255,13 +1644,21 @@ fn render_plan_markdown(plan: &serde_json::Value) -> String {
     let considerations: Vec<String> = plan
         .get("considerations")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|c| c.as_str()).map(|c| format!("- {c}")).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|c| c.as_str())
+                .map(|c| format!("- {c}"))
+                .collect()
+        })
         .unwrap_or_default();
     let mut out = md_section(
         "实施方案",
         vec![
             "## 总体思路".into(),
-            plan.get("approach").and_then(|v| v.as_str()).unwrap_or_default().into(),
+            plan.get("approach")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .into(),
             String::new(),
             "## 实施步骤".into(),
         ],
@@ -1276,7 +1673,12 @@ fn render_deliverable_markdown(d: &serde_json::Value) -> String {
     let changes: Vec<String> = d
         .get("changes")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|c| c.as_str()).map(|c| format!("- {c}")).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|c| c.as_str())
+                .map(|c| format!("- {c}"))
+                .collect()
+        })
         .unwrap_or_default();
     let files: Vec<String> = d
         .get("files")
@@ -1291,11 +1693,27 @@ fn render_deliverable_markdown(d: &serde_json::Value) -> String {
                 .collect()
         })
         .unwrap_or_default();
-    let mut out = md_section("交付产物", vec!["## 摘要".into(), d.get("summary").and_then(|v| v.as_str()).unwrap_or_default().into(), String::new(), "## 变更清单".into()]);
+    let mut out = md_section(
+        "交付产物",
+        vec![
+            "## 摘要".into(),
+            d.get("summary")
+                .and_then(|v| v.as_str())
+                .unwrap_or_default()
+                .into(),
+            String::new(),
+            "## 变更清单".into(),
+        ],
+    );
     out.push_str(&changes.join("\n"));
     out.push_str("\n\n## 涉及文件\n");
     out.push_str(&files.join("\n"));
-    out.push_str(&format!("\n\n## 测试计划\n{}", d.get("test_plan").and_then(|v| v.as_str()).unwrap_or_default()));
+    out.push_str(&format!(
+        "\n\n## 测试计划\n{}",
+        d.get("test_plan")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+    ));
     out
 }
 
@@ -1309,14 +1727,22 @@ fn render_verify_markdown(v: &serde_json::Value) -> String {
                     let criteria = r.get("criteria").and_then(|v| v.as_str())?;
                     let passed = r.get("passed").and_then(|v| v.as_bool()).unwrap_or(false);
                     let note = r.get("note").and_then(|v| v.as_str()).unwrap_or("");
-                    Some(format!("- [{}] {criteria} — {note}", if passed { "x" } else { " " }))
+                    Some(format!(
+                        "- [{}] {criteria} — {note}",
+                        if passed { "x" } else { " " }
+                    ))
                 })
                 .collect()
         })
         .unwrap_or_default();
     let mut out = md_section("验证报告", vec!["## 逐条核对".into()]);
     out.push_str(&results.join("\n"));
-    out.push_str(&format!("\n\n## 结论\n{}", v.get("conclusion").and_then(|v| v.as_str()).unwrap_or_default()));
+    out.push_str(&format!(
+        "\n\n## 结论\n{}",
+        v.get("conclusion")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+    ));
     out
 }
 
@@ -1324,10 +1750,20 @@ fn render_review_markdown(r: &serde_json::Value) -> String {
     let findings: Vec<String> = r
         .get("findings")
         .and_then(|v| v.as_array())
-        .map(|a| a.iter().filter_map(|f| f.as_str()).map(|f| format!("- {f}")).collect())
+        .map(|a| {
+            a.iter()
+                .filter_map(|f| f.as_str())
+                .map(|f| format!("- {f}"))
+                .collect()
+        })
         .unwrap_or_default();
     let mut out = md_section("审查报告", vec!["## 审查发现".into()]);
     out.push_str(&findings.join("\n"));
-    out.push_str(&format!("\n\n## 结论\n{}", r.get("conclusion").and_then(|v| v.as_str()).unwrap_or_default()));
+    out.push_str(&format!(
+        "\n\n## 结论\n{}",
+        r.get("conclusion")
+            .and_then(|v| v.as_str())
+            .unwrap_or_default()
+    ));
     out
 }

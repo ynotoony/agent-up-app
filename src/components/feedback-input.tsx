@@ -1,5 +1,5 @@
 import { MessageSquareQuote, Quote, Send, UserRound, X } from 'lucide-react';
-import { useState, type ClipboardEvent as ReactClipboardEvent, type ReactNode } from 'react';
+import { useRef, useState, type ClipboardEvent as ReactClipboardEvent, type ReactNode } from 'react';
 import type { PendingAttachment, RequirementVersion } from '../../shared/types';
 import { arrayBufferToBase64 } from '@/lib/utils';
 import { AttachmentField, AttachmentList, clipsToImageItems, revokeAttachmentUrls, type AttachmentDraft } from './attachment-field';
@@ -85,6 +85,7 @@ function CommentComposer({ mode, hasQuestions, quote, onClearQuote, onSubmit }: 
   const [attachments, setAttachments] = useState<AttachmentDraft[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [cooldown, setCooldown] = useState(false);
+  const submitLock = useRef(false);
 
   const addAttachments = (items: AttachmentDraft[]) => setAttachments((prev) => [...prev, ...items]);
 
@@ -97,8 +98,10 @@ function CommentComposer({ mode, hasQuestions, quote, onClearQuote, onSubmit }: 
   };
 
   const submit = async () => {
+    if (submitLock.current) return;
     const trimmed = text.trim();
     if (!trimmed && attachments.length === 0) return;
+    submitLock.current = true;
     setSubmitting(true);
     try {
       const payload: PendingAttachment[] = [];
@@ -115,6 +118,7 @@ function CommentComposer({ mode, hasQuestions, quote, onClearQuote, onSubmit }: 
       setCooldown(true);
       setTimeout(() => setCooldown(false), 3000);
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };

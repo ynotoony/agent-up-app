@@ -268,7 +268,7 @@ impl GoalStore {
             || goal.revision == 0
             || !matches!(
                 goal.status.as_str(),
-                "draft" | "planning" | "awaiting_confirmation" | "ready" | "failed"
+                "draft" | "planning" | "awaiting_confirmation" | "ready" | "completed" | "failed"
             )
         {
             return Err(ApiError::bad_request(
@@ -284,7 +284,9 @@ impl GoalStore {
                 return Err(ApiError::bad_request("目标记录时间无效"));
             }
         }
-        if goal.status == "ready" && (!goal.questions.is_empty() || goal.tasks.is_empty()) {
+        if matches!(goal.status.as_str(), "ready" | "completed")
+            && (!goal.questions.is_empty() || goal.tasks.is_empty())
+        {
             return Err(ApiError::bad_request("已确认计划的任务或问题状态无效"));
         }
         if let Some(run) = &goal.run {
@@ -477,6 +479,9 @@ impl GoalStore {
             return Err(ApiError::conflict("这个目标正在规划，请等待结果"));
         }
         let mut goal = self.recover(self.read(id)?, &session)?;
+        if goal.status == "completed" {
+            return Err(ApiError::conflict("这个目标已经完成，请创建新的目标"));
+        }
         if goal.status == "planning" { return Err(ApiError::conflict("这个目标正由另一应用进程规划，请等待结果")); }
         goal.status = "planning".into();
         goal.error = None;
@@ -493,6 +498,17 @@ impl GoalStore {
         self.write(&goal)?;
         session.active.insert(key.clone());
         Ok((goal, ActivePlan(key)))
+    }
+    pub(crate) fn mark_completed(&self, id: &str, revision: u64, accepted_tasks: &HashSet<String>) -> ApiResult<NativeGoal> {
+        let mut goal = self.get(id)?;
+        if goal.revision != revision || goal.status != "ready" || !goal.tasks.iter().all(|task| accepted_tasks.contains(&task.id)) {
+            return Ok(goal);
+        }
+        goal.status = "completed".into();
+        goal.revision += 1;
+        goal.updated_at = now();
+        self.write(&goal)?;
+        Ok(goal)
     }
     fn finish(
         &self,

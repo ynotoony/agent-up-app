@@ -48,7 +48,7 @@ function ProjectWorkspace({ projectId }: { projectId: string }) {
   </main>;
 }
 
-// 旧项目继续使用原有需求与治理工作区。
+// 没有原生项目档案的旧项目进入兼容层；兼容层不提供新的 Agent 交付主路径。
 function LegacyProjectPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -158,6 +158,7 @@ function LegacyProjectPage() {
             onDeleted={() => navigate('/')}
           />
           <InitializingPanel projectId={data.project.id} report={report} onCloseReport={() => setReport(null)} />
+          <div role="note" className="flex items-start gap-2 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 text-xs leading-5 text-muted-foreground"><AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" /><p>当前项目仍使用兼容流程。它保留历史需求、治理与文档能力，但不是新的 Agent 交付入口；要使用目标、计划、隔离执行、验证、审查和验收，请重新接入并建立原生项目档案。</p></div>
           <RequirementInput projects={[data.project]} defaultProjectId={data.project.id} lockProject onCreated={(requirementId) => navigate(`/requirement/${requirementId}`)} />
         </div>
 

@@ -25,6 +25,7 @@ export function RequirementInput({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const submitLock = useRef(false);
 
   const addAttachments = (items: AttachmentDraft[]) => setAttachments((prev) => [...prev, ...items]);
   const removeAttachment = (id: string) => setAttachments((prev) => prev.filter((a) => a.id !== id));
@@ -45,6 +46,7 @@ export function RequirementInput({
   };
 
   const submit = async () => {
+    if (submitLock.current) return;
     const trimmed = content.trim();
     if (trimmed.length < 4) {
       setError('需求内容至少 4 个字');
@@ -54,6 +56,7 @@ export function RequirementInput({
       setError('请选择归属项目');
       return;
     }
+    submitLock.current = true;
     setSubmitting(true);
     setError('');
     try {
@@ -81,6 +84,7 @@ export function RequirementInput({
     } catch (err) {
       setError(errorMessage(err));
     } finally {
+      submitLock.current = false;
       setSubmitting(false);
     }
   };

@@ -14,7 +14,7 @@ import { NativeDeliveryPanel } from './native-delivery';
 
 const inputClass = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm leading-relaxed text-foreground outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-60';
 const statusLabels: Record<NativeGoal['status'], string> = {
-  draft: '待规划', planning: '方案制定中', awaiting_confirmation: '待确认', ready: '计划已确认', failed: '规划失败',
+  draft: '待规划', planning: '方案制定中', awaiting_confirmation: '待确认', ready: '计划已确认', completed: '目标已完成', failed: '规划失败',
 };
 
 type PendingAction = { goalId: string; kind: 'plan' | 'confirm'; startedAt: number };
@@ -27,6 +27,24 @@ function GoalStatus({ goal, pending }: { goal: NativeGoal; pending?: PendingActi
     {processing && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}
     {label}
   </Badge>;
+}
+
+function GoalStages({ goal }: { goal: NativeGoal }) {
+  const plan = goal.status === 'awaiting_confirmation' || goal.status === 'ready' ? 'done' : goal.status === 'planning' ? 'active' : goal.status === 'failed' ? 'failed' : 'pending';
+  const delivery = goal.status === 'completed' ? 'done' : goal.status === 'ready' ? 'active' : 'pending';
+  const acceptance = goal.status === 'completed' ? 'done' : 'pending';
+  const items = [
+    ['目标', 'done'],
+    ['计划', plan],
+    ['执行与验证', delivery],
+    ['用户验收', acceptance],
+  ] as const;
+  return <ol aria-label="目标交付阶段" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    {items.map(([label, state], index) => <li key={label} className={cn('rounded-lg border px-3 py-2 text-xs', state === 'done' ? 'border-primary/30 bg-primary/10 text-primary' : state === 'active' ? 'border-primary/30 bg-primary/5 text-primary' : state === 'failed' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border text-muted-foreground')}>
+      <span className="font-medium">{index + 1}. {label}</span>
+      <span className="mt-1 block">{state === 'done' ? '已完成' : state === 'active' ? '当前阶段' : state === 'failed' ? '失败' : '待开始'}</span>
+    </li>)}
+  </ol>;
 }
 
 function PlanningElapsed({ startedAt }: { startedAt: number }) {
@@ -199,11 +217,15 @@ function GoalDetail({ projectId, goal, pending, busy, onPlan, onConfirm }: { pro
   const [tasks, setTasks] = useState<NativeTask[]>(() => goal.tasks.map((task) => ({ ...task })));
   const [planRevision, setPlanRevision] = useState(goal.revision);
   // Only a new completed plan replaces edits; polling, startup and failure keep the draft.
-  if ((goal.status === 'awaiting_confirmation' || goal.status === 'ready') && goal.revision !== planRevision) {
-    setPlanRevision(goal.revision);
-    setTasks(goal.tasks.map((task) => ({ ...task })));
-    setFeedback('');
-  }
+  // Do this after commit rather than during render, so polling cannot trigger
+  // render-phase updates or discard edits while React is reconciling.
+  useEffect(() => {
+    if ((goal.status === 'awaiting_confirmation' || goal.status === 'ready') && goal.revision !== planRevision) {
+      setPlanRevision(goal.revision);
+      setTasks(goal.tasks.map((task) => ({ ...task })));
+      setFeedback('');
+    }
+  }, [goal.status, goal.revision, goal.tasks, planRevision]);
   const planning = pending?.kind === 'plan' || goal.status === 'planning';
   const confirming = pending?.kind === 'confirm';
   const startedAt = goal.status === 'planning' && goal.run ? Date.parse(goal.run.started_at) : pending?.startedAt;
@@ -215,13 +237,15 @@ function GoalDetail({ projectId, goal, pending, busy, onPlan, onConfirm }: { pro
   return <div className="min-w-0 space-y-4 lg:col-span-2">
     <section className="space-y-4 rounded-xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2"><h3 className="font-medium">当前目标</h3><GoalStatus goal={goal} pending={pending} /></div>
+      <GoalStages goal={goal} />
       <p className="whitespace-pre-wrap break-words text-sm leading-relaxed">{goal.content}</p>
       {goal.summary && <div className="border-t border-border pt-4"><h4 className="mb-2 text-xs font-medium text-muted-foreground">计划概述</h4><p className="whitespace-pre-wrap text-sm leading-relaxed">{goal.summary}</p></div>}
       {goal.run && <p className="text-xs text-muted-foreground">规划 Agent：{goal.run.runtime_id} · {new Date(goal.run.started_at).toLocaleString('zh-CN')}{goal.run.tokens != null ? ` · ${goal.run.tokens.toLocaleString()} tokens` : ''}</p>}
       {goal.error && <div className="space-y-2"><p role="alert" className="whitespace-pre-wrap break-words text-sm text-destructive">{goal.error}</p><Link to="/settings" className="rounded text-xs text-primary underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-primary/30">检查 Agent 设置</Link></div>}
       {planning && <div className="space-y-1 text-sm text-primary"><p role="status" className="flex items-center gap-2"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />{goal.status === 'planning' ? 'Agent 正在只读分析项目、制定任务计划。' : '正在请求 Agent 规划…'}</p><p className="text-xs text-muted-foreground">{startedAt != null && Number.isFinite(startedAt) && <><PlanningElapsed startedAt={startedAt} /> · </>}规划可能需要几分钟，可以离开此页，结果会自动保存。</p></div>}
       {confirming && <p role="status" className="flex items-center gap-2 text-sm text-primary"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />正在保存确认的任务计划…</p>}
-      {ready && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>任务计划已确认。可以在下方按依赖执行任务，验证与审查通过后再验收合入。</p></div>}
+      {ready && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>任务计划已确认。下面的执行记录会分别展示真实验证、独立审查和用户验收证据；没有这些证据不会标记为完成。</p></div>}
+      {goal.status === 'completed' && <div role="status" className="flex items-start gap-2 rounded-lg bg-primary/10 p-3 text-sm text-primary"><CheckCircle2 aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" /><p>目标已完成。所有任务都已通过真实验证、独立审查并由你验收合入本地。</p></div>}
     </section>
 
     {goal.questions.length > 0 && <section className="rounded-xl border border-border bg-card p-5">

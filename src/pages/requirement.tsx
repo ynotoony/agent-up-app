@@ -36,6 +36,7 @@ export default function RequirementPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [detail, setDetail] = useState<RequirementDetail | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [viewingVersion, setViewingVersion] = useState<number | null>(null);
@@ -46,6 +47,7 @@ export default function RequirementPage() {
   const [questionDrafts, setQuestionDrafts] = useState<Record<string, QuestionDraft>>({});
   const [lightbox, setLightbox] = useState<string | null>(null);
   const quoteScrollRef = useRef<HTMLDivElement>(null);
+  const fetchGeneration = useRef(0);
 
   // 真流式：订阅 requirement://{id}/stream（token 级 delta / 消息级 message）
   const stream = useRequirementStream(id);
@@ -67,15 +69,26 @@ export default function RequirementPage() {
 
   const fetchData = useCallback(async () => {
     if (!id) return;
+    const generation = ++fetchGeneration.current;
     try {
       const data = await api.requirements.get(id);
+      if (generation !== fetchGeneration.current) return;
       setDetail(data);
+      setDetailId(id);
     } catch (err) {
-      setError(errorMessage(err));
+      if (generation === fetchGeneration.current) setError(errorMessage(err));
     }
   }, [id]);
 
   useLayoutEffect(() => {
+    fetchGeneration.current += 1;
+    setDetail(null);
+    setDetailId(null);
+    setError('');
+    setViewingVersion(null);
+    setViewStage(null);
+    setQuestionDrafts({});
+    setQuote(null);
     void fetchData();
   }, [fetchData]);
 
@@ -196,7 +209,7 @@ export default function RequirementPage() {
     );
   }
 
-  if (!detail || !requirement) {
+  if (!detail || !requirement || detailId !== id) {
     return (
       <main className="h-screen overflow-y-auto scrollbar-thin">
         <div className="max-w-3xl mx-auto px-6 py-16 space-y-4 animate-pulse">

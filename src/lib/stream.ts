@@ -26,6 +26,21 @@ export interface StreamState {
 
 const IDLE_AFTER_MS = 4000;
 
+const EMPTY_STREAM_STATE: StreamState = {
+  active: false,
+  stage: null,
+  streamText: '',
+  lastMessage: '',
+  ticking: false,
+};
+
+const EMPTY_ACCUMULATOR = {
+  streamText: '',
+  lastMessage: '',
+  stage: null as string | null,
+  active: false,
+};
+
 /**
  * 订阅某条需求的流式事件。
  * - delta 事件：追加 streamText（token 级）
@@ -33,20 +48,26 @@ const IDLE_AFTER_MS = 4000;
  * - 前端离开页面自动退订；4s 无新事件视为流停滞（隐藏光标）
  */
 export function useRequirementStream(requirementId: string | undefined): StreamState {
-  const [state, setState] = useState<StreamState>({
-    active: false,
-    stage: null,
-    streamText: '',
-    lastMessage: '',
-    ticking: false,
-  });
+  const [state, setState] = useState<StreamState>(EMPTY_STREAM_STATE);
   // 用 ref 存累计文本避免高频 setState 闭包竞态；渲染节流到 rAF
   const accRef = useRef({ streamText: '', lastMessage: '', stage: null as string | null, active: false });
   const lastEventAtRef = useRef(0);
   const rafRef = useRef<number | null>(null);
   const idleTimerRef = useRef<number | null>(null);
+  // Keep this id at the last effect boundary. During the render immediately
+  // after navigation it still points at the previous subscription, so the
+  // return value can hide stale output until the reset effect runs.
+  const subscribedIdRef = useRef<string | undefined>(undefined);
+  const idChanged = subscribedIdRef.current !== requirementId;
 
   useEffect(() => {
+    // A component instance can be reused while navigating between requirements.
+    // Clear the accumulator before subscribing so output from the previous id
+    // can never be rendered for the next one.
+    accRef.current = { ...EMPTY_ACCUMULATOR };
+    lastEventAtRef.current = 0;
+    subscribedIdRef.current = requirementId;
+    setState(EMPTY_STREAM_STATE);
     if (!requirementId) return;
     let unlisten: UnlistenFn | null = null;
     let disposed = false;
@@ -98,6 +119,13 @@ export function useRequirementStream(requirementId: string | undefined): StreamS
       } else {
         unlisten = fn;
       }
+    }).catch(() => {
+      // Subscription failure must not leave stale output marked as active.
+      if (!disposed) {
+        accRef.current = { ...EMPTY_ACCUMULATOR };
+        lastEventAtRef.current = 0;
+        setState(EMPTY_STREAM_STATE);
+      }
     });
 
     return () => {
@@ -108,5 +136,8 @@ export function useRequirementStream(requirementId: string | undefined): StreamS
     };
   }, [requirementId]);
 
-  return state;
+  // Effects run after the first render following a route-param change. Return
+  // an empty value for that render too, so the old stream cannot flash in the
+  // newly selected requirement.
+  return idChanged ? EMPTY_STREAM_STATE : state;
 }

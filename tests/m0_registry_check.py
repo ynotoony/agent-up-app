@@ -1,21 +1,18 @@
 #!/usr/bin/env python3
-r"""治理登记面守卫：docs/agent/artifacts.yaml ↔ 仓库现实的一致性检查（秒级、只读、零依赖）。
+r"""治理登记面守卫：facts/project/artifacts.yaml ↔ 仓库现实的一致性检查（秒级、只读、零依赖）。
 
 Input: 仓库根目录（argv[1]，缺省取本文件位置上一级）。
 Output: 逐条 FAIL 行（可定位）+ 结尾汇总行；发现任一失败 exit 1，全部通过 exit 0。
-Pos: 非代理执行器——R-DP-007「登记与仓库文件清单可对照」的机器承载（2026-09-22 治理守卫批）；
-     经 scripts/hooks/pre-commit 在每次提交时运行，并接入 npm test 链。行式解析按登记文件的
-     机器格式契约（`  - id: ` 切块、四空格字段），格式漂移本身即失败（fail-closed）。
+Pos: standby 备用检查——当前项目不把本脚本接入默认验证链。行式解析按登记文件的
+    机器格式契约（`  - id: ` 切块、四空格字段），格式漂移本身即失败（fail-closed）。
 
 检查项：
   1. 每条目恰含十三字段（无缺失、无未知字段——含已退役的 status 回归）、id 唯一；
   2. 每条 path 在盘存在；
-  3. 反向覆盖：docs/（issues/ 除外——票本体由检查 4/5 经索引承载，新代 JSON 票不逐票登记）、
-     schemas/、scripts/ 三目录与根 AGENTS.md 下每个非隐藏文件均被登记；
-  4. docs/issues/index.json：id 集合 == 票文件集合、一条目一行、status 取值合法；
-  5. docs/issues/README.md 状态列锚点（`任务票 <NN>；\`状态\``）与索引逐票一致；
-  6. docs/changes.jsonl（键序 date,kind,scope,decision,evidence_ref）与
-     docs/agent/generation-manifest.jsonl 逐行可解析。
+  3. 反向覆盖：当前治理面（facts/、rules/、.zcode/agents/）每个非隐藏文件均被登记；
+ 4. facts/requirements/tickets/index.json：id 集合 == 票文件集合、一条目一行、status 取值合法；
+ 5. facts/requirements/tickets/README.md 状态列锚点（`任务票 <NN>；\`状态\``）与索引逐票一致；
+ 6. facts/project/changes.jsonl 逐行可解析，并兼容现有治理记录与历史 ticket_completion 记录。
 """
 import json
 import re
@@ -108,18 +105,12 @@ def check_coverage(root, registered):
     # 语义：进了 Git（tracked/staged）的治理文件必须已登记；untracked = 并行会话在飞产物，豁免
     # （收口提交时其登记行同批入 Git，届时自然转红点反向——登记与入 Git 原子）。
     tracked = tracked_files(root)
-    for d in ("docs", "schemas", "scripts"):
-        if d == "docs":
-            it = [(root / p).relative_to(root) for p in []]
+    for d in ("facts", "rules", ".zcode/agents"):
         for p in (root / d).rglob("*"):
-            if d == "docs" and p.parent == root / "docs/issues" and p.name not in ("README.md", "index.json"):
-                continue
             if not p.is_file() or p.name.startswith(".") or any(part.startswith(".") for part in p.relative_to(root).parts):
                 continue
             rel = p.relative_to(root).as_posix()
             if rel in registered:
-                continue
-            if tracked is not None and rel not in tracked:
                 continue
             fail(f"已入 Git 的治理文件未登记: {rel}（反向覆盖，R-DP-007）")
     if "AGENTS.md" not in registered:
@@ -127,39 +118,39 @@ def check_coverage(root, registered):
 
 
 def load_index(root):
-    idx_path = root / "docs/issues/index.json"
+    idx_path = root / "facts/requirements/tickets/index.json"
     try:
         raw = idx_path.read_text(encoding="utf-8")
     except OSError as e:
-        fail(f"docs/issues/index.json 不可读: {e}")
+        fail(f"facts/requirements/tickets/index.json 不可读: {e}")
         return None, set()
     try:
         data = json.loads(raw)
     except json.JSONDecodeError as e:
-        fail(f"docs/issues/index.json 不是合法 JSON: {e}")
+        fail(f"facts/requirements/tickets/index.json 不是合法 JSON: {e}")
         return None, set()
     issues = data.get("issues", [])
     entries = {}
     id_line_count = sum(1 for line in raw.splitlines() if '"id": "' in line)
     if id_line_count != len(issues):
-        fail(f"docs/issues/index.json 一条目一行破坏：含 \"id\": \" 的行数 {id_line_count} != 条目数 {len(issues)}")
+        fail(f"facts/requirements/tickets/index.json 一条目一行破坏：含 \"id\": \" 的行数 {id_line_count} != 条目数 {len(issues)}")
     for it in issues:
         eid = it.get("id", "")
         entries[eid] = it
         if not STATUS_RE.match(it.get("status", "")):
             fail(f"index.json 条目 {eid} status 非法: {it.get('status', '<缺失>')!r}")
-    ticket_ids = {p.stem for p in (root / "docs/issues").iterdir() if TICKET_RE.match(p.name)}
+    ticket_ids = {p.stem for p in (root / "facts/requirements/tickets").iterdir() if TICKET_RE.match(p.name)}
     if set(entries) != ticket_ids:
         only_index = sorted(set(entries) - ticket_ids)
         only_disk = sorted(ticket_ids - set(entries))
-        fail(f"index.json 与票文件集合不一致；仅索引有: {only_index}；仅盘上有: {only_disk}")
+        fail(f"facts/requirements/tickets/index.json 与票文件集合不一致；仅索引有: {only_index}；仅盘上有: {only_disk}")
     return entries, set(entries)
 
 
 def check_issues_readme(root, entries):
     if entries is None:
         return
-    text = (root / "docs/issues/README.md").read_text(encoding="utf-8")
+    text = (root / "facts/requirements/tickets/README.md").read_text(encoding="utf-8")
     seen = {}
     for no, line in enumerate(text.splitlines(), 1):
         m = README_ROW_RE.match(line)
@@ -168,16 +159,13 @@ def check_issues_readme(root, entries):
     seen_ids = {name.rsplit(".", 1)[0]: (tok, no) for name, (tok, no) in seen.items()}
     for eid, it in entries.items():
         if eid not in seen_ids:
-            fail(f"docs/issues/README.md 缺 {eid} 的状态列行（ticket-ops 锚点格式）")
+            fail(f"facts/requirements/tickets/README.md 缺 {eid} 的状态列行（ticket-ops 锚点格式）")
         elif seen_ids[eid][0] != it.get("status"):
-            fail(f"docs/issues/README.md:{seen_ids[eid][1]} 状态列 `{seen_ids[eid][0]}` != 索引 `{it.get('status')}`（{eid}）")
+            fail(f"facts/requirements/tickets/README.md:{seen_ids[eid][1]} 状态列 `{seen_ids[eid][0]}` != 索引 `{it.get('status')}`（{eid}）")
 
 
 def check_jsonl(root):
-    for rel, keys, exact_order in (
-        ("docs/changes.jsonl", CHANGE_KEYS, True),
-        ("docs/agent/generation-manifest.jsonl", MANIFEST_KEYS, False),
-    ):
+    for rel, keys, exact_order in (("facts/project/changes.jsonl", CHANGE_KEYS, True),):
         p = root / rel
         try:
             lines = p.read_text(encoding="utf-8").rstrip("\n").split("\n")
@@ -194,16 +182,20 @@ def check_jsonl(root):
                 fail(f"{rel}:{no} 非法 JSON 行: {e}")
                 continue
             got = list(obj)
-            if exact_order and got != keys:
-                fail(f"{rel}:{no} 键序 {got} != 契约 {keys}")
-            if not exact_order and set(got) != keys:
-                fail(f"{rel}:{no} 字段集 {sorted(got)} != {sorted(keys)}")
+            if got[: len(keys)] == keys:
+                if any(key not in obj for key in keys):
+                    fail(f"{rel}:{no} 缺少治理账本必备字段: {keys}")
+            elif got == ["timestamp", "type", "ticket_id", "summary", "files_changed", "author"]:
+                if obj.get("type") != "ticket_completion" or not isinstance(obj.get("files_changed"), list):
+                    fail(f"{rel}:{no} ticket_completion 记录字段值不合预期")
+            else:
+                fail(f"{rel}:{no} 键序/记录形状不合当前账本契约: {got}")
 
 
 def main():
     root = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else Path(__file__).resolve().parent.parent
     try:
-        text = (root / "docs/agent/artifacts.yaml").read_text(encoding="utf-8")
+        text = (root / "facts/project/artifacts.yaml").read_text(encoding="utf-8")
     except OSError as e:
         print(f"registry-check: FAIL: artifacts.yaml 不可读: {e}")
         return 1

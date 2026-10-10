@@ -34,7 +34,11 @@ fn migration_is_idempotent() {
     let state2 = db::open_state(&base).expect("reopen state");
     let conn = state2.conn.lock().unwrap();
     let cols: i64 = conn
-        .query_row("SELECT COUNT(*) FROM pragma_table_info('projects') WHERE name = 'path'", [], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM pragma_table_info('projects') WHERE name = 'path'",
+            [],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(cols, 1, "path 列应恰好出现一次");
 }
@@ -56,7 +60,11 @@ fn migration_backfills_path_from_description() {
     let state2 = db::open_state(&base).expect("reopen");
     let conn = state2.conn.lock().unwrap();
     let (path, description): (Option<String>, Option<String>) = conn
-        .query_row("SELECT path, description FROM projects WHERE id = 'p-old'", [], |r| Ok((r.get(0)?, r.get(1)?)))
+        .query_row(
+            "SELECT path, description FROM projects WHERE id = 'p-old'",
+            [],
+            |r| Ok((r.get(0)?, r.get(1)?)),
+        )
         .unwrap();
     assert_eq!(path.as_deref(), Some("/tmp/legacy-dir"));
     assert_eq!(description, None);
@@ -71,9 +79,13 @@ fn init_empty_dir_seeds_governance() {
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
 
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init ok");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init ok");
     assert!(!outcome.already_registered);
-    assert_eq!(outcome.report.governance_seeded, 14, "规则 10 + 角色 3 + 待定 1（空目录无需求文档，仅验证命令待定）");
+    assert_eq!(
+        outcome.report.governance_seeded, 14,
+        "规则 10 + 角色 3 + 待定 1（空目录无需求文档，仅验证命令待定）"
+    );
     assert!(outcome.report.pending_open >= 1, "验证命令待定必须存在");
 
     // 目录零污染：只允许出现 .git（初始化自建），不得出现任何治理文件
@@ -81,21 +93,50 @@ fn init_empty_dir_seeds_governance() {
         .unwrap()
         .map(|e| e.unwrap().file_name().to_string_lossy().to_string())
         .collect();
-    assert!(entries.iter().all(|n| n == ".git"), "目录应保持零污染，实际: {entries:?}");
+    assert!(
+        entries.iter().all(|n| n == ".git"),
+        "目录应保持零污染，实际: {entries:?}"
+    );
     assert!(!project_dir.join("AGENTS.md").exists());
     assert!(!project_dir.join("docs").exists());
 
     // 库内校验：规则/角色/待定齐备
     let conn = state.conn.lock().unwrap();
     let rules: i64 = conn
-        .query_row("SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'rule'", params![outcome.project.id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'rule'",
+            params![outcome.project.id],
+            |r| r.get(0),
+        )
         .unwrap();
     let roles: i64 = conn
-        .query_row("SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'role'", params![outcome.project.id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'role'",
+            params![outcome.project.id],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(rules, 10);
     assert_eq!(roles, 3);
-    assert_eq!(outcome.project.path.as_deref(), Some(project_dir.display().to_string().as_str()));
+    let canonical_project = project_dir.canonicalize().unwrap();
+    assert_eq!(outcome.project.path.as_deref(), canonical_project.to_str());
+}
+
+#[cfg(unix)]
+#[test]
+fn init_resolves_symlink_root_to_canonical_directory() {
+    use std::os::unix::fs::symlink;
+    let base = temp_base("init-symlink");
+    let real = base.join("real");
+    let alias = base.join("alias");
+    std::fs::create_dir_all(&real).unwrap();
+    symlink(&real, &alias).unwrap();
+    let state = app_state(&base);
+    let outcome = project_init::init_project(&state, alias.to_str().unwrap()).unwrap();
+    assert_eq!(
+        outcome.project.path.as_deref(),
+        Some(real.canonicalize().unwrap().to_str().unwrap())
+    );
 }
 
 // ④ 重复初始化同一目录 → 幂等返回已有项目。
@@ -106,8 +147,10 @@ fn init_same_dir_twice_returns_existing() {
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
 
-    let first = project_init::init_project(&state, &project_dir.display().to_string()).expect("first init");
-    let second = project_init::init_project(&state, &project_dir.display().to_string()).expect("second init");
+    let first =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("first init");
+    let second = project_init::init_project(&state, &project_dir.display().to_string())
+        .expect("second init");
     assert!(!first.already_registered);
     assert!(second.already_registered);
     assert_eq!(first.project.id, second.project.id);
@@ -115,7 +158,11 @@ fn init_same_dir_twice_returns_existing() {
     // 种子不重复
     let conn = state.conn.lock().unwrap();
     let rules: i64 = conn
-        .query_row("SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'rule'", params![first.project.id], |r| r.get(0))
+        .query_row(
+            "SELECT COUNT(*) FROM governance_items WHERE project_id = ?1 AND kind = 'rule'",
+            params![first.project.id],
+            |r| r.get(0),
+        )
         .unwrap();
     assert_eq!(rules, 10);
 }
@@ -128,29 +175,66 @@ fn scan_classify_and_missing_marking() {
     let project_dir = base.join("scan-project");
     write_file(&project_dir.join("README.md"), "# 项目说明");
     write_file(&project_dir.join("notes.md"), "一般文档");
-    write_file(&project_dir.join("AgentUp-Harness-PRD/01-总览.md"), "# PRD 总览\n需求内容");
+    write_file(
+        &project_dir.join("AgentUp-Harness-PRD/01-总览.md"),
+        "# PRD 总览\n需求内容",
+    );
     write_file(&project_dir.join("docs/spec.md"), "规格说明");
-    write_file(&project_dir.join("src/deep/nested.md"), "# 深层目录里的文档");
+    write_file(
+        &project_dir.join("src/deep/nested.md"),
+        "# 深层目录里的文档",
+    );
     let state = app_state(&base);
 
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
-    assert_eq!(outcome.report.requirements_created, 5, "全部 5 篇文本文档都应转为需求（数量对得上）");
-    assert_eq!(outcome.report.locally_archived, 0, "无完成信号 → 不应预归档");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    assert_eq!(
+        outcome.report.requirements_created, 5,
+        "全部 5 篇文本文档都应转为需求（数量对得上）"
+    );
+    assert_eq!(
+        outcome.report.locally_archived, 0,
+        "无完成信号 → 不应预归档"
+    );
     assert_eq!(outcome.report.converted_requirement_ids.len(), 5);
     let conn = state.conn.lock().unwrap();
     let docs = db::list_project_docs(&conn, &outcome.project.id).unwrap();
-    let kind_of = |rel: &str| docs.iter().find(|d| d.rel_path == rel).map(|d| d.kind.clone());
+    let kind_of = |rel: &str| {
+        docs.iter()
+            .find(|d| d.rel_path == rel)
+            .map(|d| d.kind.clone())
+    };
     assert_eq!(kind_of("README.md").as_deref(), Some("readme"));
-    assert_eq!(kind_of("AgentUp-Harness-PRD/01-总览.md").as_deref(), Some("requirement"), "目录名含 prd 命中需求类");
-    assert_eq!(kind_of("docs/spec.md").as_deref(), Some("requirement"), "文件名含 spec 命中需求类");
+    assert_eq!(
+        kind_of("AgentUp-Harness-PRD/01-总览.md").as_deref(),
+        Some("requirement"),
+        "目录名含 prd 命中需求类"
+    );
+    assert_eq!(
+        kind_of("docs/spec.md").as_deref(),
+        Some("requirement"),
+        "文件名含 spec 命中需求类"
+    );
     assert_eq!(kind_of("notes.md").as_deref(), Some("doc"));
-    assert!(docs.iter().any(|d| d.rel_path == "src/deep/nested.md"), "深层目录必须被遍历到");
+    assert!(
+        docs.iter().any(|d| d.rel_path == "src/deep/nested.md"),
+        "深层目录必须被遍历到"
+    );
     assert_eq!(docs.len(), 5);
     let linked = docs.iter().filter(|d| d.requirement_id.is_some()).count();
     assert_eq!(linked, 5, "全部文本类文档都应记录 requirement_id 链接");
     for rid in &outcome.report.converted_requirement_ids {
-        let requirement = db::get_requirement(&conn, rid).unwrap().expect("requirement exists");
-        assert!(requirement.content.as_deref().unwrap_or_default().contains("来自存量文档"), "需求内容应标注文档出处");
+        let requirement = db::get_requirement(&conn, rid)
+            .unwrap()
+            .expect("requirement exists");
+        assert!(
+            requirement
+                .content
+                .as_deref()
+                .unwrap_or_default()
+                .contains("来自存量文档"),
+            "需求内容应标注文档出处"
+        );
     }
     drop(conn);
 
@@ -158,7 +242,10 @@ fn scan_classify_and_missing_marking() {
     std::fs::remove_file(project_dir.join("notes.md")).unwrap();
     let report = project_init::reinit_project(&state, &outcome.project.id).expect("reinit");
     assert_eq!(report.docs_missing, 1);
-    assert_eq!(report.requirements_created, 0, "已转换过的文档不得重复转需求");
+    assert_eq!(
+        report.requirements_created, 0,
+        "已转换过的文档不得重复转需求"
+    );
     let conn = state.conn.lock().unwrap();
     let (missing, content): (i64, Option<String>) = conn
         .query_row(
@@ -168,7 +255,11 @@ fn scan_classify_and_missing_marking() {
         )
         .unwrap();
     assert_eq!(missing, 1);
-    assert_eq!(content.as_deref(), Some("一般文档"), "数据在库：文件删除后记录与全文保留");
+    assert_eq!(
+        content.as_deref(),
+        Some("一般文档"),
+        "数据在库：文件删除后记录与全文保留"
+    );
 
     // 需求被删除后，重新初始化允许该文档再次转换（链接失效自动重建）。
     // 注意：只能删「文件仍在盘上」的文档对应需求——notes.md 文件已删，缺失文档不参与转换。
@@ -177,7 +268,11 @@ fn scan_classify_and_missing_marking() {
         .find(|d| d.rel_path == "README.md")
         .and_then(|d| d.requirement_id.clone())
         .expect("README.md 已链接需求");
-    conn.execute("DELETE FROM requirements WHERE id = ?1", params![readme_rid]).unwrap();
+    conn.execute(
+        "DELETE FROM requirements WHERE id = ?1",
+        params![readme_rid],
+    )
+    .unwrap();
     drop(conn);
     let report = project_init::reinit_project(&state, &outcome.project.id).expect("reinit 2");
     assert_eq!(report.requirements_created, 1, "需求被删后文档应重新转换");
@@ -190,7 +285,8 @@ fn empty_dir_creates_no_requirements() {
     let project_dir = base.join("empty-project");
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
     assert_eq!(outcome.report.requirements_created, 0, "空目录不应产生需求");
     assert!(outcome.report.converted_requirement_ids.is_empty());
 }
@@ -203,12 +299,22 @@ async fn auto_classify_done_docs_after_understanding() {
     std::env::set_var("AGENTUP_TEST_FAKE_RUNTIME", "1");
     let base = temp_base("classify");
     let project_dir = base.join("classify-project");
-    write_file(&project_dir.join("docs/done-feature.md"), "# 已完成功能\n该功能已实现并上线，实现代码见 src/ 目录。");
-    write_file(&project_dir.join("docs/todo-feature.md"), "# 待实施\n新增导出报告功能：支持按周导出项目进度。");
+    write_file(
+        &project_dir.join("docs/done-feature.md"),
+        "# 已完成功能\n该功能已实现并上线，实现代码见 src/ 目录。",
+    );
+    write_file(
+        &project_dir.join("docs/todo-feature.md"),
+        "# 待实施\n新增导出报告功能：支持按周导出项目进度。",
+    );
     let state = app_state(&base);
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
     assert_eq!(outcome.report.requirements_created, 2);
-    assert_eq!(outcome.report.locally_archived, 1, "含完成信号的文档应在转换时即被本地规则预归档");
+    assert_eq!(
+        outcome.report.locally_archived, 1,
+        "含完成信号的文档应在转换时即被本地规则预归档"
+    );
 
     let status_of = |id: &str| {
         let conn = state.conn.lock().unwrap();
@@ -239,8 +345,16 @@ async fn auto_classify_done_docs_after_understanding() {
 
     // 理解队列只处理未归档的需求（与命令层跳过逻辑同构）
     orchestrator::start_initial_understanding(&state, todo_id.clone()).await;
-    assert_eq!(status_of(&done_id), RequirementStatus::Completed, "预归档需求不因理解而丢失状态");
-    assert_eq!(status_of(&todo_id), RequirementStatus::AwaitingConfirmation, "理解完成后转待确认并可见");
+    assert_eq!(
+        status_of(&done_id),
+        RequirementStatus::Completed,
+        "预归档需求不因理解而丢失状态"
+    );
+    assert_eq!(
+        status_of(&todo_id),
+        RequirementStatus::AwaitingConfirmation,
+        "理解完成后转待确认并可见"
+    );
     {
         let conn = state.conn.lock().unwrap();
         let visible = db::list_requirements_by_project(&conn, &outcome.project.id).unwrap();
@@ -249,7 +363,10 @@ async fn auto_classify_done_docs_after_understanding() {
     // 本地归档依据落了日志（可审计）
     let conn = state.conn.lock().unwrap();
     let logs = db::list_logs_by_requirement(&conn, &done_id).unwrap();
-    assert!(logs.iter().any(|l| l.message.contains("本地规则归类")), "预归档判定必须落日志");
+    assert!(
+        logs.iter().any(|l| l.message.contains("本地规则归类")),
+        "预归档判定必须落日志"
+    );
 }
 
 // ⑩ 存量迁移：doc-pending → initializing（幂等）。
@@ -264,7 +381,15 @@ fn legacy_doc_pending_migrates_to_initializing() {
             ("来自存量文档「docs/spec.md」：\n旧数据", true),
             ("用户手敲的正常需求内容", false),
         ] {
-            db::create_requirement(&conn, &project.id, content, None, RequirementMode::Standard, None).unwrap();
+            db::create_requirement(
+                &conn,
+                &project.id,
+                content,
+                None,
+                RequirementMode::Standard,
+                None,
+            )
+            .unwrap();
             let _ = expect_initializing;
         }
     }
@@ -278,7 +403,11 @@ fn legacy_doc_pending_migrates_to_initializing() {
         let rows = stmt.query_map([], |r| r.get::<_, String>(0)).unwrap();
         rows.collect::<Result<Vec<_>, _>>().unwrap()
     };
-    assert_eq!(statuses, vec!["initializing".to_string()], "存量文档需求应迁移为 initializing");
+    assert_eq!(
+        statuses,
+        vec!["initializing".to_string()],
+        "存量文档需求应迁移为 initializing"
+    );
     let normal: String = conn
         .query_row(
             "SELECT status FROM requirements WHERE content NOT LIKE '来自存量文档%'",
@@ -296,7 +425,8 @@ fn resolve_pending_stores_answer() {
     let project_dir = base.join("pending-project");
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
 
     let pending = {
         let conn = state.conn.lock().unwrap();
@@ -330,28 +460,74 @@ fn refresh_requirement_metrics_aggregates() {
     let project_dir = base.join("metrics-project");
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
 
     let (requirement, task_ids) = {
         let conn = state.conn.lock().unwrap();
-        let requirement = db::create_requirement(&conn, &outcome.project.id, "测试指标聚合的需求内容", None, RequirementMode::Standard, Some(10)).unwrap();
-        let t1 = db::create_task(&conn, &requirement.id, StepType::Understand, "理解需求", TaskStatus::Running).unwrap();
-        let t2 = db::create_task(&conn, &requirement.id, StepType::Implement, "实施", TaskStatus::Running).unwrap();
+        let requirement = db::create_requirement(
+            &conn,
+            &outcome.project.id,
+            "测试指标聚合的需求内容",
+            None,
+            RequirementMode::Standard,
+            Some(10),
+        )
+        .unwrap();
+        let t1 = db::create_task(
+            &conn,
+            &requirement.id,
+            StepType::Understand,
+            "理解需求",
+            TaskStatus::Running,
+        )
+        .unwrap();
+        let t2 = db::create_task(
+            &conn,
+            &requirement.id,
+            StepType::Implement,
+            "实施",
+            TaskStatus::Running,
+        )
+        .unwrap();
         (requirement, vec![t1.id, t2.id])
     };
     {
         let conn = state.conn.lock().unwrap();
-        db::update_task(&conn, &task_ids[0], &db::TaskUpdates { tokens: Some(1200), status: Some(TaskStatus::Completed), ..Default::default() }).unwrap();
-        db::update_task(&conn, &task_ids[1], &db::TaskUpdates { tokens: Some(800), status: Some(TaskStatus::Completed), ..Default::default() }).unwrap();
+        db::update_task(
+            &conn,
+            &task_ids[0],
+            &db::TaskUpdates {
+                tokens: Some(1200),
+                status: Some(TaskStatus::Completed),
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        db::update_task(
+            &conn,
+            &task_ids[1],
+            &db::TaskUpdates {
+                tokens: Some(800),
+                status: Some(TaskStatus::Completed),
+                ..Default::default()
+            },
+        )
+        .unwrap();
         db::refresh_requirement_metrics(&conn, &requirement.id).unwrap();
     }
     let fresh = {
         let conn = state.conn.lock().unwrap();
-        db::get_requirement(&conn, &requirement.id).unwrap().unwrap()
+        db::get_requirement(&conn, &requirement.id)
+            .unwrap()
+            .unwrap()
     };
     assert_eq!(fresh.total_tokens, Some(2000));
     assert_eq!(fresh.estimated_minutes, Some(10));
-    assert!(fresh.actual_minutes.is_some(), "实际耗时应被聚合（≥0 分钟）");
+    assert!(
+        fresh.actual_minutes.is_some(),
+        "实际耗时应被聚合（≥0 分钟）"
+    );
 }
 
 // ⑧ 导出 agentup-files：生成技能兼容文件集（单向投影），目录出现治理文件仅发生在显式导出时。
@@ -361,19 +537,39 @@ fn export_agentup_files_writes_projection() {
     let project_dir = base.join("export-project");
     std::fs::create_dir_all(&project_dir).unwrap();
     let state = app_state(&base);
-    let outcome = project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
+    let outcome =
+        project_init::init_project(&state, &project_dir.display().to_string()).expect("init");
 
     let result = project_init::export_agentup_files(&state, &outcome.project.id).expect("export");
     assert!(result.written.iter().any(|p| p.ends_with("AGENTS.md")));
-    assert!(result.written.iter().any(|p| p.ends_with("docs/development-process.md")));
-    assert!(result.written.iter().any(|p| p.ends_with("docs/agent/roles/implementation.md")));
-    assert!(result.written.iter().any(|p| p.ends_with("docs/agent/artifacts.yaml")));
+    assert!(result
+        .written
+        .iter()
+        .any(|p| p.ends_with("docs/development-process.md")));
+    assert!(result
+        .written
+        .iter()
+        .any(|p| p.ends_with("docs/agent/roles/implementation.md")));
+    assert!(result
+        .written
+        .iter()
+        .any(|p| p.ends_with("docs/agent/artifacts.yaml")));
     let agents = std::fs::read_to_string(project_dir.join("AGENTS.md")).unwrap();
-    assert!(agents.contains("生成于 AgentUp Harness"), "投影文件必须带生成头");
-    assert!(agents.contains("docs/development-process.md"), "路由必须指向流程权威");
+    assert!(
+        agents.contains("生成于 AgentUp Harness"),
+        "投影文件必须带生成头"
+    );
+    assert!(
+        agents.contains("docs/development-process.md"),
+        "路由必须指向流程权威"
+    );
 
     // 二次导出内容未变 → 全部 skipped（幂等）
     let second = project_init::export_agentup_files(&state, &outcome.project.id).expect("export 2");
-    assert!(second.written.is_empty(), "内容未变应跳过，实际写入 {:?}", second.written);
+    assert!(
+        second.written.is_empty(),
+        "内容未变应跳过，实际写入 {:?}",
+        second.written
+    );
     assert_eq!(second.skipped.len(), result.written.len());
 }

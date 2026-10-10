@@ -24,5 +24,14 @@
   "verification": "✅ cargo test 通过 (2026-10-09)，✅ pnpm typecheck 通过 (2026-10-09)，✅ 导出逻辑在 project_init.rs 中实现并测试，✅ 验收测试清单完成 (tests/stage-one-acceptance.md)",
   "estimated_time": "0.5-2h",
   "actual_time": "1.5h",
-  "completed_at": "2026-10-09T14:30:00Z"
+  "completed_at": "2026-10-09T14:30:00Z",
+  "checkpoint": {
+    "at": "2026-10-10",
+    "status": "blocked",
+    "scope": "历史实现已存在；本次治理回收不改变产品文件。",
+    "verification": "N/A + reason：历史票只保留 cargo/typecheck 与清单声称，未在票内落盘可复核的命令输出与环境。",
+    "independent_review": "N/A + reason：未找到票内 Independent Review Checkpoint；不得据此标记 done。",
+    "blocker": "缺可复核的独立 Review Checkpoint；历史 completion 记录不足以解除门禁。",
+    "next_step": "由独立 Review 执行体补审并把逐项证据落盘，再按状态机收口。"
+  }
 }

@@ -97,7 +97,7 @@ export interface NativeGoal {
   id: string;
   project_id: string;
   content: string;
-  status: 'draft' | 'planning' | 'awaiting_confirmation' | 'ready' | 'failed';
+  status: 'draft' | 'planning' | 'awaiting_confirmation' | 'ready' | 'completed' | 'failed';
   revision: number;
   created_at: string;
   updated_at: string;

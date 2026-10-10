@@ -12,6 +12,32 @@ const running = (run: NativeDelivery) => ['running', 'verifying', 'reviewing'].i
 const labels: Record<NativeDelivery['status'], string> = { running: '执行中', verifying: '验证中', reviewing: '独立审查中', awaiting_acceptance: '等待你验收', accepted: '已合入本地', failed: '未完成' };
 const inputClass = 'w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:ring-2 focus-visible:ring-primary/30 disabled:opacity-60';
 
+const stageState = (run: NativeDelivery, stage: 'execute' | 'verify' | 'review' | 'accept') => {
+  if (run.status === 'failed') return 'failed';
+  if (stage === 'execute') return run.status === 'running' ? 'active' : 'done';
+  if (stage === 'verify') return run.status === 'running' ? 'pending' : run.checks.length > 0 ? (run.checks.every((check) => check.passed && check.exit_code === 0) ? 'done' : 'failed') : run.status === 'verifying' ? 'active' : 'pending';
+  if (stage === 'review') return run.review ? (run.review.passed ? 'done' : 'failed') : run.status === 'reviewing' ? 'active' : 'pending';
+  return run.status === 'accepted' ? 'done' : run.status === 'awaiting_acceptance' ? 'active' : 'pending';
+};
+
+function DeliveryStages({ run }: { run: NativeDelivery }) {
+  const items = [
+    ['execute', '隔离执行'],
+    ['verify', '真实验证'],
+    ['review', '独立审查'],
+    ['accept', '用户验收'],
+  ] as const;
+  return <ol aria-label="交付阶段" className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+    {items.map(([stage, label], index) => {
+      const state = stageState(run, stage);
+      return <li key={stage} className={`rounded-lg border px-3 py-2 text-xs ${state === 'done' ? 'border-primary/30 bg-primary/10 text-primary' : state === 'active' ? 'border-primary/30 bg-primary/5 text-primary' : state === 'failed' ? 'border-destructive/30 bg-destructive/10 text-destructive' : 'border-border text-muted-foreground'}`}>
+        <span className="font-medium">{index + 1}. {label}</span>
+        <span className="mt-1 block">{state === 'done' ? '已完成' : state === 'active' ? '进行中' : state === 'failed' ? '未通过' : '待开始'}</span>
+      </li>;
+    })}
+  </ol>;
+}
+
 export function NativeDeliveryPanel({ projectId, goal }: { projectId: string; goal: NativeGoal }) {
   const [runs, setRuns] = useState<NativeDelivery[]>([]);
   const [commandText, setCommandText] = useState('');
@@ -47,7 +73,7 @@ export function NativeDeliveryPanel({ projectId, goal }: { projectId: string; go
     return () => { alive.current = false; readVersion.current++; };
   }, [projectId, goal.id]);
 
-  const active = runs.some(running);
+  const active = runs.some((run) => run.goal_revision === goal.revision && running(run));
   useEffect(() => {
     if (!active && !busy) return;
     let stopped = false;
@@ -82,7 +108,9 @@ export function NativeDeliveryPanel({ projectId, goal }: { projectId: string; go
 
   const current = runs.filter((r) => r.goal_revision === goal.revision);
   const accepted = new Set(current.filter((r) => r.status === 'accepted').map((r) => r.task_id));
-  const pending = runs.some((r) => running(r) || r.status === 'awaiting_acceptance');
+  // A previous plan revision may still have retained evidence. It must not
+  // block execution for the current confirmed plan.
+  const pending = current.some((r) => running(r) || r.status === 'awaiting_acceptance');
   const locked = Boolean(busy) || pending;
 
   return <section className="space-y-4" aria-label="任务执行与交付">
@@ -102,23 +130,31 @@ export function NativeDeliveryPanel({ projectId, goal }: { projectId: string; go
         return <div key={task.id} className="flex flex-wrap items-center justify-between gap-3 p-4"><div className="min-w-0 flex-1"><p className="text-sm font-medium">{task.title}</p><p className="mt-1 text-xs text-muted-foreground">{finished ? '已验收并合入本地' : missing.length ? `等待前置任务：${missing.map((id) => goal.tasks.find((t) => t.id === id)?.title ?? id).join('、')}` : latest ? labels[latest.status] : '可以执行'}</p></div><Button size="sm" variant={finished ? 'secondary' : 'primary'} disabled={finished || missing.length > 0 || locked || Boolean(commandError)} loading={busy === task.id} onClick={() => void act(task.id, () => api.deliveries.execute(projectId, goal.id, task.id, goal.revision, commands, feedback))}>{finished ? <CheckCircle2 aria-hidden="true" className="h-3.5 w-3.5" /> : <Play aria-hidden="true" className="h-3.5 w-3.5" />}{finished ? '已合入' : latest?.status === 'failed' ? '重新执行' : '执行任务'}</Button></div>;
       })}</div>
       {busy && !active && <p role="status" className="flex gap-2 text-sm text-primary"><Loader2 aria-hidden="true" className="h-4 w-4 animate-spin" />正在处理，请稍候…</p>}
-      {[...runs].sort((a,b) => b.started_at.localeCompare(a.started_at)).map((run) => <DeliveryResult key={run.id} run={run} busy={Boolean(busy)} currentRevision={goal.revision} onAccept={() => void act(run.id, () => api.deliveries.accept(projectId, run.id, run.diff!.fingerprint))} onReject={() => void act(run.id, () => api.deliveries.reject(projectId, run.id))} />)}
+      {runs.length > 0 && <div className="space-y-3"><div><h4 className="text-sm font-medium">交付证据</h4><p className="mt-1 text-xs text-muted-foreground">当前计划修订版的记录可参与验收；旧版记录仅供追溯。</p></div>{[...runs].sort((a,b) => Number(b.goal_revision !== goal.revision) - Number(a.goal_revision !== goal.revision) || b.started_at.localeCompare(a.started_at)).map((run) => <DeliveryResult key={run.id} run={run} busy={Boolean(busy)} currentRevision={goal.revision} onAccept={() => void act(run.id, () => api.deliveries.accept(projectId, run.id, run.diff!.fingerprint))} onReject={() => void act(run.id, () => api.deliveries.reject(projectId, run.id))} />)}</div>}
     </>}
   </section>;
 }
 
 function DeliveryResult({ run, busy, currentRevision, onAccept, onReject }: { run: NativeDelivery; busy: boolean; currentRevision: number; onAccept: () => void; onReject: () => void }) {
   const canAccept = run.status === 'awaiting_acceptance' && run.goal_revision === currentRevision && Boolean(run.diff) && run.review?.passed && run.checks.length > 0 && run.checks.every((c) => c.passed && c.exit_code === 0);
+  const acceptanceBlocker = run.status === 'awaiting_acceptance' && !canAccept
+    ? run.goal_revision !== currentRevision ? '这条记录属于旧版计划，不能合入当前计划。'
+      : !run.diff ? '缺少代码差异证据，不能验收。'
+        : !run.review?.passed ? '独立审查尚未通过，不能验收。'
+          : run.checks.length === 0 || !run.checks.every((c) => c.passed && c.exit_code === 0) ? '真实验证未全部通过，不能验收。'
+            : '验收条件尚未满足。'
+    : '';
   return <article className="space-y-3 rounded-xl border border-border bg-card p-5">
     <div className="flex flex-wrap items-center justify-between gap-2"><h4 className="text-sm font-medium">{run.task_title}</h4><Badge className={run.status === 'failed' ? 'bg-destructive/10 text-destructive' : 'bg-primary/10 text-primary'}>{running(run) && <Loader2 aria-hidden="true" className="mr-1 h-3 w-3 animate-spin" />}{labels[run.status]}</Badge></div>
     <p className="text-xs text-muted-foreground">{new Date(run.started_at).toLocaleString('zh-CN')} · {run.runtime_id}{run.goal_revision !== currentRevision ? ' · 旧版计划记录' : ''}</p>
+    <DeliveryStages run={run} />
     {running(run) && <p role="status" className="text-sm text-primary">{run.status === 'running' ? 'Agent 正在隔离目录完成任务。' : run.status === 'verifying' ? 'App 正在运行验证命令。' : '独立 Agent 正在检查改动与验收结果。'}可以离开页面，记录会保存。</p>}
     {run.error && <p role="alert" className="whitespace-pre-wrap break-words text-sm text-destructive">{run.error}</p>}
     {run.worktree && <details><summary className="cursor-pointer text-xs text-muted-foreground">隔离工作目录</summary><p className="mt-2 break-all font-mono text-xs text-muted-foreground">{run.worktree.path}</p></details>}
     {run.diff && <details><summary className="cursor-pointer text-sm">改动文件（{run.diff.files.length}）与代码差异</summary><p className="mt-2 break-words text-xs text-muted-foreground">{run.diff.files.join('、')}</p><pre className="mt-2 max-h-96 overflow-auto rounded-lg bg-muted p-3 text-xs leading-relaxed">{run.diff.stat}{'\n'}{run.diff.patch}</pre></details>}
     {run.checks.length > 0 && <div className="space-y-2"><h5 className="text-xs font-medium">真实验证结果</h5>{run.checks.map((check,index) => <details key={index} className="rounded-lg border border-border p-3"><summary className="cursor-pointer break-all text-xs"><span className={check.passed ? 'text-primary' : 'text-destructive'}>{check.passed ? '通过' : '失败'}</span> · {check.program} {check.args.join(' ')} · 退出码 {check.exit_code ?? '未正常退出'}</summary><pre className="mt-2 max-h-60 overflow-auto whitespace-pre-wrap break-words text-xs text-muted-foreground">{check.output || '无输出'}</pre></details>)}</div>}
     {run.review && <div className="space-y-2 border-t border-border pt-3"><h5 className="text-xs font-medium">独立审查：{run.review.passed ? '通过' : '未通过'}</h5><p className="text-sm leading-6">{run.review.summary}</p>{run.review.findings.length > 0 && <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">{run.review.findings.map((finding,index) => <li key={index}>{finding}</li>)}</ul>}</div>}
-    {run.status === 'awaiting_acceptance' && <div className="space-y-3 border-t border-border pt-4"><p className="text-xs leading-5 text-muted-foreground">确认结果符合目标后，App 将创建本地提交并合入原分支。尚未验收的改动只留在隔离目录。</p><div className="flex flex-wrap justify-end gap-2"><Button size="sm" variant="ghost" disabled={busy} onClick={onReject}>暂不采纳（保留目录）</Button><Button disabled={busy || !canAccept} onClick={onAccept}><GitMerge aria-hidden="true" className="h-4 w-4" />验收并合入本地</Button></div></div>}
+    {run.status === 'awaiting_acceptance' && <div className="space-y-3 border-t border-border pt-4"><p className="text-xs leading-5 text-muted-foreground">确认结果符合目标后，App 将创建本地提交并合入原分支。尚未验收的改动只留在隔离目录。</p>{acceptanceBlocker && <p role="status" className="text-xs text-destructive">{acceptanceBlocker}</p>}<div className="flex flex-wrap justify-end gap-2"><Button size="sm" variant="ghost" disabled={busy} onClick={onReject}>暂不采纳（保留目录）</Button><Button disabled={busy || !canAccept} onClick={onAccept}><GitMerge aria-hidden="true" className="h-4 w-4" />验收并合入本地</Button></div></div>}
     {run.commit && <p className="break-all font-mono text-xs text-primary">本地提交：{run.commit}</p>}
     {run.status === 'accepted' && run.error && run.diff && <div className="flex justify-end"><Button variant="secondary" disabled={busy} onClick={onAccept}><RefreshCw aria-hidden="true" className="h-4 w-4" />重试记录归档与清理</Button></div>}
   </article>;

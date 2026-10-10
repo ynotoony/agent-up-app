@@ -20,6 +20,46 @@ const PATCH_LIMIT: usize = 200 * 1024;
 const OUTPUT_LIMIT: usize = 64 * 1024;
 const COMMIT_SUBJECT: &str = "feat(agentup): complete isolated task";
 
+/// Verification commands are intentionally narrow: they must be produced by App policy,
+/// never arbitrary shell input from IPC.
+pub fn validate_verification_commands(commands: &[VerificationCommand]) -> ApiResult<()> {
+    if commands.is_empty() || commands.len() > 12 {
+        return Err(ApiError::bad_request("验证命令数量无效"));
+    }
+    for c in commands {
+        let allowed = match c.program.as_str() {
+            "cargo" => {
+                c.args.len() == 3
+                    && c.args[0] == "test"
+                    && c.args[1] == "--manifest-path"
+                    && matches!(c.args[2].as_str(), "Cargo.toml" | "src-tauri/Cargo.toml")
+            }
+            "node" => {
+                c.args.as_slice()
+                    == [
+                        "node_modules/typescript/bin/tsc",
+                        "-p",
+                        "tsconfig.json",
+                        "--noEmit",
+                    ]
+            }
+            "npm" | "pnpm" | "yarn" => false,
+            "git" => c.args.as_slice() == ["diff", "--check"],
+            _ => false,
+        };
+        if !allowed || c.program.contains('/') || c.args.iter().any(|a| a.contains('\0')) {
+            return Err(ApiError::bad_request("验证命令不在后端允许列表"));
+        }
+        if c.args
+            .iter()
+            .any(|a| a == "-c" || a == "--eval" || a == "--exec" || a.contains("shell"))
+        {
+            return Err(ApiError::bad_request("验证命令参数包含禁止的脚本执行选项"));
+        }
+    }
+    Ok(())
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Worktree {
     pub root: String,
@@ -477,6 +517,15 @@ fn cargo_cache(w: &Worktree) -> ApiResult<PathBuf> {
 /// Commands are supplied by App policy and shown before execution, never inferred from agent text.
 pub async fn run_checks(w: &Worktree, commands: &[VerificationCommand]) -> Vec<CheckResult> {
     let mut results = Vec::new();
+    if let Err(error) = validate_verification_commands(commands) {
+        return vec![CheckResult {
+            program: "<rejected>".into(),
+            args: vec![],
+            exit_code: None,
+            passed: false,
+            output: error.message,
+        }];
+    }
     for command in commands {
         let mut result = CheckResult {
             program: command.program.clone(),
@@ -495,6 +544,23 @@ pub async fn run_checks(w: &Worktree, commands: &[VerificationCommand]) -> Vec<C
             results.push(result);
             continue;
         }
+        #[cfg(target_os = "macos")]
+        let mut process = {
+            let quote = |value: &str| value.replace('\\', "\\\\").replace('"', "\\\"");
+            let worktree = quote(&w.path);
+            let cache = quote(&cargo_cache(w).map(|path| path.to_string_lossy().into_owned()).unwrap_or_default());
+            let profile = format!("(version 1) (allow default) (deny network-outbound) (deny file-write*) (allow file-read* (literal \"/dev/null\") (literal \"/dev/urandom\")) (allow file-write* (literal \"/dev/null\") (subpath \"{worktree}\") (subpath \"{cache}\"))");
+            let sandbox = Path::new("/usr/bin/sandbox-exec");
+            if !sandbox.is_file() {
+                result.output = "系统缺少 sandbox-exec，拒绝执行验证命令".into();
+                results.push(result);
+                continue;
+            }
+            let mut process = tokio::process::Command::new(sandbox);
+            process.args(["-p", &profile, "--", &command.program]);
+            process
+        };
+        #[cfg(not(target_os = "macos"))]
         let mut process = tokio::process::Command::new(&command.program);
         process
             .args(&command.args)
@@ -505,6 +571,14 @@ pub async fn run_checks(w: &Worktree, commands: &[VerificationCommand]) -> Vec<C
             .kill_on_drop(true);
         for key in ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE"] {
             process.env_remove(key);
+        }
+        if command.program == "git" {
+            process.env("GIT_CONFIG_NOSYSTEM", "1");
+            process.env("GIT_CONFIG_GLOBAL", "/dev/null");
+            process.env("GIT_CONFIG_SYSTEM", "/dev/null");
+        }
+        if let Ok(cache) = cargo_cache(w) {
+            process.env("TMPDIR", cache);
         }
         let is_cargo = Path::new(&command.program)
             .file_name()

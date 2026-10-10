@@ -46,8 +46,8 @@ scripts/release.sh <版本号> [--notes-file <文件>] [--dry-run] [--yes]
 
 - 填好 Key 后点 **「获取可用模型」**：应用会试连 `{base_url}/models` 拉取你账号下的模型列表做下拉选择，同时验证连通性。
 - 模型名必须与服务商一致（如 Ark 上是 `glm-5-3-flash-260828` 而非网页名 `glm-5.3-flash`），且需在服务商控制台**开通**该模型后才能调用（Ark 未开通会返回 `ModelNotOpen`）。
-- 调用失败时自动**降级到本地模拟引擎**继续走完交付链路，并在执行日志中记录降级原因，不会卡死流程。
-**不填 Key 时使用本地模拟引擎**：理解/方案/实施/验证由确定性规则生成，可离线体验完整状态链路（理解 → 质疑 → 确认 → 方案 → 决策 → 实施 → 验证 → 迭代）。
+- 调用失败时会明确标记当前阶段失败并保留错误证据，不生成模拟完成结果，也不会把没有真实代码变更的任务标成完成。
+**不填 Key 时**仍可离线体验项目接入、目标创建和状态恢复；需要真实规划或交付时必须配置可用 runtime。
 
 ## 架构
 
@@ -57,7 +57,7 @@ src-tauri/                Rust 后端
   src/types.rs            数据模型（镜像 PRD《02-数据模型》9 张表 + 请求结构）
   src/db.rs               rusqlite（bundled SQLite）：全部 CRUD/聚合/JOIN project_name
   src/task_engine.rs      动态模式分析（fast/standard/high_risk/emergency）+ getModeSteps
-  src/understanding.rs    LLM 需求理解（系统提示词/parse_and_normalize 清洗/本地模拟引擎）
+  src/understanding.rs    兼容层需求理解（系统提示词/parse_and_normalize 清洗；失败不伪造交付）
   src/llm.rs              OpenAI 兼容客户端（reqwest + rustls）
   src/orchestrator.rs     执行编排：理解/方案/实施/验证/审查异步流水线，决策挂起与恢复，迭代重建
   src/attachments.rs      附件落盘 + att:// 自定义协议预览（替代 S3）
@@ -76,7 +76,7 @@ src/                      渲染层（React 19 + Vite + Tailwind 4）
 |---|---|
 | Next.js App Router + REST | Tauri commands（同构信封语义，错误码 400/404/409 一致） |
 | Supabase PostgreSQL + Drizzle | 本地 SQLite（rusqlite bundled），schema 镜像 02-数据模型 |
-| coze-coding-dev-sdk LLMClient | OpenAI 兼容 `/chat/completions` + 设置页配置；未配置 Key → 本地模拟引擎 |
+| coze-coding-dev-sdk LLMClient | OpenAI 兼容 `/chat/completions` + 设置页配置；未配置 Key → 规划/交付明确失败 |
 | S3 对象存储 + 签名 URL | 本地文件 + `att://` 自定义协议（图片缩略图/灯箱） |
 | DEPLOY_RUN_PORT 等环境变量 | 无需；数据在 `~/Library/Application Support/com.agentup.harness/` |
 
@@ -84,5 +84,5 @@ src/                      渲染层（React 19 + Vite + Tailwind 4）
 
 ## 验证
 
-- `cargo test --test smoke`（AGENTUP_TEST_FAST=1 加速模拟延时）：全链路 19 项断言——项目/需求/附件 → 理解 v1 → 回答质疑 v2 → 确认 → 方案 → 决策挂起/解决 → 实施 → 验证 → completed → 迭代 v3 → 再次 completed，含聚合统计与附件持久化。
+- `cargo test --manifest-path src-tauri/Cargo.toml --tests`：覆盖项目发现、目标规划、隔离交付、真实验证、独立审查、用户验收、提交归档、恢复和安全边界；runtime 不可用时明确失败，不生成模拟交付证据。
 - 打包产物已实测：启动、窗口、数据库初始化（`agentup.db` WAL）正常。

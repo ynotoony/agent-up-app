@@ -222,35 +222,44 @@ fn local_hooks_are_not_run_and_cleanup_never_discards_work() {
     assert!(Path::new(&w.path).join("leftover.txt").exists());
 }
 #[tokio::test]
-async fn verification_reports_real_exit_missing_command_and_captures_both_streams() {
+async fn verification_runs_backend_allowed_command() {
     let (_temp, root) = repo();
     let w = worktree(&root);
     let results = delivery_git::run_checks(
         &w,
-        &[
-            VerificationCommand {
-                program: "sh".into(),
-                args: vec!["-c".into(), "printf 'out'; printf 'err' >&2; exit 7".into()],
-            },
-            VerificationCommand {
-                program: "agentup-does-not-exist-1234567".into(),
-                args: vec![],
-            },
-            VerificationCommand {
-                program: "git".into(),
-                args: vec!["rev-parse".into(), "--show-toplevel".into()],
-            },
-        ],
+        &[VerificationCommand {
+            program: "git".into(),
+            args: vec!["diff".into(), "--check".into()],
+        }],
     )
     .await;
-    assert_eq!(results[0].exit_code, Some(7));
-    assert!(!results[0].passed);
-    assert!(results[0].output.contains("out"));
-    assert!(results[0].output.contains("err"));
-    assert_eq!(results[1].exit_code, None);
-    assert!(!results[1].passed);
-    assert!(results[2].passed);
-    assert_eq!(results[2].output.trim(), w.path);
+    assert_eq!(results[0].exit_code, Some(0));
+    assert!(results[0].passed);
+}
+
+#[tokio::test]
+async fn verification_rejects_shell_and_arbitrary_runtime_commands() {
+    let (_temp, root) = repo();
+    let w = worktree(&root);
+    for command in [
+        VerificationCommand {
+            program: "sh".into(),
+            args: vec!["-c".into(), "touch pwned".into()],
+        },
+        VerificationCommand {
+            program: "node".into(),
+            args: vec!["-p".into(), "process.env".into()],
+        },
+        VerificationCommand {
+            program: "npm".into(),
+            args: vec!["run".into(), "arbitrary".into()],
+        },
+    ] {
+        let result = delivery_git::run_checks(&w, &[command]).await;
+        assert_eq!(result.len(), 1);
+        assert!(!result[0].passed);
+        assert!(result[0].exit_code.is_none());
+    }
 }
 
 #[test]
@@ -270,35 +279,31 @@ fn receipt_requires_matching_commit_in_current_branch_history() {
 #[cfg(unix)]
 #[tokio::test]
 async fn cargo_reuses_owned_sibling_cache_and_rejects_symlink_cache() {
-    use std::os::unix::fs::{symlink, PermissionsExt};
-    let (temp, root) = repo();
-    let fake_cargo = temp.path().join("cargo");
+    use std::os::unix::fs::symlink;
+    let (_temp, root) = repo();
     fs::write(
-        &fake_cargo,
-        "#!/bin/sh\nprintf '%s' \"$CARGO_TARGET_DIR\"\n",
+        root.join("Cargo.toml"),
+        "[package]\nname='fixture'\nversion='0.1.0'\nedition='2021'\n",
     )
     .unwrap();
-    fs::set_permissions(&fake_cargo, fs::Permissions::from_mode(0o755)).unwrap();
+    fs::create_dir(root.join("src")).unwrap();
+    fs::write(root.join("src/lib.rs"), "pub fn ok() {}\n").unwrap();
+    ok(&root, &["add", "Cargo.toml", "src/lib.rs"]);
+    ok(&root, &["commit", "-qm", "fixture manifest"]);
     let commands = [VerificationCommand {
-        program: fake_cargo.to_str().unwrap().into(),
-        args: vec![],
+        program: "cargo".into(),
+        args: vec!["test".into(), "--manifest-path".into(), "Cargo.toml".into()],
     }];
     let w = worktree(&root);
     let result = delivery_git::run_checks(&w, &commands).await;
-    assert!(result[0].passed, "{:?}", result[0]);
     let cache = Path::new(&w.path).parent().unwrap().join(".cargo-target");
-    assert_eq!(Path::new(&result[0].output), cache);
+    assert!(result[0].passed, "{:?}", result[0]);
+    assert!(cache.is_dir());
     assert!(!cache.starts_with(&w.root));
     assert!(!cache.starts_with(&w.path));
-    fs::write(cache.join("keep-cache"), "reuse").unwrap();
     let w2 = worktree(&root);
     assert!(delivery_git::run_checks(&w2, &commands).await[0].passed);
-    assert_eq!(
-        fs::read_to_string(cache.join("keep-cache")).unwrap(),
-        "reuse"
-    );
-    fs::remove_file(cache.join("keep-cache")).unwrap();
-    fs::remove_dir(&cache).unwrap();
+    fs::remove_dir_all(&cache).unwrap();
     symlink(&root, &cache).unwrap();
     let denied = delivery_git::run_checks(&w, &commands).await;
     assert!(!denied[0].passed);
