@@ -1,7 +1,7 @@
 {
   "name": "agentup-harness",
   "productName": "AgentUp Harness",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "面向结果的 Agent 交付系统：一句话需求 → 理解 → 质疑 → 方案 → 实施 → 验证 → 迭代",
   "private": true,
   "main": "dist/main/index.js",
