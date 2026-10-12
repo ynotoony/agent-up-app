@@ -1,4 +1,7 @@
-// 生成 AgentUp Harness 应用图标：indigo 圆角方块 + 白色"进展闪电"标。
+// Input: Icon drawing constants and a destination PNG path from the command line.
+// Output: A 1024x1024 AgentUp application icon PNG.
+// Pos: Build-time asset generator for the Tauri application icon.
+// 生成 AgentUp 应用图标：indigo 圆角方块 + 白色"进展闪电"标。
 // 运行：swift scripts/make-icon.swift build/icon_1024.png
 import CoreGraphics
 import Foundation

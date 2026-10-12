@@ -1,3 +1,6 @@
+/* Input: Tailwind CSS and renderer-wide theme values. */
+/* Output: Global tokens, base styles, and shared utilities. */
+/* Pos: Global stylesheet imported before workbench-specific styles. */
 @import "tailwindcss";
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -28,6 +31,9 @@
   --radius: 0.625rem;
   --scrollbar-thumb: rgba(28, 28, 40, 0.14);
   --scrollbar-thumb-hover: rgba(28, 28, 40, 0.24);
+  --work-success: #247853;
+  --work-warning: #835313;
+  --work-running: #365f9b;
 }
 
 .dark {
@@ -54,6 +60,9 @@
   --chart-5: #ef4444;
   --scrollbar-thumb: rgba(255, 255, 255, 0.12);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.22);
+  --work-success: #80c5a0;
+  --work-warning: #deb76f;
+  --work-running: #8eaee8;
 }
 
 @theme inline {

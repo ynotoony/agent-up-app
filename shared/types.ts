@@ -1,4 +1,6 @@
-// AgentUp Harness 共享类型 —— 与 PRD《02-数据模型》《03-后端API契约》一一对应。
+// Input: Renderer and Tauri command domain data shapes.
+// Output: Shared compile-time contracts for command requests and responses.
+// Pos: Type boundary between the React renderer and Rust backend.
 export type RequirementStatus =
   | 'pending'
   | 'initializing'
@@ -224,7 +226,17 @@ export interface GovernanceTicket {
   updated_at: string | null;
   complexity: string | null;
   source: 'governance';
+  source_path: string;
+  body_error: string | null;
+  ready: boolean;
+  body_loaded: boolean;
+  readiness_reason: string | null;
+  /** Present on create responses when the ticket was registered but sidecar updates need recovery. */
+  creation_warning?: string | null;
+  unresolved_dependencies: string[];
+  summary?: string | null;
   body?: {
+    [key: string]: unknown;
     goal: unknown;
     scope: unknown;
     acceptance: unknown;
@@ -234,12 +246,75 @@ export interface GovernanceTicket {
 
 export interface GovernanceTicketsResult {
   project_id: string;
+  index_path: string;
   tickets: GovernanceTicket[];
   total: number;
   /** id/status 缺失或非法而拒收的索引行数（对账用，不静默消失） */
   skipped: number;
   unknown_statuses: Record<string, string>;
+  ticket_creation_supported: boolean;
+  ticket_creation_reason: string | null;
 }
+
+export interface GovernanceTicketDetail {
+  project_id: string;
+  index_path: string;
+  ticket: GovernanceTicket;
+}
+
+export interface TicketDraft {
+  title: string;
+  complexity: 'C0' | 'C1' | 'C2' | 'C3';
+  profile: string;
+  complexity_reason: string;
+  priority_reason: string;
+  goal: string;
+  scope: string[];
+  acceptance: string[];
+  verification: string;
+  blocked_by: string[];
+}
+
+export type NewTicketInput = TicketDraft;
+
+export interface TicketDraftResult {
+  draft: TicketDraft;
+  runtime_id: string;
+}
+
+export interface TicketHandoff {
+  launched: boolean;
+  runtime_id: string;
+  ticket_id: string;
+  project_path: string;
+  source_path: string;
+  terminal: string;
+  session_id: string;
+  launcher_pid: number;
+  prompt_delivery: 'context_file' | 'clipboard';
+  needs_paste: boolean;
+  context_path: string;
+}
+
+export interface WorkspaceWrite {
+  path: string;
+  action: 'initialize_git' | 'create_file' | 'register_local';
+  description: string;
+}
+
+export interface WorkspacePreview {
+  path: string;
+  name: string;
+  mode: 'new' | 'git' | 'governed';
+  git: ProjectDiscovery['git'] | null;
+  index_path: string | null;
+  discovery: ProjectDiscovery | null;
+  writes: WorkspaceWrite[];
+  fingerprint: string;
+  warnings: string[];
+}
+
+export interface WorkspaceConfirmInput { path: string; fingerprint: string }
 
 export interface AttachmentItem {
   name: string;

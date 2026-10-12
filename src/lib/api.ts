@@ -1,3 +1,6 @@
+// Input: Tauri invoke transport and shared renderer/backend types.
+// Output: Typed renderer API for backend commands.
+// Pos: Single renderer boundary for calls into the Tauri backend.
 import { invoke } from '@tauri-apps/api/core';
 import type {
   CreateRequirementResult,
@@ -6,6 +9,9 @@ import type {
   ExportOutcome,
   GovernanceItem,
   GovernanceTicketsResult,
+  GovernanceTicketDetail,
+  NewTicketInput,
+  TicketDraftResult,
   InitProjectResult,
   InitReport,
   ImportProjectInput,
@@ -26,6 +32,9 @@ import type {
   RoleInfo,
   Task,
   WorkspaceData,
+  WorkspacePreview,
+  WorkspaceConfirmInput,
+  TicketHandoff,
 } from '../../shared/types';
 
 // 渲染层唯一数据入口 —— 通过 Tauri invoke 调用主进程命令。
@@ -54,6 +63,8 @@ export interface ApiClient {
     get(): Promise<WorkspaceData>;
   };
   projects: {
+    onboardingPreview(path: string): Promise<WorkspacePreview>;
+    onboardingConfirm(input: WorkspaceConfirmInput): Promise<ImportProjectResult>;
     list(): Promise<Project[]>;
     create(body: { name: string; description?: string | null }): Promise<Project>;
     init(path: string): Promise<InitProjectResult>;
@@ -70,7 +81,10 @@ export interface ApiClient {
     governanceComplete(id: string): Promise<Requirement>;
     export(id: string, kind: 'agentup-files' | 'json-snapshot', target?: string): Promise<ExportOutcome>;
     tickets(id: string, loadBodies?: boolean): Promise<GovernanceTicketsResult>;
-    ticketLaunch(projectId: string, ticketId: string): Promise<unknown>;
+    ticketDetail(projectId: string, ticketId: string): Promise<GovernanceTicketDetail>;
+    ticketDraft(projectId: string, description: string): Promise<TicketDraftResult>;
+    ticketCreate(projectId: string, input: NewTicketInput): Promise<GovernanceTicketDetail>;
+    ticketLaunch(projectId: string, ticketId: string, runtimeId?: string): Promise<TicketHandoff>;
     get(id: string): Promise<ProjectDashboard>;
     update(id: string, updates: { name?: string; description?: string | null; status?: string }): Promise<Project>;
     remove(id: string): Promise<{ deleted: boolean }>;
@@ -158,6 +172,8 @@ export const api: ApiClient = {
   },
   projects: {
     list: () => call<Project[]>('projects_list'),
+    onboardingPreview: (path) => call<WorkspacePreview>('workspace_onboarding_preview', { path }),
+    onboardingConfirm: (input) => call<ImportProjectResult>('workspace_onboarding_confirm', { input }),
     create: (body) => call<Project>('projects_create', { name: body.name, description: body.description ?? null }),
     init: (path) => call<InitProjectResult>('projects_init', { path }),
     discover: (path) => call<ProjectDiscovery>('projects_discover', { path }),
@@ -173,7 +189,10 @@ export const api: ApiClient = {
     governanceComplete: (id) => call<Requirement>('projects_governance_complete', { id }),
     export: (id, kind, target) => call<ExportOutcome>('projects_export', { id, kind, target: target ?? null }),
     tickets: (id, loadBodies) => call<GovernanceTicketsResult>('projects_tickets', { id, loadBodies: loadBodies ?? false }),
-    ticketLaunch: (projectId, ticketId) => call('projects_ticket_launch', { projectId, ticketId }),
+    ticketDetail: (projectId, ticketId) => call<GovernanceTicketDetail>('projects_ticket_detail', { projectId, ticketId }),
+    ticketDraft: (projectId, description) => call<TicketDraftResult>('projects_ticket_draft', { projectId, description }),
+    ticketCreate: (projectId, input) => call<GovernanceTicketDetail>('projects_ticket_create', { projectId, input }),
+    ticketLaunch: (projectId, ticketId, runtimeId) => call<TicketHandoff>('projects_ticket_launch', { projectId, ticketId, runtimeId: runtimeId ?? null }),
     get: (id) => call<ProjectDashboard>('projects_get', { id }),
     update: (id, updates) =>
       call<Project>('projects_update', {

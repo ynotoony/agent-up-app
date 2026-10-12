@@ -1,3 +1,6 @@
+// Input: Backend modules and Tauri runtime configuration.
+// Output: Application startup and registered invoke commands.
+// Pos: Crate root for the Tauri backend.
 pub mod types;
 pub mod error;
 pub mod db;
@@ -9,6 +12,8 @@ pub mod agent_runtime;
 pub mod roles;
 pub mod project_init;
 pub mod project_discovery;
+pub mod workspace_onboarding;
+pub mod ticket_handoff;
 pub mod native_goals;
 pub mod native_delivery;
 pub mod delivery_git;
@@ -42,6 +47,8 @@ pub fn run() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            workspace_onboarding::workspace_onboarding_preview,
+            workspace_onboarding::workspace_onboarding_confirm,
             native_delivery::native_delivery_options,
             native_delivery::native_deliveries_list,
             native_delivery::native_task_execute,
@@ -63,6 +70,9 @@ pub fn run() {
             commands::projects_doc_read,
             commands::projects_doc_to_requirement,
             commands::projects_tickets,
+            commands::projects_ticket_detail,
+            commands::projects_ticket_draft,
+            commands::projects_ticket_create,
             commands::projects_ticket_launch,
             commands::projects_governance,
             commands::projects_initializing,

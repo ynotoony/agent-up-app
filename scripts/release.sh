@@ -1,14 +1,17 @@
 #!/bin/sh
-# scripts/release.sh — AgentUp Harness 发布一条龙
+# Input: Release version, optional notes file, repository state, and build tools.
+# Output: A verified DMG; unless --dry-run, an annotated tag and GitHub Release upload.
+# Pos: Repository release orchestrator and publishing boundary.
+# scripts/release.sh — AgentUp 桌面应用发布
 #
 # 流程（校验先于写入，失败即中止；发布段中途失败会给出当前状态与补救命令）：
-#   1. 预检：gh/cargo/pnpm 就位、main 分支、跟踪文件无改动、与 origin/main 同步
-#      （未跟踪的本地文件不阻塞——本仓事实记录本就只存本地，也不会进安装包）
+#   1. 预检：gh/cargo/pnpm 就位、main 分支、跟踪文件无改动、无非忽略未跟踪文件、与 origin/main 同步
+#      （Git 忽略的本地事实记录豁免，不进入安装包）
 #   2. 版本一致：package.json == src-tauri/tauri.conf.json == src-tauri/Cargo.toml == 入参 X.Y.Z
 #   3. 门禁：pnpm typecheck ＋ cargo test（以 cargo 退出码为准，非零即中止）
 #   4. tag/Release 防重：v<版本> 的本地 tag、远端 tag、GitHub Release；远端不可达时中止而非放行
 #   5. 构建：tauri build 出 .app；hdiutil 直出 DMG（含 Applications 软链，不依赖 Finder）
-#   6. DMG 验证：只读挂载，须含 AgentUp Harness.app 与 Applications 软链；退出时自动清理挂载
+#   6. DMG 验证：只读挂载，须含 AgentUp.app 与 Applications 软链；退出时自动清理挂载
 #   7. 确认后：打 annotated tag → 推 tag → 建 GitHub Release → 上传 DMG
 #
 # 用法：
@@ -24,7 +27,7 @@ set -eu
 cd "$(dirname "$0")/.."
 MNT=""
 TMPD=$(mktemp -d "${TMPDIR:-/tmp}/agentup-release.XXXXXX")
-TEST_LOG="$TMPD/test.log"; DIST_LOG="$TMPD/dist.log"; STAGING="$TMPD/staging"; MNT="$TMPD/mnt"
+TEST_LOG="$TMPD/test.log"; DIST_LOG="$TMPD/dist.log"; STAGING="$TMPD/staging"
 cleanup() { [ -z "$MNT" ] || hdiutil detach "$MNT" -quiet 2>/dev/null || true; rm -rf "$TMPD"; }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
@@ -45,15 +48,24 @@ while [ $# -gt 0 ]; do
   esac
   shift
 done
+if [ -n "$NOTES_FILE" ]; then
+  [ -f "$NOTES_FILE" ] || die "说明文件不存在：$NOTES_FILE"
+  [ -r "$NOTES_FILE" ] || die "说明文件不可读：$NOTES_FILE"
+fi
 [ -n "$VERSION" ] || { echo "✗ 用法：scripts/release.sh <版本号> [--notes-file <文件>] [--dry-run] [--yes]" >&2; exit 2; }
-printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "版本号须为 X.Y.Z 三段数字（不带 v 前缀），如 1.0.1"
+printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+$' || die "版本号须为 X.Y.Z 三段数字（不带 v 前缀），如 1.1.0"
 TAG="v$VERSION"
 
 say "1/7 预检"
 for cmd in git cargo pnpm gh hdiutil; do command -v "$cmd" >/dev/null 2>&1 || die "缺依赖命令：$cmd"; done
 RELEASE_BRANCH="${RELEASE_BRANCH:-main}"
 [ "$(git branch --show-current)" = "$RELEASE_BRANCH" ] || die "须在 ${RELEASE_BRANCH} 分支执行（可用 RELEASE_BRANCH 环境变量覆盖）"
-[ -z "$(git status --porcelain --untracked-files=no)" ] || die "跟踪文件有未提交改动——先提交或还原（版本号三处改动须已提交）"
+[ -z "$(git status --porcelain --untracked-files=no -- . ':(top,exclude,literal)facts/project/changes.jsonl')" ] || die "跟踪文件有未提交改动——先提交或还原（版本号三处改动须已提交）"
+UNTRACKED=$(git ls-files --others --exclude-standard)
+[ -z "$UNTRACKED" ] || {
+  printf '✗ 存在未跟踪且未被忽略的文件：\n%s\n' "$UNTRACKED" >&2
+  die "请先检查并提交需要随发布交付的源码/资源；本地事实文件须由 .gitignore 明确忽略"
+}
 RC=0
 git ls-remote --exit-code --heads origin "$RELEASE_BRANCH" >/dev/null 2>&1 || RC=$?
 if [ "$RC" -eq 0 ]; then
@@ -65,7 +77,7 @@ elif [ "$RC" -eq 2 ]; then
 else
   die "git ls-remote 失败（rc=${RC}，网络或认证问题）——无法确认与远端的关系，中止"
 fi
-say "预检通过（${RELEASE_BRANCH} @ $(git rev-parse --short HEAD)，${SYNC_MSG}；未跟踪的本地文件不影响发布）"
+say "预检通过（${RELEASE_BRANCH} @ $(git rev-parse --short HEAD)，${SYNC_MSG}；忽略文件不影响发布）"
 
 say "2/7 版本一致性（${VERSION}）"
 json_ver() { sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$1" | head -1; }
@@ -112,14 +124,14 @@ if [ -n "${CARGO_TARGET_DIR:-}" ] && [ "${CARGO_TARGET_DIR#/}" = "$CARGO_TARGET_
   die "CARGO_TARGET_DIR 需为绝对路径（当前为相对值：${CARGO_TARGET_DIR}）"
 fi
 BUNDLE_ROOT="${CARGO_TARGET_DIR:-$(pwd)/src-tauri/target}/release/bundle"
-APP_BUNDLE="$BUNDLE_ROOT/macos/AgentUp Harness.app"
+APP_BUNDLE="$BUNDLE_ROOT/macos/AgentUp.app"
 [ -d "$APP_BUNDLE" ] || { tail -20 "$DIST_LOG" >&2; die "未找到 .app 产物：$APP_BUNDLE"; }
 ARCH=$(uname -m)
-DMG="$BUNDLE_ROOT/dmg/AgentUp Harness_${VERSION}_${ARCH}.dmg"
+DMG="$BUNDLE_ROOT/dmg/AgentUp_${VERSION}_${ARCH}.dmg"
 mkdir -p "$BUNDLE_ROOT/dmg" "$STAGING"
 cp -R "$APP_BUNDLE" "$STAGING/" || die "复制 .app 进 staging 失败"
 ln -s /Applications "$STAGING/Applications"
-hdiutil create -volname "AgentUp Harness" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null \
+hdiutil create -volname "AgentUp" -srcfolder "$STAGING" -ov -format UDZO "$DMG" >/dev/null \
   || { tail -20 "$DIST_LOG" >&2; die "hdiutil 打包 DMG 失败"; }
 [ -f "$DMG" ] || die "DMG 产物缺失：$DMG"
 say "构建完成：$(basename "${DMG}")（$(du -h "${DMG}" | cut -f1)）"
@@ -127,8 +139,8 @@ say "构建完成：$(basename "${DMG}")（$(du -h "${DMG}" | cut -f1)）"
 say "6/7 DMG 挂载验证"
 MNT=$(mktemp -d "${TMPDIR:-/tmp}/agentup-mnt.XXXXXX")
 hdiutil attach -nobrowse -readonly "$DMG" -mountpoint "$MNT" >/dev/null || die "DMG 无法挂载"
-if [ ! -d "$MNT/AgentUp Harness.app" ] || [ ! -L "$MNT/Applications" ]; then
-  die "DMG 内容不齐（缺 AgentUp Harness.app 或 Applications 软链）；挂载点 $MNT 将随退出自动卸载清理"
+if [ ! -d "$MNT/AgentUp.app" ] || [ ! -L "$MNT/Applications" ]; then
+  die "DMG 内容不齐（缺 AgentUp.app 或 Applications 软链）；挂载点 $MNT 将随退出自动卸载清理"
 fi
 hdiutil detach "$MNT" -quiet || die "DMG 卸载失败——请手动执行：hdiutil detach $MNT"
 MNT=""
@@ -147,23 +159,22 @@ if [ "$ASSUME_YES" -ne 1 ]; then
   case "$ANSWER" in y|Y|yes|YES) ;; *) die "已取消（未做任何写入）" ;; esac
 fi
 
-git tag -a "$TAG" -m "AgentUp Harness $TAG" || die "打 tag 失败（本地 tag 已删除或请检查 git 状态）"
+git tag -a "$TAG" -m "AgentUp $TAG" || die "打 tag 失败（本地 tag 已删除或请检查 git 状态）"
 git push origin "$TAG" || die "推送 tag 失败——tag $TAG 已留在本地；处理后可手动 git push origin $TAG 重试"
 
 if [ -n "$NOTES_FILE" ]; then
-  [ -f "$NOTES_FILE" ] || die "说明文件不存在：$NOTES_FILE"
   REL_NOTES="$NOTES_FILE"
 else
   REL_NOTES="$TMPD/notes.md"
   {
-    printf '# AgentUp Harness %s\n\n' "$TAG"
+    printf '# AgentUp %s\n\n' "$TAG"
     printf '安装：下载下方 DMG（Apple Silicon），拖入 Applications。应用未做开发者签名，首次启动若被 Gatekeeper 拦截：右键 → 打开。\n\n'
     printf '## 验证\n\n- cargo test 全绿、pnpm typecheck 通过（发布前由 scripts/release.sh 强制执行）\n\n'
     printf '> 治理流程、票单与产品路线等事实记录仅存维护者本地。\n'
   } >"$REL_NOTES"
 fi
 
-gh release create "$TAG" --title "AgentUp Harness $TAG" --notes-file "$REL_NOTES" \
+gh release create "$TAG" --title "AgentUp $TAG" --notes-file "$REL_NOTES" \
   || die "创建 Release 失败——注意：tag $TAG 已推送远端；可修复后手动 gh release create $TAG --title ... --notes-file ... 补建，或 git push origin :$TAG 删远端 tag 后重跑本脚本"
 gh release upload "$TAG" "$DMG" \
   || die "上传 DMG 失败——Release $TAG 已创建；可手动补传：gh release upload $TAG \"$DMG\""
